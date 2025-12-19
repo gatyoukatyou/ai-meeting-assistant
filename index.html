@@ -6,19 +6,24 @@
   <title>AI参加会議</title>
   <style>
     :root {
-      --primary: #2563eb;
-      --primary-hover: #1d4ed8;
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
       --danger: #dc2626;
       --danger-hover: #b91c1c;
-      --success: #16a34a;
-      --warning: #f59e0b;
-      --bg: #f8fafc;
+      --success: #059669;
+      --warning: #d97706;
+      --bg: #f9fafb;
       --card-bg: #ffffff;
-      --text: #1e293b;
-      --text-secondary: #64748b;
-      --border: #e2e8f0;
-      --shadow: 0 1px 3px rgba(0,0,0,0.1);
-      --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1);
+      --text: #111827;
+      --text-secondary: #6b7280;
+      --border: #e5e7eb;
+      --border-light: #f3f4f6;
+      --shadow: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --accent-blue: #eff6ff;
+      --accent-green: #f0fdf4;
+      --accent-border-blue: #dbeafe;
+      --accent-border-green: #dcfce7;
     }
 
     * {
@@ -38,19 +43,22 @@
     .header {
       background: var(--card-bg);
       border-bottom: 1px solid var(--border);
-      padding: 1rem 1.5rem;
+      padding: 1.25rem 1.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
       flex-wrap: wrap;
       gap: 1rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
 
     .header h1 {
       font-size: 1.25rem;
+      font-weight: 600;
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      color: var(--text);
     }
 
     .header-controls {
@@ -115,20 +123,23 @@
     }
 
     .status-badge {
-      padding: 0.25rem 0.75rem;
-      border-radius: 1rem;
+      padding: 0.375rem 0.875rem;
+      border-radius: 1.5rem;
       font-size: 0.75rem;
       font-weight: 500;
+      border: 1px solid transparent;
     }
 
     .status-ready {
-      background: #dbeafe;
-      color: #1e40af;
+      background: var(--accent-blue);
+      color: var(--primary);
+      border-color: var(--accent-border-blue);
     }
 
     .status-recording {
       background: #fee2e2;
       color: #991b1b;
+      border-color: #fecaca;
       animation: pulse 1.5s infinite;
     }
 
@@ -154,17 +165,19 @@
 
     .panel {
       background: var(--card-bg);
-      border-radius: 0.75rem;
+      border-radius: 0.875rem;
       box-shadow: var(--shadow);
       overflow: hidden;
+      border: 1px solid var(--border);
     }
 
     .panel-header {
-      padding: 1rem;
+      padding: 1.125rem 1.25rem;
       border-bottom: 1px solid var(--border);
       display: flex;
       justify-content: space-between;
       align-items: center;
+      background: var(--border-light);
     }
 
     .panel-title {
@@ -173,6 +186,7 @@
       display: flex;
       align-items: center;
       gap: 0.5rem;
+      color: var(--text);
     }
 
     .panel-body {
@@ -268,12 +282,13 @@
     }
 
     .ai-response {
-      background: #f1f5f9;
-      border-radius: 0.5rem;
-      padding: 1rem;
+      background: var(--border-light);
+      border-radius: 0.625rem;
+      padding: 1.125rem;
       margin-bottom: 0.75rem;
       font-size: 0.9rem;
       line-height: 1.7;
+      border: 1px solid var(--border);
     }
 
     .ai-response:empty::before {
@@ -301,18 +316,19 @@
     }
 
     .qa-answer {
-      background: #f1f5f9;
-      border-radius: 0.5rem;
-      padding: 0.75rem;
+      background: var(--border-light);
+      border-radius: 0.625rem;
+      padding: 0.875rem;
       font-size: 0.875rem;
+      border: 1px solid var(--border);
     }
 
     /* コスト表示 */
     .cost-display {
       font-size: 0.75rem;
       color: var(--text-secondary);
-      padding: 0.5rem 1rem;
-      background: #f8fafc;
+      padding: 0.75rem 1rem;
+      background: var(--border-light);
       border-top: 1px solid var(--border);
     }
 
@@ -381,10 +397,10 @@
 
     .cost-warning {
       background: #fef3c7;
-      border: 1px solid #fde047;
-      border-radius: 0.25rem;
-      padding: 0.5rem;
-      margin-top: 0.5rem;
+      border: 1px solid #fef08a;
+      border-radius: 0.5rem;
+      padding: 0.625rem;
+      margin-top: 0.625rem;
       color: #92400e;
       font-size: 0.7rem;
     }
@@ -393,25 +409,29 @@
       display: inline-flex;
       align-items: center;
       gap: 0.25rem;
-      padding: 0.125rem 0.5rem;
+      padding: 0.25rem 0.625rem;
       border-radius: 1rem;
       font-size: 0.65rem;
       font-weight: 500;
+      border: 1px solid transparent;
     }
 
     .cost-badge-low {
       background: #d1fae5;
       color: #065f46;
+      border-color: #a7f3d0;
     }
 
     .cost-badge-medium {
       background: #fef3c7;
       color: #92400e;
+      border-color: #fef08a;
     }
 
     .cost-badge-high {
       background: #fee2e2;
       color: #991b1b;
+      border-color: #fecaca;
     }
 
     /* モーダル */
@@ -435,12 +455,13 @@
 
     .modal {
       background: var(--card-bg);
-      border-radius: 0.75rem;
+      border-radius: 0.875rem;
       max-width: 500px;
       width: 100%;
       max-height: 90vh;
       overflow: hidden;
       box-shadow: var(--shadow-lg);
+      border: 1px solid var(--border);
     }
 
     .modal-header {
@@ -528,32 +549,33 @@
 
     /* セキュリティ通知 */
     .security-notice {
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 0.5rem;
-      padding: 1rem;
-      margin-bottom: 1.25rem;
+      background: var(--accent-blue);
+      border: 1px solid var(--accent-border-blue);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
     }
 
     .security-notice-title {
       font-weight: 600;
-      color: #1e40af;
+      color: var(--primary);
       display: flex;
       align-items: center;
       gap: 0.5rem;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
     }
 
     .security-notice-text {
-      font-size: 0.8rem;
-      color: #1e40af;
+      font-size: 0.825rem;
+      color: var(--text);
       line-height: 1.6;
     }
 
     .security-features {
-      margin-top: 0.75rem;
-      padding-top: 0.75rem;
-      border-top: 1px solid #bfdbfe;
+      margin-top: 0.875rem;
+      padding-top: 0.875rem;
+      border-top: 1px solid var(--accent-border-blue);
     }
 
     .security-feature {
@@ -561,8 +583,8 @@
       align-items: center;
       gap: 0.5rem;
       font-size: 0.8rem;
-      color: #1e40af;
-      margin-bottom: 0.25rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.375rem;
     }
 
     .security-feature::before {
@@ -574,17 +596,17 @@
     /* セキュリティオプション */
     .security-options {
       background: #fefce8;
-      border: 1px solid #fde047;
-      border-radius: 0.5rem;
-      padding: 1rem;
-      margin-top: 1.25rem;
+      border: 1px solid #fef08a;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-top: 1.5rem;
     }
 
     .security-options-title {
       font-weight: 600;
-      color: #854d0e;
-      margin-bottom: 0.75rem;
-      font-size: 0.875rem;
+      color: #92400e;
+      margin-bottom: 0.875rem;
+      font-size: 0.9rem;
     }
 
     .checkbox-group {
@@ -610,24 +632,28 @@
       align-items: center;
       gap: 0.25rem;
       font-size: 0.7rem;
-      padding: 0.125rem 0.5rem;
+      padding: 0.25rem 0.625rem;
       border-radius: 1rem;
       margin-left: 0.5rem;
+      border: 1px solid transparent;
     }
 
     .validation-pending {
       background: #fef3c7;
       color: #92400e;
+      border-color: #fef08a;
     }
 
     .validation-success {
       background: #d1fae5;
       color: #065f46;
+      border-color: #a7f3d0;
     }
 
     .validation-error {
       background: #fee2e2;
       color: #991b1b;
+      border-color: #fecaca;
     }
 
     /* ウェルカムモーダル */
@@ -654,10 +680,11 @@
 
     .welcome-features {
       text-align: left;
-      background: #f8fafc;
-      border-radius: 0.5rem;
-      padding: 1rem;
+      background: var(--border-light);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
       margin-bottom: 1.5rem;
+      border: 1px solid var(--border);
     }
 
     .welcome-feature {
@@ -687,15 +714,16 @@
 
     /* エクスポートモーダル */
     .export-preview {
-      background: #1e293b;
-      color: #e2e8f0;
-      border-radius: 0.5rem;
-      padding: 1rem;
+      background: var(--border-light);
+      color: var(--text);
+      border-radius: 0.625rem;
+      padding: 1.125rem;
       font-family: monospace;
       font-size: 0.75rem;
       max-height: 300px;
       overflow-y: auto;
       white-space: pre-wrap;
+      border: 1px solid var(--border);
     }
 
     /* 設定インポート/エクスポート */
@@ -760,17 +788,19 @@
 
     /* LLMインジケーター */
     .llm-indicator {
-      padding: 0.25rem 0.75rem;
-      border-radius: 1rem;
+      padding: 0.375rem 0.875rem;
+      border-radius: 1.5rem;
       font-size: 0.75rem;
       font-weight: 500;
-      background: #dbeafe;
-      color: #1e40af;
+      background: var(--accent-blue);
+      color: var(--primary);
+      border: 1px solid var(--accent-border-blue);
     }
 
     .llm-indicator.no-api {
       background: #fee2e2;
       color: #991b1b;
+      border-color: #fecaca;
     }
   </style>
 </head>
@@ -1018,8 +1048,8 @@
         </div>
 
         <!-- 文字起こし用API -->
-        <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-          <div style="font-weight: 600; color: #166534; margin-bottom: 0.75rem;">🎤 文字起こし用API（いずれか1つ必須）</div>
+        <div style="background: var(--accent-green); border: 2px solid var(--accent-border-green); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="font-weight: 700; font-size: 1rem; color: var(--success); margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--accent-border-green);">🎤 文字起こし用API（いずれか1つ必須）</div>
           
           <div class="setting-group" style="margin-bottom: 0.75rem;">
             <label class="setting-label">
@@ -1058,8 +1088,8 @@
         </div>
 
         <!-- LLM専用API -->
-        <div style="background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem;">
-          <div style="font-weight: 600; color: #1e40af; margin-bottom: 0.75rem;">💬 LLM専用API（任意・追加のAIモデル）</div>
+        <div style="background: var(--accent-blue); border: 2px solid var(--accent-border-blue); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem;">
+          <div style="font-weight: 700; font-size: 1rem; color: var(--primary); margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--accent-border-blue);">💬 AI質問応答用API（任意・高度な回答に使用）</div>
           
           <div class="setting-group" style="margin-bottom: 0.75rem;">
             <label class="setting-label">
