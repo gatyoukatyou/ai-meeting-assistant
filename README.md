@@ -47,6 +47,12 @@ As a result, no user-controlled data is executed during HTML parsing, which sign
 
 その結果、HTML パース時にユーザー入力が実行される経路は存在せず、XSS 攻撃のリスクが大幅に低減されています。
 
+### URL Handling (Open Redirect / XSS Mitigation) / URLの取り扱い（オープンリダイレクト・XSS対策）
+
+All dynamic URL assignments that may involve user-controlled input (e.g., `a.href = input`, `window.location.href = input`) are now guarded by explicit validation. User-provided URLs are normalized using the `URL` constructor and restricted to the `http` / `https` schemes. Dangerous schemes such as `javascript:`, `data:`, and `vbscript:` are rejected.
+
+ユーザー入力が関与する可能性のある動的な URL 設定（例: `a.href = input`, `window.location.href = input`）には、明示的な検証を導入しています。URL は `URL` コンストラクタで正規化され、`http` / `https` スキームのみが許可されます。`javascript:`、`data:`、`vbscript:` などの危険なスキームは拒否されます。
+
 ## Verification / 検証方法
 
 No automated tests are available for this static application. The following checks were performed manually:
@@ -54,12 +60,14 @@ No automated tests are available for this static application. The following chec
 - Searched for HTML injection APIs (innerHTML, insertAdjacentHTML, outerHTML)
 - Verified that no inline event handlers remain
 - Reviewed DOM update paths to ensure textContent / DOM node creation is used
+- Inspected dynamic URL assignments to confirm they use the shared validation helper
 
 本アプリは静的アプリケーションであり、自動テストは存在しません。以下の方法で手動検証を行いました。
 
 - innerHTML / insertAdjacentHTML / outerHTML の残存確認
 - onclick / onchange / onkeypress 等の inline handler が存在しないことを確認
 - DOM 更新が textContent および DOM ノード生成経由で行われていることを確認
+- 動的URL設定箇所が共通の検証ヘルパーを通過していることを確認
 
 ## Planned Improvements / 今後の改善予定
 

@@ -532,6 +532,27 @@
 
   <script src="js/secure-storage.js"></script>
   <script>
+    function safeURL(input) {
+      try {
+        const url = new URL(input, window.location.origin);
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+          return url.href;
+        }
+      } catch (e) {
+        console.warn('Invalid URL rejected:', input);
+      }
+      return null;
+    }
+
+    function navigateTo(target) {
+      const safe = safeURL(target);
+      if (safe) {
+        window.location.href = safe;
+      } else {
+        console.warn('Navigation blocked due to unsafe target:', target);
+      }
+    }
+
     // =====================================
     // 初期化
     // =====================================
@@ -627,7 +648,7 @@
 
       // 3秒後にメイン画面に自動遷移
       setTimeout(() => {
-        window.location.href = 'index.html';
+        navigateTo('index.html');
       }, 3000);
     }
 

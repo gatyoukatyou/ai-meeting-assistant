@@ -148,4 +148,10 @@ As a result, no user-controlled data is executed during HTML parsing, which sign
 
 その結果、HTML パース時にユーザー入力が実行される経路は存在せず、XSS 攻撃のリスクが大幅に低減されています。
 
+### URL Handling (Open Redirect / XSS Mitigation) / URLの取り扱い（オープンリダイレクト・XSS対策）
+
+All dynamic URL assignments that may involve user-controlled input (e.g., `a.href = input`, `window.location.href = input`) are now guarded by explicit validation. User-provided URLs are normalized using the `URL` constructor and restricted to the `http` / `https` schemes. Dangerous schemes such as `javascript:`, `data:`, and `vbscript:` are rejected.
+
+ユーザー入力が関与する可能性のある動的な URL 設定（例: `a.href = input`, `window.location.href = input`）には、明示的な検証を導入しています。URL は `URL` コンストラクタで正規化され、`http` / `https` スキームのみが許可されます。`javascript:`、`data:`、`vbscript:` などの危険なスキームは拒否されます。
+
 セキュリティ上の問題を発見した場合は、GitHubのIssueでご報告ください。

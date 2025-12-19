@@ -1053,7 +1053,7 @@
     let audioChunks = [];
     let transcriptIntervalId = null;
     let fullTranscript = '';
-    
+
     // コスト管理（詳細版）
     let costs = {
       transcript: {
@@ -1120,6 +1120,27 @@
       idea: '',
       custom: [] // Q&A形式で蓄積
     };
+
+    function safeURL(input) {
+      try {
+        const url = new URL(input, window.location.origin);
+        if (url.protocol === 'http:' || url.protocol === 'https:') {
+          return url.href;
+        }
+      } catch (e) {
+        console.warn('Invalid URL rejected:', input);
+      }
+      return null;
+    }
+
+    function navigateTo(target) {
+      const safe = safeURL(target);
+      if (safe) {
+        window.location.href = safe;
+      } else {
+        console.warn('Navigation blocked due to unsafe target:', target);
+      }
+    }
 
     // =====================================
     // 初期化
@@ -1237,7 +1258,7 @@
       
       if (!apiKey) {
         alert(`${provider === 'gemini' ? 'Gemini' : 'OpenAI'} APIキーを設定してください`);
-        window.location.href = 'config.html';
+        navigateTo('config.html');
         return;
       }
 
@@ -1465,7 +1486,7 @@
       
       if (!llm) {
         alert('LLM用のAPIキーが設定されていません。\n設定画面でAPIキーを入力してください。');
-        window.location.href = 'config.html';
+        navigateTo('config.html');
         return;
       }
 
