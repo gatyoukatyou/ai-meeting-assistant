@@ -30,8 +30,10 @@ GitHub Pages: https://gatyoukatyou.github.io/ai-meeting-assistant/
 ## 必要条件
 
 - モダンブラウザ（Chrome / Edge 推奨）
-- Gemini APIキー（必須：文字起こしに使用）
-- その他LLMのAPIキー（任意：質問応答に使用）
+- 文字起こし用APIキー（以下のいずれか1つが必須）
+  - Gemini API または OpenAI API
+- LLM用APIキー（任意：質問応答に使用）
+  - Gemini / Claude / OpenAI / Groq から選択
 
 ## 使い方
 
@@ -42,9 +44,10 @@ GitHub Pages: https://gatyoukatyou.github.io/ai-meeting-assistant/
 ### 2. APIキーを設定
 
 1. 初回起動時のウェルカム画面、または右上の「⚙️ 設定」をクリック
-2. Gemini APIキーを入力（必須）
+2. 文字起こし用APIキーを入力（Gemini API または OpenAI API のいずれか必須）
 3. 必要に応じて他のLLMのAPIキーを入力
-4. 「保存」をクリック
+4. 文字起こしプロバイダーとLLM優先順位を選択（任意）
+5. 「保存」をクリック
 
 **APIキーの取得先:**
 - [Google AI Studio](https://aistudio.google.com/apikey) - Gemini
@@ -54,9 +57,11 @@ GitHub Pages: https://gatyoukatyou.github.io/ai-meeting-assistant/
 
 ### 3. 録音開始
 
-1. 「🎤 録音開始」をクリック
-2. マイクへのアクセスを許可
-3. 設定した間隔（デフォルト30秒）ごとに自動で文字起こし
+1. 文字起こしプロバイダー（Gemini / OpenAI）を選択
+2. 録音間隔（15秒/30秒/60秒/2分）を選択
+3. 「🎤 録音開始」をクリック
+4. マイクへのアクセスを許可
+5. 設定した間隔ごとに自動で文字起こし
 
 ### 4. AIに質問
 
