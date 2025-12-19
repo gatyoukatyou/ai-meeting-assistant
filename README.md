@@ -53,6 +53,12 @@ All dynamic URL assignments that may involve user-controlled input (e.g., `a.hre
 
 ユーザー入力が関与する可能性のある動的な URL 設定（例: `a.href = input`, `window.location.href = input`）には、明示的な検証を導入しています。URL は `URL` コンストラクタで正規化され、`http` / `https` スキームのみが許可されます。`javascript:`、`data:`、`vbscript:` などの危険なスキームは拒否されます。
 
+### Content Security Policy (Report-Only) / コンテンツセキュリティポリシー（報告モード）
+
+A strict Content-Security-Policy-Report-Only meta tag is now included in both entrypoints. It locks down `default-src`, `script-src`, and `connect-src` (limited to `self`, Google Generative Language, OpenAI, Anthropic, Groq) and runs inline scripts only when they carry the shared nonce (`nonce=YWktbWVldGluZw==`). `style-src` currently includes `'unsafe-inline'` because large inline `<style>` blocks and attributes remain; removing it requires future CSS extraction. Once logs show no violations, replace the Report-Only meta with the provided enforced CSP string.
+
+両エントリーポイントに Content-Security-Policy-Report-Only メタタグを追加しました。`default-src`、`script-src`、`connect-src` を厳格化し（`self` と Google Generative Language / OpenAI / Anthropic / Groq への接続のみ許可）、インラインスクリプトは共有ノンス（`nonce=YWktbWVldGluZw==`）を付与した場合のみ実行されます。`style-src` には既存の大規模な `<style>` ブロックとインライン属性のため一時的に `'unsafe-inline'` を含めていますが、今後 CSS を外部化して削減します。検証で違反が出ないことを確認後、案内している強制版 CSP に差し替えてください。
+
 ## Verification / 検証方法
 
 No automated tests are available for this static application. The following checks were performed manually:

@@ -154,4 +154,10 @@ All dynamic URL assignments that may involve user-controlled input (e.g., `a.hre
 
 ユーザー入力が関与する可能性のある動的な URL 設定（例: `a.href = input`, `window.location.href = input`）には、明示的な検証を導入しています。URL は `URL` コンストラクタで正規化され、`http` / `https` スキームのみが許可されます。`javascript:`、`data:`、`vbscript:` などの危険なスキームは拒否されます。
 
+### Content Security Policy (Report-Only) / コンテンツセキュリティポリシー（報告モード）
+
+A Content-Security-Policy-Report-Only meta tag now protects both HTML entrypoints. The policy restricts `default-src`, enforces `script-src 'self' 'nonce-YWktbWVldGluZw=='`, and allows network calls only to Google Generative Language, OpenAI, Anthropic, and Groq APIs. Inline scripts execute solely via the shared nonce. `style-src` currently includes `'unsafe-inline'` because legacy inline styles remain; this is documented debt for future CSS refactoring. After monitoring the report-only logs, enable the enforced CSP string noted near each meta tag.
+
+両方のHTMLエントリーポイントに Content-Security-Policy-Report-Only メタタグを追加しました。`default-src` を自己ドメインに限定し、`script-src 'self' 'nonce-YWktbWVldGluZw=='` で制御、外部通信は Google Generative Language / OpenAI / Anthropic / Groq API への接続のみ許可します。インラインスクリプトは共有ノンス経由でのみ動作します。`style-src` は既存のインラインスタイルが残るため暫定的に `'unsafe-inline'` を含み、今後のCSSリファクタで解消予定です。Report-Onlyのログに問題がないことを確認したら、メタタグ付近に記載した強制版CSPへ切り替えてください。
+
 セキュリティ上の問題を発見した場合は、GitHubのIssueでご報告ください。
