@@ -1,192 +1,156 @@
 # AI参加会議
 
-会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行うWebアプリケーションです。
+会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行うWebアプリです。
 
-## 特徴
+## できること
 
-- 🎤 **安定した文字起こし** - Gemini Audio / OpenAI Whisper から選択可能
-- 💬 **AIへの質問機能** - 会議内容に基づいて、要約・意見・アイデアをAIに質問
-- 🤖 **複数LLM対応** - Gemini / Claude / GPT-4 / Groq から自動選択
-- 💰 **API利用料概算表示** - リアルタイムで概算コストを表示
-- 📚 **履歴管理** - AI回答をタブで管理、自由質問はQ&A形式で履歴保持
-- 📥 **エクスポート** - 会議内容とAI回答をMarkdown形式で出力
-- 🔒 **セキュリティ** - APIキーは暗号化してローカル保存（外部送信なし）
+- 🎤 **会議を文字にする** - 話している内容が自動で文字になります
+- 💬 **AIに質問できる** - 「要約して」「意見を聞かせて」「アイデアある?」と聞けます
+- 🤖 **いろんなAIが使える** - Gemini、Claude、GPT-4、Groq から選べます
+- 💰 **料金がわかる** - 今どのくらいお金がかかっているか見えます
+- 📥 **記録を保存できる** - 会議の内容とAIの回答をファイルにできます
+- 🔒 **安全** - あなたのAPIキーは暗号化して、あなたのパソコンだけに保存されます
 
 ## デモ
 
-GitHub Pages: https://gatyoukatyou.github.io/ai-meeting-assistant/
+実際に動かしてみる: https://gatyoukatyou.github.io/ai-meeting-assistant/
 
-## セキュリティ
+## 安全性について
 
-このアプリでは、ユーザーのAPIキーを安全に取り扱います：
+このアプリは、あなたのAPIキーを安全に守ります：
 
-- ✅ APIキーは**暗号化**してブラウザのローカルストレージに保存
-- ✅ 外部サーバーには**一切送信されません**
-- ✅ **自動削除オプション**で共有PCでも安心
-- ✅ 設定の**暗号化エクスポート/インポート**対応
+- ✅ APIキーは**暗号化**してあなたのブラウザだけに保存
+- ✅ 外部のサーバーには**絶対に送りません**
+- ✅ **自動削除**を設定すれば、他の人に使われません
+- ✅ **バックアップ機能**で別のパソコンに移すこともできます
 
-詳細は [SECURITY.md](docs/SECURITY.md) をご覧ください。
+詳しくは [セキュリティについて](docs/SECURITY.md) をご覧ください。
 
-## Language Policy / 言語表記について
+## 必要なもの
 
-This project is primarily intended for users in Japan. Therefore, all important documentation (README, Security Notes, etc.) is written in **Japanese with English provided alongside**.
-
-本プロジェクトは主に日本国内の利用を想定しています。そのため、README やセキュリティノートなどの重要な文書は、**日本語を主とし、必ず英語表記を併記**する方針としています。
-
-> Note / 注意: Any future documentation updates must include both Japanese and English text. 日本語のみ、または英語のみの記述はレビュー対象となります。
-
-## Security Notes / セキュリティに関する注意
-
-### DOM Hardening (XSS Mitigation) / DOMハードニング（XSS対策）
-
-All inline event handlers (onclick, onchange, onkeypress, etc.) have been removed from the HTML. All user interactions are now handled exclusively via JavaScript event listeners registered after DOMContentLoaded.
-
-すべての inline イベントハンドラ（onclick、onchange、onkeypress など）は HTML から完全に削除されました。現在、すべてのユーザー操作は DOMContentLoaded 後に登録される JavaScript の event listener 経由でのみ処理されます。
-
-As a result, no user-controlled data is executed during HTML parsing, which significantly reduces the risk of XSS attacks.
-
-その結果、HTML パース時にユーザー入力が実行される経路は存在せず、XSS 攻撃のリスクが大幅に低減されています。
-
-### URL Handling (Open Redirect / XSS Mitigation) / URLの取り扱い（オープンリダイレクト・XSS対策）
-
-All dynamic URL assignments that may involve user-controlled input (e.g., `a.href = input`, `window.location.href = input`) are now guarded by explicit validation. User-provided URLs are normalized using the `URL` constructor and restricted to the `http` / `https` schemes. Dangerous schemes such as `javascript:`, `data:`, and `vbscript:` are rejected.
-
-ユーザー入力が関与する可能性のある動的な URL 設定（例: `a.href = input`, `window.location.href = input`）には、明示的な検証を導入しています。URL は `URL` コンストラクタで正規化され、`http` / `https` スキームのみが許可されます。`javascript:`、`data:`、`vbscript:` などの危険なスキームは拒否されます。
-
-### Content Security Policy (Report-Only) / コンテンツセキュリティポリシー（報告モード）
-
-A strict Content-Security-Policy-Report-Only meta tag is now included in both entrypoints. After migrating all inline scripts into external files (`js/app.js`, `js/config.js`), `script-src` only needs `'self'` (the nonce has been removed). `connect-src` is limited to Google Generative Language, OpenAI, Anthropic, and Groq endpoints used by the app. `style-src` still includes `'unsafe-inline'` because the inline `<style>` blocks remain; removing it requires future CSS extraction. Once DevTools shows no violations, replace the Report-Only meta with the provided enforced CSP string.
-
-両エントリーポイントに Content-Security-Policy-Report-Only メタタグを適用しています。すべてのインラインスクリプトを外部ファイル（`js/app.js`、`js/config.js`）へ移行したため、`script-src` は `'self'` のみで済み、ノンス指定は不要になりました。`connect-src` は本アプリが利用する Google Generative Language / OpenAI / Anthropic / Groq の API だけを許可しています。`style-src` には依然として `'unsafe-inline'` が必要ですが、これは今後 CSS を外部化して削減します。DevTools コンソールで違反が出ないことを確認できたら、案内している強制版 CSP へ切り替えてください。
-
-## Verification / 検証方法
-
-No automated tests are available for this static application. The following checks were performed manually:
-
-- Searched for HTML injection APIs (innerHTML, insertAdjacentHTML, outerHTML)
-- Verified that no inline event handlers remain
-- Reviewed DOM update paths to ensure textContent / DOM node creation is used
-- Inspected dynamic URL assignments to confirm they use the shared validation helper
-
-本アプリは静的アプリケーションであり、自動テストは存在しません。以下の方法で手動検証を行いました。
-
-- innerHTML / insertAdjacentHTML / outerHTML の残存確認
-- onclick / onchange / onkeypress 等の inline handler が存在しないことを確認
-- DOM 更新が textContent および DOM ノード生成経由で行われていることを確認
-- 動的URL設定箇所が共通の検証ヘルパーを通過していることを確認
-
-## Planned Improvements / 今後の改善予定
-
-- Add Content Security Policy (CSP) without 'unsafe-inline'
-- Guard dynamic URL assignments against javascript: and data: schemes
-
-- unsafe-inline を含まない Content Security Policy (CSP) の導入
-- javascript: / data: スキームを排除する URL ガードの実装
-
-## 必要条件
-
-- モダンブラウザ（Chrome / Edge 推奨）
-- 文字起こし用APIキー（以下のいずれか1つが必須）
-  - Gemini API または OpenAI API
-- LLM用APIキー（任意：質問応答に使用）
-  - Gemini / Claude / OpenAI / Groq から選択
+- パソコンとブラウザ（Chrome か Edge がおすすめ）
+- マイク（話すため）
+- 文字起こし用のAPIキー（下記のどれか1つが必要）
+  - Gemini API **または** OpenAI API
+- AI回答用のAPIキー（任意。より賢い回答が欲しい場合）
+  - Gemini / Claude / OpenAI / Groq から選べます
 
 ## 使い方
 
-### 1. アプリにアクセス
+### 1. アプリを開く
 
-`index.html` をブラウザで開く、または GitHub Pages の URL にアクセス
+`index.html` をブラウザで開くか、上のデモのURLにアクセスしてください。
 
-### 2. APIキーを設定
+### 2. APIキーを設定する
 
-1. 初回起動時のウェルカム画面、または右上の「⚙️ 設定」をクリック
-2. 文字起こし用APIキーを入力（Gemini API または OpenAI API のいずれか必須）
-3. 必要に応じて他のLLMのAPIキーを入力
-4. 文字起こしプロバイダーとLLM優先順位を選択（任意）
-5. 「保存」をクリック
+1. 初めて開くと説明が出るので、「設定を開始する」をクリック
+2. 文字起こし用のAPIキーを入力（Gemini か OpenAI のどちらか）
+3. もっと賢いAI回答が欲しければ、他のAIのキーも入力
+4. 「保存」をクリック
 
-**APIキーの取得先:**
+**APIキーはここで取得できます:**
 - [Google AI Studio](https://aistudio.google.com/apikey) - Gemini
 - [Anthropic Console](https://console.anthropic.com/) - Claude
 - [OpenAI Platform](https://platform.openai.com/api-keys) - GPT-4
 - [Groq Console](https://console.groq.com/keys) - Groq
 
-### 3. 録音開始
+### 3. 会議を録音する
 
-1. 文字起こしプロバイダー（Gemini / OpenAI）を選択
-2. 録音間隔（15秒/30秒/60秒/2分）を選択
+1. 文字起こしに使うAI（Gemini か OpenAI）を選ぶ
+2. 何秒ごとに文字起こしするか選ぶ（15秒/30秒/60秒/2分）
 3. 「🎤 録音開始」をクリック
-4. マイクへのアクセスを許可
-5. 設定した間隔ごとに自動で文字起こし
+4. マイクの使用を許可する
+5. 話すと自動で文字になります
 
-### 4. AIに質問
+### 4. AIに質問する
 
-- **要約**: 会議内容を要約（上書き）
-- **意見を聞く**: AIの見解を取得（蓄積）
-- **アイデア**: 新しい提案を生成（蓄積）
-- **自由質問**: カスタム質問を入力（Q&A形式で蓄積）
+会議の途中や終わった後に、AIに質問できます：
 
-テキストを選択してから質問すると、選択部分についてのみ回答します。
+- **要約** - 会議の内容を短くまとめてもらう
+- **意見を聞く** - AIの考えを聞く
+- **アイデア** - 新しい提案をもらう
+- **自由質問** - 自分で質問を書いて送る
 
-### 5. エクスポート
+**ちょっとしたコツ:**
+テキストをマウスで選択してから質問すると、その部分だけについて答えてくれます。
 
-「📥 エクスポート」をクリックすると、会議内容とAI回答をMarkdownファイルとしてダウンロードできます。
+### 5. 記録を保存する
+
+「📥 エクスポート」をクリックすると、会議の内容とAIの回答がファイルになります。
 
 ## 設定のバックアップ
 
-設定画面から、APIキー含む設定を暗号化エクスポートできます：
+別のパソコンに移す時や、バックアップを取りたい時：
 
-1. 「📤 エクスポート」をクリック
-2. パスワードを設定
-3. JSONファイルがダウンロードされます
+**保存する時:**
+1. 設定画面で「📤 エクスポート」をクリック
+2. パスワードを決める
+3. ファイルがダウンロードされます
 
-別のデバイスへインポートする際は：
+**読み込む時:**
+1. 設定画面で「📥 インポート」をクリック
+2. 前に保存したファイルを選ぶ
+3. パスワードを入力
 
-1. 「📥 インポート」をクリック
-2. エクスポートしたファイルを選択
-3. エクスポート時のパスワードを入力
+## よくある質問
 
-## ファイル構成
+**Q: お金はかかりますか？**
+A: このアプリ自体は無料です。ただし、AIサービス（Gemini、OpenAI など）の利用料は別途かかります。画面に表示される金額は目安です。
 
-```
-ai-meeting-assistant/
-├── index.html          # メインアプリケーション
-├── README.md           # このファイル
-├── LICENSE             # MITライセンス
-└── docs/
-    ├── SECURITY.md     # セキュリティについて
-    ├── PRIVACY.md      # プライバシーポリシー
-    ├── TERMS.md        # 利用規約
-    └── CHANGELOG.md    # 変更履歴
-```
+**Q: 会議の内容はどこかに送られますか？**
+A: いいえ。あなたのパソコンで処理され、AIサービスに送られるだけです。このアプリの作者には何も送られません。
 
-## 法的情報
+**Q: APIキーって何ですか？**
+A: AIサービスを使うための「パスワード」のようなものです。各サービスのサイトで無料で作れます。
 
-- [利用規約](docs/TERMS.md) - 本アプリの利用条件
-- [プライバシーポリシー](docs/PRIVACY.md) - 個人情報の取り扱い
-- [セキュリティ](docs/SECURITY.md) - APIキーの保護について
+**Q: APIキーが漏れたら危ないですか？**
+A: はい。他の人があなたのキーを使って、あなたに料金が請求される可能性があります。このアプリでは暗号化して保存しているので安全ですが、他の人には教えないでください。
 
-## 対応環境
+**Q: エラーが出ました**
+A: APIキーが正しいか確認してください。また、各AIサービスで残高があるか確認してください。
 
-| ブラウザ | 対応状況 |
-|----------|----------|
-| Chrome | ✅ 推奨 |
-| Edge | ✅ 推奨 |
-| Firefox | ⚠️ 一部機能制限あり |
-| Safari | ⚠️ 一部機能制限あり |
+**Q: 会議を録音していいですか？**
+A: 必ず参加者全員に「録音します」と伝えて、了承を得てください。
 
-## ライセンス
+## どのブラウザで動きますか？
 
-MIT License
-
-## バージョン
-
-v0.6.0 - 法的ドキュメント追加版
-
-変更履歴は [CHANGELOG.md](docs/CHANGELOG.md) をご覧ください。
+| ブラウザ | 動作 |
+|----------|------|
+| Chrome | ✅ おすすめ |
+| Edge | ✅ おすすめ |
+| Firefox | ⚠️ 一部機能が使えない場合があります |
+| Safari | ⚠️ 一部機能が使えない場合があります |
 
 ## 注意事項
 
-- 会議の録音を行う際は、参加者全員の同意を得てください
-- API利用料金は各サービス提供元に直接請求されます
-- 表示されるコストは概算であり、実際の請求額とは異なる場合があります
+- 会議を録音する時は、参加者全員に伝えて了承を得てください
+- AIサービスの料金は、各サービスから直接請求されます（このアプリではありません）
+- 画面に表示される料金は目安です。実際の請求額と違う場合があります
+- APIキーは他の人に教えないでください
+
+## 法的なこと
+
+このアプリを使うことで、以下に同意したことになります：
+
+- [利用規約](docs/TERMS.md) - このアプリの使い方のルール
+- [プライバシーポリシー](docs/PRIVACY.md) - 個人情報の扱い方
+- [セキュリティ](docs/SECURITY.md) - APIキーの守り方
+
+## ライセンス
+
+MIT License - 自由に使ってOKです
+
+## バージョン
+
+v0.7.0 - ドキュメント改善版
+
+変更履歴: [CHANGELOG.md](docs/CHANGELOG.md)
+
+## 困ったときは
+
+GitHubの[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で質問してください。
+
+---
+
+**作った人からのお願い:**
+このアプリはオープンソースで無料で提供しています。役に立ったら、GitHub でスターをつけてくれると嬉しいです！

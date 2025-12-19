@@ -1,163 +1,146 @@
 # セキュリティについて
 
-最終更新日: 2024年12月18日
+最終更新日: 2024年12月20日
 
-このドキュメントでは、AI参加会議アプリにおけるAPIキーの取り扱いとセキュリティ対策について説明します。
+このページでは、AI参加会議アプリがあなたのAPIキーをどうやって守っているかを説明します。
 
-## 概要
+## 一番大事なこと
 
-本アプリは**完全にクライアントサイドで動作**します。サーバーへのデータ送信は一切行いません。ユーザーのデータは、ユーザー自身のブラウザ内でのみ処理されます。
+**このアプリは、あなたのパソコンの中だけで動きます。**
 
-## Language Policy / 言語表記について
+- ✅ 会議の内容や設定は、外部のサーバーに送られません
+- ✅ APIキーはあなたのブラウザの中だけに保存されます
+- ✅ このアプリの作者には、あなたのデータは一切届きません
 
-This document follows the repository-wide policy of writing security notes in **Japanese with English provided alongside**.
+## APIキーはどうやって守られていますか？
 
-本ドキュメントは、リポジトリ全体の方針に従い、**日本語と英語を常に併記**しています。
+### 1. 暗号化して保存
 
-## APIキーの保存方法
+APIキーは、そのまま保存されるのではなく、**暗号化**されて保存されます。
 
-### 暗号化ローカル保存
+**例えるなら:**
+- そのまま保存 = 金庫に現金をそのまま入れる
+- 暗号化して保存 = 金庫に現金を暗号ボックスに入れてから保管する
 
-APIキーは以下の方法で保護されています：
+誰かがブラウザの保存場所を見ても、暗号化されているので読めません。
 
-1. **XOR暗号化** - APIキーは平文ではなく、デバイス固有のキーでXOR暗号化されて保存されます
-2. **Base64エンコード** - 暗号化後、Base64でエンコードされます
-3. **ローカルストレージ** - ブラウザのlocalStorageに保存され、外部サーバーには送信されません
+### 2. あなたのパソコンだけのカギ
 
-### デバイス固有キー
+暗号化には、あなたのパソコンとブラウザだけの特別なカギを使います。
 
-初回起動時に、暗号学的に安全な乱数（`crypto.getRandomValues`）でデバイス固有のキーが生成されます。このキーは各デバイス・ブラウザで異なるため、同じ暗号化データでも他のデバイスでは復号できません。
+**つまり:**
+- 他のパソコンでは開けません
+- 同じパソコンでも、別のブラウザでは開けません
+- このアプリの作者も開けません
 
-## セキュリティ機能
+### 3. ローカルストレージに保存
 
-### 1. 自動削除オプション
+ブラウザには「ローカルストレージ」という、そのパソコン専用の保存場所があります。
 
-「ブラウザを閉じたらAPIキーを自動削除」オプションを有効にすると：
-- ブラウザを完全に閉じた際にAPIキーが削除されます
-- 共有PCでの使用に適しています
-- タブを閉じただけでは削除されません（ブラウザ全体を閉じる必要があります）
+**特徴:**
+- 他のWebサイトからは見えません
+- あなたのパソコンから外に出ません
+- ブラウザの設定から自分で削除できます
 
-### 2. APIキー検証
+## 安全のための機能
 
-保存前にAPIキーの有効性を確認します：
-- Gemini: モデル一覧APIで検証
-- OpenAI: モデル一覧APIで検証
-- Groq: モデル一覧APIで検証
-- Claude: 直接検証APIがないため、初回使用時に検証
+### 自動削除オプション
 
-### 3. 設定のエクスポート/インポート
+「ブラウザを閉じたらAPIキーを自動削除」をONにすると：
 
-- エクスポート時にユーザーが設定したパスワードで追加暗号化
-- 暗号化されたJSONファイルとして保存
-- 他のデバイスへの移行に使用可能
-- パスワードなしでは復号不可
+- ブラウザを完全に閉じた時に、APIキーが自動で消えます
+- **こんな時に便利:**
+  - 会社の共用パソコンを使う時
+  - 家族でパソコンを共有している時
+  - ネットカフェなど公共の場所で使う時
 
-## データの流れ
+**注意:** タブを閉じただけでは消えません。ブラウザ全体を閉じる必要があります。
+
+### APIキーの確認
+
+設定を保存する前に、APIキーが本当に使えるかチェックします。
+
+- Gemini: Google のサーバーに聞いて確認
+- OpenAI: OpenAI のサーバーに聞いて確認
+- Groq: Groq のサーバーに聞いて確認
+- Claude: 最初に使う時に確認
+
+間違ったキーを保存してしまうことを防ぎます。
+
+### バックアップ機能
+
+別のパソコンに移る時や、万が一のバックアップに：
+
+**エクスポート（保存）:**
+1. 設定画面で「エクスポート」ボタンを押す
+2. パスワードを決める
+3. ファイルがダウンロードされる
+
+**インポート（読み込み）:**
+1. 設定画面で「インポート」ボタンを押す
+2. 保存したファイルを選ぶ
+3. パスワードを入力
+
+**パスワードを忘れたら:** 復元できません。パスワードは忘れないようにメモしてください。
+
+## データはどこに行きますか？
 
 ```
-[ユーザー入力] 
+[あなたが入力]
     ↓
-[XOR暗号化（デバイスキー使用）]
+[暗号化されて保存（あなたのブラウザ内）]
     ↓
-[Base64エンコード]
+[録音ボタンを押す]
     ↓
-[localStorage保存]
-
-※ APIキーがネットワークを流れるのは、
-  各AIサービスへのAPI呼び出し時のみ（HTTPS暗号化）
+[音声が AI サービス（Gemini / OpenAI など）に送られる]
+    ↓
+[文字起こしの結果が返ってくる]
 ```
 
-## 保護されている内容
+**重要:**
+- APIキーがインターネットを通るのは、AIサービスを使う時だけ
+- 通信は「HTTPS」という暗号化された方法で行われます
+- このアプリの作者には何も送られません
 
-| 脅威 | 対策状況 |
-|------|----------|
-| 他のWebサイトからのアクセス | ✅ Same-Origin Policyにより不可 |
-| 開発者ツールでの閲覧 | ✅ 暗号化されているため直接読めない |
-| ネットワーク盗聴 | ✅ HTTPS通信のみ |
-| サーバーへの送信 | ✅ クライアント完結のため送信されない |
-| 共有PC利用時 | ✅ 自動削除オプションで対応 |
-| 別デバイスへの移行 | ✅ パスワード付きエクスポート/インポート |
+## 何が守られていますか？
 
-## 推奨事項
+| 危険 | どう守っているか |
+|------|-----------------|
+| 他のWebサイトから見られる | ブラウザが自動的にブロックします |
+| 保存場所を直接見られる | 暗号化されているので読めません |
+| 通信を盗聴される | HTTPS暗号化で守られています |
+| アプリの作者に送られる | そもそも送信しません |
+| 共用パソコンで使われる | 自動削除オプションで対応 |
 
-### 一般ユーザー向け
+## 気をつけること
 
-1. **共有PCでは自動削除オプションを有効に**してください
-2. **APIキーは定期的にローテーション**してください
-3. **設定をエクスポートする場合は強力なパスワード**を使用してください
+### 普通に使う人
 
-### 開発者向け
+1. **共用パソコンでは自動削除をONに**してください
+2. **APIキーは定期的に変更**することをおすすめします
+3. **バックアップのパスワードは強力なもの**にしてください
+   - 例: 良い → `MyDog2024!Summer`
+   - 例: 悪い → `1234` や `password`
 
-1. このアプリをフォークする場合、暗号化ロジックを変更しないでください
-2. APIキーを平文で保存・ログ出力しないでください
-3. 外部サーバーへのデータ送信を追加しないでください
+### こんな時は使わないでください
 
-## 技術的詳細
+- 信頼できないパソコン（ウイルスがいるかも）
+- 公共の Wi-Fi で重要な会議を録音する時
+- セキュリティソフトが入っていないパソコン
 
-### 暗号化の実装
+## もし問題を見つけたら
 
-```javascript
-// デバイスキー生成
-const array = new Uint8Array(32);
-crypto.getRandomValues(array);
-const deviceKey = Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
-
-// 暗号化（XOR）
-function encrypt(text) {
-  let result = '';
-  for (let i = 0; i < text.length; i++) {
-    result += String.fromCharCode(
-      text.charCodeAt(i) ^ deviceKey.charCodeAt(i % deviceKey.length)
-    );
-  }
-  return btoa(unescape(encodeURIComponent(result)));
-}
-```
-
-### ストレージキー構造
-
-| キー | 内容 |
-|------|------|
-| `_dk` | デバイスキー（暗号化用） |
-| `_ak_gemini` | 暗号化されたGemini APIキー |
-| `_ak_claude` | 暗号化されたClaude APIキー |
-| `_ak_openai` | 暗号化されたOpenAI APIキー |
-| `_ak_groq` | 暗号化されたGroq APIキー |
-| `_m_*` | モデル設定（暗号化不要） |
-| `_opt_*` | オプション設定（暗号化不要） |
+セキュリティ上の問題を見つけた場合は、GitHubの[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で教えてください。
 
 ## 免責事項
 
-このアプリケーションは、一般的なWebアプリケーションとして合理的なセキュリティ対策を実装していますが、完全なセキュリティを保証するものではありません。
+このアプリは一般的な安全対策を実装していますが、完璧ではありません。
 
-- APIキーの管理は最終的にユーザーの責任です
-- 重要なAPIキーには利用制限を設定することを推奨します
-- セキュリティに関する懸念がある場合は、使用を控えてください
+- APIキーの管理は、最終的にあなたの責任です
+- 重要なAPIキーには、使える金額の上限を設定してください
+- 心配な場合は使わないでください
 
-## 問題の報告
+---
 
-## Security Notes / セキュリティに関する注意
-
-### DOM Hardening (XSS Mitigation) / DOMハードニング（XSS対策）
-
-All inline event handlers (onclick, onchange, onkeypress, etc.) have been removed from the HTML. All user interactions are now handled exclusively via JavaScript event listeners registered after DOMContentLoaded.
-
-すべての inline イベントハンドラ（onclick、onchange、onkeypress など）は HTML から完全に削除されました。現在、すべてのユーザー操作は DOMContentLoaded 後に登録される JavaScript の event listener 経由でのみ処理されます。
-
-As a result, no user-controlled data is executed during HTML parsing, which significantly reduces the risk of XSS attacks.
-
-その結果、HTML パース時にユーザー入力が実行される経路は存在せず、XSS 攻撃のリスクが大幅に低減されています。
-
-### URL Handling (Open Redirect / XSS Mitigation) / URLの取り扱い（オープンリダイレクト・XSS対策）
-
-All dynamic URL assignments that may involve user-controlled input (e.g., `a.href = input`, `window.location.href = input`) are now guarded by explicit validation. User-provided URLs are normalized using the `URL` constructor and restricted to the `http` / `https` schemes. Dangerous schemes such as `javascript:`, `data:`, and `vbscript:` are rejected.
-
-ユーザー入力が関与する可能性のある動的な URL 設定（例: `a.href = input`, `window.location.href = input`）には、明示的な検証を導入しています。URL は `URL` コンストラクタで正規化され、`http` / `https` スキームのみが許可されます。`javascript:`、`data:`、`vbscript:` などの危険なスキームは拒否されます。
-
-### Content Security Policy (Report-Only) / コンテンツセキュリティポリシー（報告モード）
-
-A Content-Security-Policy-Report-Only meta tag now protects both HTML entrypoints. After relocating all inline scripts into external modules, `script-src` is simply `'self'` (no nonce needed) while `connect-src` is restricted to the Google Generative Language, OpenAI, Anthropic, and Groq APIs used for transcription/LLM calls. `style-src` temporarily includes `'unsafe-inline'` because large inline style blocks remain; this is documented debt for future CSS refactoring. Verification is currently done via DevTools console; once no violations appear, enable the enforced CSP string noted near each meta tag.
-
-両方のHTMLエントリーポイントに Content-Security-Policy-Report-Only メタタグを適用しています。すべてのインラインスクリプトを外部モジュールへ移したため、`script-src` は `'self'` のみで成立し、ノンス指定は不要になりました。`connect-src` は利用中の Google Generative Language / OpenAI / Anthropic / Groq API に限定しています。`style-src` は大きなインラインスタイルが残るため暫定的に `'unsafe-inline'` を含めており、今後のCSSリファクタで解消予定です。現在はDevToolsコンソールでReport-Only違反を確認しており、問題がなければメタタグ付近に記載した強制版CSPへ切り替えます。
-
-セキュリティ上の問題を発見した場合は、GitHubのIssueでご報告ください。
+**わからないことがあれば:**
+難しい言葉や、わからないことがあれば、遠慮なく[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で質問してください。
