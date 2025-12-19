@@ -821,7 +821,7 @@
       </select>
       <button class="btn btn-primary" id="recordBtn" onclick="toggleRecording()">🎤 録音開始</button>
       <button class="btn btn-secondary" onclick="openExportModal()">📥 エクスポート</button>
-      <button class="btn btn-ghost" onclick="openSettings()">⚙️ 設定</button>
+      <a href="config.html" class="btn btn-ghost">⚙️ 設定</a>
     </div>
   </header>
 
@@ -1010,9 +1010,9 @@
             </div>
           </div>
 
-          <button class="btn btn-primary welcome-btn" onclick="closeWelcome(); openSettings();">
+          <a href="config.html" class="btn btn-primary welcome-btn">
             ⚙️ 設定を開始する
-          </button>
+          </a>
           
           <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-secondary); text-align: center;">
             利用開始により、<a href="docs/TERMS.md" target="_blank" style="color: var(--primary);">利用規約</a>と<a href="docs/PRIVACY.md" target="_blank" style="color: var(--primary);">プライバシーポリシー</a>に同意したものとみなされます。
@@ -1022,164 +1022,6 @@
     </div>
   </div>
 
-  <!-- 設定モーダル -->
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal" style="max-width: 550px;">
-      <div class="modal-header">
-        <h2>⚙️ 設定</h2>
-        <button class="modal-close" onclick="closeSettings()">×</button>
-      </div>
-      <div class="modal-body">
-        <div class="security-notice">
-          <div class="security-notice-title">
-            <span>🔒</span>
-            <span>APIキーのセキュリティ</span>
-          </div>
-          <div class="security-notice-text">
-            APIキーはこのアプリ内で暗号化され、ブラウザのローカルストレージに保存されます。
-            外部サーバーには一切送信されません。
-          </div>
-          <div class="security-features">
-            <div class="security-feature">暗号化してローカル保存（平文では保存しない）</div>
-            <div class="security-feature">API呼び出し時のみHTTPS経由で送信</div>
-            <div class="security-feature">他のWebサイトからはアクセス不可</div>
-            <div class="security-feature">設定のエクスポート/インポート対応</div>
-          </div>
-        </div>
-
-        <!-- 文字起こし用API -->
-        <div style="background: var(--accent-green); border: 2px solid var(--accent-border-green); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem;">
-          <div style="font-weight: 700; font-size: 1rem; color: var(--success); margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--accent-border-green);">🎤 文字起こし用API（いずれか1つ必須）</div>
-          
-          <div class="setting-group" style="margin-bottom: 0.75rem;">
-            <label class="setting-label">
-              Gemini API
-              <span class="validation-status validation-pending" id="gemini-status" style="display:none;"></span>
-            </label>
-            <div class="setting-row">
-              <input type="password" class="setting-input" id="geminiApiKey" placeholder="AIza...">
-              <select class="model-select" id="geminiModel">
-                <option value="gemini-2.0-flash-exp">gemini-2.0-flash</option>
-                <option value="gemini-1.5-pro">gemini-1.5-pro</option>
-                <option value="gemini-1.5-flash">gemini-1.5-flash</option>
-              </select>
-            </div>
-            <div class="setting-hint">
-              <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> から取得（文字起こし＆LLM両方に使用可能）
-            </div>
-          </div>
-
-          <div class="setting-group" style="margin-bottom: 0;">
-            <label class="setting-label">
-              OpenAI API（Whisper）
-              <span class="validation-status" id="openai-status" style="display:none;"></span>
-            </label>
-            <div class="setting-row">
-              <input type="password" class="setting-input" id="openaiApiKey" placeholder="sk-...">
-              <select class="model-select" id="openaiModel">
-                <option value="gpt-4o">gpt-4o</option>
-                <option value="gpt-4o-mini">gpt-4o-mini</option>
-              </select>
-            </div>
-            <div class="setting-hint">
-              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得（Whisper文字起こし＆LLM両方に使用可能）
-            </div>
-          </div>
-        </div>
-
-        <!-- LLM専用API -->
-        <div style="background: var(--accent-blue); border: 2px solid var(--accent-border-blue); border-radius: 0.75rem; padding: 1.5rem; margin-bottom: 1.5rem;">
-          <div style="font-weight: 700; font-size: 1rem; color: var(--primary); margin-bottom: 1rem; padding-bottom: 0.75rem; border-bottom: 2px solid var(--accent-border-blue);">💬 AI質問応答用API（任意・高度な回答に使用）</div>
-          
-          <div class="setting-group" style="margin-bottom: 0.75rem;">
-            <label class="setting-label">
-              Claude API
-              <span class="validation-status" id="claude-status" style="display:none;"></span>
-            </label>
-            <div class="setting-row">
-              <input type="password" class="setting-input" id="claudeApiKey" placeholder="sk-ant-...">
-              <select class="model-select" id="claudeModel">
-                <option value="claude-sonnet-4-20250514">claude-sonnet-4</option>
-                <option value="claude-3-5-sonnet-20241022">claude-3.5-sonnet</option>
-              </select>
-            </div>
-            <div class="setting-hint">
-              <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Anthropic Console</a> から取得
-            </div>
-          </div>
-
-          <div class="setting-group" style="margin-bottom: 0;">
-            <label class="setting-label">
-              Groq API
-              <span class="validation-status" id="groq-status" style="display:none;"></span>
-            </label>
-            <div class="setting-row">
-              <input type="password" class="setting-input" id="groqApiKey" placeholder="gsk_...">
-              <select class="model-select" id="groqModel">
-                <option value="llama-3.1-70b-versatile">llama-3.1-70b</option>
-                <option value="llama-3.1-8b-instant">llama-3.1-8b</option>
-              </select>
-            </div>
-            <div class="setting-hint">
-              <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a> から取得（高速・低コスト）
-            </div>
-          </div>
-        </div>
-
-        <!-- LLM優先順位 -->
-        <div class="setting-group">
-          <label class="setting-label">💬 LLM優先順位</label>
-          <select class="model-select" id="llmPriority" style="width: 100%;">
-            <option value="auto">自動選択（設定されたAPIを順に使用）</option>
-            <option value="gemini">Gemini を優先</option>
-            <option value="claude">Claude を優先</option>
-            <option value="openai">OpenAI を優先</option>
-            <option value="groq">Groq を優先</option>
-          </select>
-          <div class="setting-hint">
-            自動選択の場合: Claude → OpenAI → Gemini → Groq の順で、APIキーが設定されているものを使用
-          </div>
-        </div>
-
-        <div class="security-options">
-          <div class="security-options-title">🛡️ セキュリティオプション</div>
-          <div class="checkbox-group">
-            <input type="checkbox" id="clearOnClose">
-            <label for="clearOnClose">ブラウザを閉じたらAPIキーを自動削除（共有PC向け）</label>
-          </div>
-        </div>
-
-        <div class="security-options" style="background: #eff6ff; border-color: #bfdbfe;">
-          <div class="security-options-title" style="color: #1e40af;">💰 コストアラート</div>
-          <div class="setting-group" style="margin-bottom: 0.5rem;">
-            <label class="setting-label" style="font-size: 0.8rem;">1セッションの上限金額（円）</label>
-            <input type="number" class="setting-input" id="costLimit" placeholder="例: 100" value="100" min="0" step="10" style="max-width: 150px;">
-          </div>
-          <div class="checkbox-group">
-            <input type="checkbox" id="costAlertEnabled" checked>
-            <label for="costAlertEnabled" style="color: #1e40af;">上限の80%で警告を表示</label>
-          </div>
-        </div>
-
-        <div class="settings-transfer">
-          <div class="settings-transfer-title">📦 設定のバックアップ</div>
-          <div class="settings-transfer-buttons">
-            <button class="btn btn-secondary" onclick="exportSettings()">📤 エクスポート</button>
-            <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 インポート</button>
-            <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importSettings(event)">
-            <button class="btn btn-danger" onclick="clearAllSettings()">🗑️ 全削除</button>
-          </div>
-          <div class="settings-transfer-hint">
-            エクスポートファイルは暗号化されています。他のデバイスへの移行に使用できます。
-          </div>
-        </div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeSettings()">キャンセル</button>
-        <button class="btn btn-primary" onclick="saveSettings()">💾 保存</button>
-      </div>
-    </div>
-  </div>
 
   <!-- エクスポートモーダル -->
   <div class="modal-overlay" id="exportModal">
@@ -1201,165 +1043,8 @@
     </div>
   </div>
 
+  <script src="js/secure-storage.js"></script>
   <script>
-    // =====================================
-    // セキュリティ：暗号化・復号化モジュール
-    // =====================================
-    const SecureStorage = {
-      // デバイス固有のキーを生成（ブラウザフィンガープリント的なもの）
-      _getDeviceKey: function() {
-        let deviceKey = localStorage.getItem('_dk');
-        if (!deviceKey) {
-          // ランダムなデバイスキーを生成
-          deviceKey = this._generateRandomKey();
-          localStorage.setItem('_dk', deviceKey);
-        }
-        return deviceKey;
-      },
-
-      _generateRandomKey: function() {
-        const array = new Uint8Array(32);
-        crypto.getRandomValues(array);
-        return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
-      },
-
-      // 簡易暗号化（XOR + Base64）
-      _encrypt: function(text) {
-        if (!text) return '';
-        const key = this._getDeviceKey();
-        let result = '';
-        for (let i = 0; i < text.length; i++) {
-          result += String.fromCharCode(
-            text.charCodeAt(i) ^ key.charCodeAt(i % key.length)
-          );
-        }
-        return btoa(unescape(encodeURIComponent(result)));
-      },
-
-      _decrypt: function(encoded) {
-        if (!encoded) return '';
-        try {
-          const key = this._getDeviceKey();
-          const text = decodeURIComponent(escape(atob(encoded)));
-          let result = '';
-          for (let i = 0; i < text.length; i++) {
-            result += String.fromCharCode(
-              text.charCodeAt(i) ^ key.charCodeAt(i % key.length)
-            );
-          }
-          return result;
-        } catch (e) {
-          console.error('Decryption failed:', e);
-          return '';
-        }
-      },
-
-      // APIキーを保存
-      setApiKey: function(provider, key) {
-        if (!key) {
-          localStorage.removeItem(`_ak_${provider}`);
-          return;
-        }
-        localStorage.setItem(`_ak_${provider}`, this._encrypt(key));
-      },
-
-      // APIキーを取得
-      getApiKey: function(provider) {
-        const encrypted = localStorage.getItem(`_ak_${provider}`);
-        return this._decrypt(encrypted);
-      },
-
-      // モデルを保存（暗号化不要）
-      setModel: function(provider, model) {
-        localStorage.setItem(`_m_${provider}`, model);
-      },
-
-      getModel: function(provider) {
-        return localStorage.getItem(`_m_${provider}`);
-      },
-
-      // オプションを保存
-      setOption: function(key, value) {
-        localStorage.setItem(`_opt_${key}`, JSON.stringify(value));
-      },
-
-      getOption: function(key, defaultValue) {
-        const val = localStorage.getItem(`_opt_${key}`);
-        return val ? JSON.parse(val) : defaultValue;
-      },
-
-      // 全設定をエクスポート（別のデバイス用に再暗号化）
-      exportAll: function(exportPassword) {
-        const data = {
-          gemini: { key: this.getApiKey('gemini'), model: this.getModel('gemini') },
-          claude: { key: this.getApiKey('claude'), model: this.getModel('claude') },
-          openai: { key: this.getApiKey('openai'), model: this.getModel('openai') },
-          groq: { key: this.getApiKey('groq'), model: this.getModel('groq') },
-          options: {
-            clearOnClose: this.getOption('clearOnClose', false)
-          },
-          exportedAt: new Date().toISOString()
-        };
-        
-        // エクスポート用のパスワードで暗号化
-        const json = JSON.stringify(data);
-        let encrypted = '';
-        for (let i = 0; i < json.length; i++) {
-          encrypted += String.fromCharCode(
-            json.charCodeAt(i) ^ exportPassword.charCodeAt(i % exportPassword.length)
-          );
-        }
-        return btoa(unescape(encodeURIComponent(encrypted)));
-      },
-
-      // インポート
-      importAll: function(encryptedData, importPassword) {
-        try {
-          const decoded = decodeURIComponent(escape(atob(encryptedData)));
-          let json = '';
-          for (let i = 0; i < decoded.length; i++) {
-            json += String.fromCharCode(
-              decoded.charCodeAt(i) ^ importPassword.charCodeAt(i % importPassword.length)
-            );
-          }
-          const data = JSON.parse(json);
-          
-          if (data.gemini?.key) this.setApiKey('gemini', data.gemini.key);
-          if (data.gemini?.model) this.setModel('gemini', data.gemini.model);
-          if (data.claude?.key) this.setApiKey('claude', data.claude.key);
-          if (data.claude?.model) this.setModel('claude', data.claude.model);
-          if (data.openai?.key) this.setApiKey('openai', data.openai.key);
-          if (data.openai?.model) this.setModel('openai', data.openai.model);
-          if (data.groq?.key) this.setApiKey('groq', data.groq.key);
-          if (data.groq?.model) this.setModel('groq', data.groq.model);
-          if (data.options) {
-            this.setOption('clearOnClose', data.options.clearOnClose || false);
-          }
-          
-          return true;
-        } catch (e) {
-          console.error('Import failed:', e);
-          return false;
-        }
-      },
-
-      // 全削除
-      clearAll: function() {
-        ['gemini', 'claude', 'openai', 'groq'].forEach(p => {
-          localStorage.removeItem(`_ak_${p}`);
-          localStorage.removeItem(`_m_${p}`);
-        });
-        localStorage.removeItem('_opt_clearOnClose');
-      },
-
-      // APIキーのみ削除（デバイスキーは残す）
-      clearApiKeys: function() {
-        ['gemini', 'claude', 'openai', 'groq'].forEach(p => {
-          localStorage.removeItem(`_ak_${p}`);
-        });
-      }
-    };
-
     // =====================================
     // グローバル変数
     // =====================================
@@ -1456,9 +1141,6 @@
         localStorage.setItem('_visited', 'true');
       }
 
-      // 保存された設定を復元
-      loadSavedSettings();
-
       // ブラウザを閉じる前のクリーンアップ
       window.addEventListener('beforeunload', function() {
         if (SecureStorage.getOption('clearOnClose', false)) {
@@ -1467,246 +1149,6 @@
       });
     });
 
-    function loadSavedSettings() {
-      // APIキーを入力欄に復元（マスク表示のため実際には表示されないが、値としては存在）
-      const providers = ['gemini', 'claude', 'openai', 'groq'];
-      providers.forEach(p => {
-        const key = SecureStorage.getApiKey(p);
-        const model = SecureStorage.getModel(p);
-        if (key) document.getElementById(`${p}ApiKey`).value = key;
-        if (model) document.getElementById(`${p}Model`).value = model;
-      });
-
-      // オプション
-      document.getElementById('clearOnClose').checked = SecureStorage.getOption('clearOnClose', false);
-      document.getElementById('costAlertEnabled').checked = SecureStorage.getOption('costAlertEnabled', true);
-      document.getElementById('costLimit').value = SecureStorage.getOption('costLimit', 100);
-      document.getElementById('llmPriority').value = SecureStorage.getOption('llmPriority', 'auto');
-      
-      // 文字起こしプロバイダーの選択を更新
-      updateTranscriptProviderOptions();
-      
-      // LLMインジケーターを更新
-      updateLlmIndicator();
-    }
-
-    // 文字起こしプロバイダーの選択肢を更新
-    function updateTranscriptProviderOptions() {
-      const geminiKey = SecureStorage.getApiKey('gemini');
-      const openaiKey = SecureStorage.getApiKey('openai');
-      const select = document.getElementById('transcriptProvider');
-      
-      // 選択肢を有効/無効化
-      select.querySelector('option[value="gemini"]').disabled = !geminiKey;
-      select.querySelector('option[value="openai"]').disabled = !openaiKey;
-      
-      // 有効なプロバイダーを自動選択
-      if (geminiKey) {
-        select.value = 'gemini';
-      } else if (openaiKey) {
-        select.value = 'openai';
-      }
-    }
-
-    // 使用可能なLLMを取得
-    function getAvailableLlm() {
-      const priority = SecureStorage.getOption('llmPriority', 'auto');
-      const providers = ['claude', 'openai', 'gemini', 'groq']; // 優先順位
-      
-      if (priority !== 'auto') {
-        // 指定されたプロバイダーを優先
-        if (SecureStorage.getApiKey(priority)) {
-          return { provider: priority, model: SecureStorage.getModel(priority) || getDefaultModel(priority) };
-        }
-      }
-      
-      // 自動選択：設定されているAPIキーを優先順位で選択
-      for (const p of providers) {
-        if (SecureStorage.getApiKey(p)) {
-          return { provider: p, model: SecureStorage.getModel(p) || getDefaultModel(p) };
-        }
-      }
-      
-      return null; // 使用可能なLLMなし
-    }
-
-    // LLMインジケーターを更新
-    function updateLlmIndicator() {
-      const indicator = document.getElementById('llmIndicator');
-      const llm = getAvailableLlm();
-      
-      if (llm) {
-        const names = { gemini: 'Gemini', claude: 'Claude', openai: 'OpenAI', groq: 'Groq' };
-        indicator.textContent = `🤖 ${names[llm.provider]}`;
-        indicator.classList.remove('no-api');
-      } else {
-        indicator.textContent = '⚠️ API未設定';
-        indicator.classList.add('no-api');
-      }
-    }
-
-    // =====================================
-    // モーダル制御
-    // =====================================
-    function closeWelcome() {
-      document.getElementById('welcomeModal').classList.remove('active');
-    }
-
-    function openSettings() {
-      loadSavedSettings();
-      document.getElementById('settingsModal').classList.add('active');
-    }
-
-    function closeSettings() {
-      document.getElementById('settingsModal').classList.remove('active');
-    }
-
-    async function saveSettings() {
-      const providers = ['gemini', 'claude', 'openai', 'groq'];
-      
-      // APIキーを保存
-      providers.forEach(p => {
-        const key = document.getElementById(`${p}ApiKey`).value.trim();
-        const model = document.getElementById(`${p}Model`).value;
-        SecureStorage.setApiKey(p, key);
-        SecureStorage.setModel(p, model);
-      });
-
-      // オプションを保存
-      SecureStorage.setOption('clearOnClose', document.getElementById('clearOnClose').checked);
-      SecureStorage.setOption('costAlertEnabled', document.getElementById('costAlertEnabled').checked);
-      SecureStorage.setOption('costLimit', parseInt(document.getElementById('costLimit').value) || 100);
-      SecureStorage.setOption('llmPriority', document.getElementById('llmPriority').value);
-
-      // 文字起こし用APIが少なくとも1つ設定されているか確認
-      const geminiKey = SecureStorage.getApiKey('gemini');
-      const openaiKey = SecureStorage.getApiKey('openai');
-      
-      if (!geminiKey && !openaiKey) {
-        alert('文字起こし用に、Gemini APIまたはOpenAI APIのいずれかを設定してください。');
-        return;
-      }
-
-      // 設定されたAPIキーを検証
-      if (geminiKey) {
-        const isValid = await validateApiKey('gemini', geminiKey);
-        if (!isValid) {
-          alert('Gemini APIキーが無効です。正しいキーを入力してください。');
-          return;
-        }
-      }
-      
-      if (openaiKey) {
-        const isValid = await validateApiKey('openai', openaiKey);
-        if (!isValid) {
-          alert('OpenAI APIキーが無効です。正しいキーを入力してください。');
-          return;
-        }
-      }
-
-      // UI更新
-      updateTranscriptProviderOptions();
-      updateLlmIndicator();
-
-      alert('設定を保存しました');
-      closeSettings();
-    }
-
-    // APIキーの検証
-    async function validateApiKey(provider, key) {
-      const statusEl = document.getElementById(`${provider}-status`);
-      if (!statusEl) return true;
-
-      statusEl.style.display = 'inline-flex';
-      statusEl.className = 'validation-status validation-pending';
-      statusEl.textContent = '検証中...';
-
-      try {
-        let isValid = false;
-
-        if (provider === 'gemini') {
-          // Gemini APIの簡易検証
-          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-          isValid = res.ok;
-        } else if (provider === 'openai') {
-          const res = await fetch('https://api.openai.com/v1/models', {
-            headers: { 'Authorization': `Bearer ${key}` }
-          });
-          isValid = res.ok;
-        } else if (provider === 'groq') {
-          const res = await fetch('https://api.groq.com/openai/v1/models', {
-            headers: { 'Authorization': `Bearer ${key}` }
-          });
-          isValid = res.ok;
-        } else {
-          // Claude は直接検証が難しいのでスキップ
-          isValid = true;
-        }
-
-        statusEl.className = isValid ? 'validation-status validation-success' : 'validation-status validation-error';
-        statusEl.textContent = isValid ? '✓ 有効' : '✗ 無効';
-        return isValid;
-      } catch (e) {
-        statusEl.className = 'validation-status validation-error';
-        statusEl.textContent = '✗ エラー';
-        return false;
-      }
-    }
-
-    // 設定エクスポート
-    function exportSettings() {
-      const password = prompt('エクスポート用パスワードを設定してください（インポート時に必要）:');
-      if (!password) return;
-
-      const encrypted = SecureStorage.exportAll(password);
-      const blob = new Blob([JSON.stringify({ data: encrypted, v: 1 })], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `ai-meeting-settings-${new Date().toISOString().split('T')[0]}.json`;
-      a.click();
-      URL.revokeObjectURL(url);
-
-      alert('設定をエクスポートしました。パスワードは安全に保管してください。');
-    }
-
-    // 設定インポート
-    function importSettings(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const json = JSON.parse(e.target.result);
-          const password = prompt('インポート用パスワードを入力してください:');
-          if (!password) return;
-
-          const success = SecureStorage.importAll(json.data, password);
-          if (success) {
-            alert('設定をインポートしました');
-            loadSavedSettings();
-          } else {
-            alert('インポートに失敗しました。パスワードが正しいか確認してください。');
-          }
-        } catch (err) {
-          alert('ファイルの読み込みに失敗しました');
-        }
-      };
-      reader.readAsText(file);
-      event.target.value = '';
-    }
-
-    // 全設定削除
-    function clearAllSettings() {
-      if (confirm('すべての設定（APIキー含む）を削除しますか？この操作は取り消せません。')) {
-        SecureStorage.clearAll();
-        loadSavedSettings();
-        alert('設定を削除しました');
-      }
-    }
-
-    // =====================================
     // 録音機能
     // =====================================
     async function toggleRecording() {
@@ -1723,7 +1165,7 @@
       
       if (!apiKey) {
         alert(`${provider === 'gemini' ? 'Gemini' : 'OpenAI'} APIキーを設定してください`);
-        openSettings();
+        window.location.href = 'config.html';
         return;
       }
 
@@ -1898,6 +1340,41 @@
     }
 
     // =====================================
+    // ヘルパー関数
+    // =====================================
+    // 使用可能なLLMを取得
+    function getAvailableLlm() {
+      const priority = SecureStorage.getOption('llmPriority', 'auto');
+      const providers = ['claude', 'openai', 'gemini', 'groq']; // 優先順位
+
+      if (priority !== 'auto') {
+        // 指定されたプロバイダーを優先
+        if (SecureStorage.getApiKey(priority)) {
+          return { provider: priority, model: SecureStorage.getModel(priority) || getDefaultModel(priority) };
+        }
+      }
+
+      // 自動選択：設定されているAPIキーを優先順位で選択
+      for (const p of providers) {
+        if (SecureStorage.getApiKey(p)) {
+          return { provider: p, model: SecureStorage.getModel(p) || getDefaultModel(p) };
+        }
+      }
+
+      return null; // 使用可能なLLMなし
+    }
+
+    function getDefaultModel(provider) {
+      const defaults = {
+        gemini: 'gemini-2.0-flash-exp',
+        claude: 'claude-sonnet-4-20250514',
+        openai: 'gpt-4o',
+        groq: 'llama-3.1-70b-versatile'
+      };
+      return defaults[provider];
+    }
+
+    // =====================================
     // AI質問機能
     // =====================================
     async function askAI(type) {
@@ -1916,7 +1393,7 @@
       
       if (!llm) {
         alert('LLM用のAPIキーが設定されていません。\n設定画面でAPIキーを入力してください。');
-        openSettings();
+        window.location.href = 'config.html';
         return;
       }
 

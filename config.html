@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>設定 - AI参加会議</title>
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --danger: #dc2626;
+      --danger-hover: #b91c1c;
+      --success: #059669;
+      --warning: #d97706;
+      --bg: #f9fafb;
+      --card-bg: #ffffff;
+      --text: #111827;
+      --text-secondary: #6b7280;
+      --border: #e5e7eb;
+      --border-light: #f3f4f6;
+      --shadow: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-lg: 0 4px 6px -1px rgba(0,0,0,0.1);
+      --accent-blue: #eff6ff;
+      --accent-green: #f0fdf4;
+      --accent-border-blue: #dbeafe;
+      --accent-border-green: #dcfce7;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    .header {
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .header-content {
+      max-width: 800px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      transition: all 0.15s;
+      text-decoration: none;
+    }
+
+    .btn-secondary {
+      background: var(--border);
+      color: var(--text);
+    }
+
+    .btn-secondary:hover {
+      background: #cbd5e1;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary-hover);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: white;
+    }
+
+    .btn-danger:hover {
+      background: var(--danger-hover);
+    }
+
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 0.875rem;
+      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
+      padding: 2rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .card-title {
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 1.5rem;
+      color: var(--text);
+    }
+
+    .security-notice {
+      background: var(--accent-blue);
+      border: 1px solid var(--accent-border-blue);
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .security-notice-title {
+      font-weight: 600;
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+      font-size: 0.9rem;
+    }
+
+    .security-notice-text {
+      font-size: 0.825rem;
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .security-features {
+      margin-top: 0.875rem;
+      padding-top: 0.875rem;
+      border-top: 1px solid var(--accent-border-blue);
+    }
+
+    .security-feature {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      margin-bottom: 0.375rem;
+    }
+
+    .security-feature::before {
+      content: '✓';
+      color: var(--success);
+      font-weight: bold;
+    }
+
+    .api-section {
+      border-radius: 0.75rem;
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+      border: 2px solid;
+    }
+
+    .api-section.transcription {
+      background: var(--accent-green);
+      border-color: var(--accent-border-green);
+    }
+
+    .api-section.llm {
+      background: var(--accent-blue);
+      border-color: var(--accent-border-blue);
+    }
+
+    .api-section-title {
+      font-weight: 700;
+      font-size: 1rem;
+      margin-bottom: 1rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid;
+    }
+
+    .api-section.transcription .api-section-title {
+      color: var(--success);
+      border-color: var(--accent-border-green);
+    }
+
+    .api-section.llm .api-section-title {
+      color: var(--primary);
+      border-color: var(--accent-border-blue);
+    }
+
+    .setting-group {
+      margin-bottom: 1.25rem;
+    }
+
+    .setting-label {
+      display: block;
+      font-weight: 500;
+      margin-bottom: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .setting-row {
+      display: flex;
+      gap: 0.5rem;
+    }
+
+    .setting-input {
+      flex: 1;
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+    }
+
+    .setting-input:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    .model-select {
+      padding: 0.5rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      font-size: 0.875rem;
+      min-width: 140px;
+    }
+
+    .setting-hint {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.25rem;
+    }
+
+    .setting-hint a {
+      color: var(--primary);
+    }
+
+    .security-options {
+      background: #fefce8;
+      border: 1px solid #fef08a;
+      border-radius: 0.75rem;
+      padding: 1.25rem;
+      margin-top: 1.5rem;
+    }
+
+    .security-options-title {
+      font-weight: 600;
+      color: #92400e;
+      margin-bottom: 0.875rem;
+      font-size: 0.9rem;
+    }
+
+    .checkbox-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .checkbox-group input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+    }
+
+    .checkbox-group label {
+      font-size: 0.8rem;
+      color: #854d0e;
+    }
+
+    .validation-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      font-size: 0.7rem;
+      padding: 0.25rem 0.625rem;
+      border-radius: 1rem;
+      margin-left: 0.5rem;
+      border: 1px solid transparent;
+    }
+
+    .validation-pending {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fef08a;
+    }
+
+    .validation-success {
+      background: #d1fae5;
+      color: #065f46;
+      border-color: #a7f3d0;
+    }
+
+    .validation-error {
+      background: #fee2e2;
+      color: #991b1b;
+      border-color: #fecaca;
+    }
+
+    .settings-transfer {
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .settings-transfer-title {
+      font-weight: 600;
+      margin-bottom: 0.75rem;
+      font-size: 0.875rem;
+    }
+
+    .settings-transfer-buttons {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .settings-transfer-hint {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: flex-end;
+      margin-top: 2rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .success-message {
+      background: #d1fae5;
+      border: 1px solid #a7f3d0;
+      color: #065f46;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+
+    .error-message {
+      background: #fee2e2;
+      border: 1px solid #fecaca;
+      color: #991b1b;
+      padding: 1rem;
+      border-radius: 0.5rem;
+      margin-bottom: 1.5rem;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <header class="header">
+    <div class="header-content">
+      <h1>⚙️ 設定</h1>
+      <a href="index.html" class="btn btn-secondary">← メイン画面に戻る</a>
+    </div>
+  </header>
+
+  <main class="container">
+    <div id="successMessage" class="success-message"></div>
+    <div id="errorMessage" class="error-message"></div>
+
+    <div class="card">
+      <div class="security-notice">
+        <div class="security-notice-title">
+          <span>🔒</span>
+          <span>APIキーのセキュリティ</span>
+        </div>
+        <div class="security-notice-text">
+          APIキーはこのアプリ内で暗号化され、ブラウザのローカルストレージに保存されます。
+          外部サーバーには一切送信されません。
+        </div>
+        <div class="security-features">
+          <div class="security-feature">暗号化してローカル保存（平文では保存しない）</div>
+          <div class="security-feature">API呼び出し時のみHTTPS経由で送信</div>
+          <div class="security-feature">他のWebサイトからはアクセス不可</div>
+          <div class="security-feature">設定のエクスポート/インポート対応</div>
+        </div>
+      </div>
+
+      <!-- 文字起こし用API -->
+      <div class="api-section transcription">
+        <div class="api-section-title">🎤 文字起こし用API（いずれか1つ必須）</div>
+
+        <div class="setting-group" style="margin-bottom: 0.75rem;">
+          <label class="setting-label">
+            Gemini API
+            <span class="validation-status validation-pending" id="gemini-status" style="display:none;"></span>
+          </label>
+          <div class="setting-row">
+            <input type="password" class="setting-input" id="geminiApiKey" placeholder="AIza...">
+            <select class="model-select" id="geminiModel">
+              <option value="gemini-2.0-flash-exp">gemini-2.0-flash</option>
+              <option value="gemini-1.5-pro">gemini-1.5-pro</option>
+              <option value="gemini-1.5-flash">gemini-1.5-flash</option>
+            </select>
+          </div>
+          <div class="setting-hint">
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> から取得（文字起こし＆LLM両方に使用可能）
+          </div>
+        </div>
+
+        <div class="setting-group" style="margin-bottom: 0;">
+          <label class="setting-label">
+            OpenAI API（Whisper）
+            <span class="validation-status" id="openai-status" style="display:none;"></span>
+          </label>
+          <div class="setting-row">
+            <input type="password" class="setting-input" id="openaiApiKey" placeholder="sk-...">
+            <select class="model-select" id="openaiModel">
+              <option value="gpt-4o">gpt-4o</option>
+              <option value="gpt-4o-mini">gpt-4o-mini</option>
+            </select>
+          </div>
+          <div class="setting-hint">
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得（Whisper文字起こし＆LLM両方に使用可能）
+          </div>
+        </div>
+      </div>
+
+      <!-- LLM専用API -->
+      <div class="api-section llm">
+        <div class="api-section-title">💬 AI質問応答用API（任意・高度な回答に使用）</div>
+
+        <div class="setting-group" style="margin-bottom: 0.75rem;">
+          <label class="setting-label">
+            Claude API
+            <span class="validation-status" id="claude-status" style="display:none;"></span>
+          </label>
+          <div class="setting-row">
+            <input type="password" class="setting-input" id="claudeApiKey" placeholder="sk-ant-...">
+            <select class="model-select" id="claudeModel">
+              <option value="claude-sonnet-4-20250514">claude-sonnet-4</option>
+              <option value="claude-3-5-sonnet-20241022">claude-3.5-sonnet</option>
+            </select>
+          </div>
+          <div class="setting-hint">
+            <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Anthropic Console</a> から取得
+          </div>
+        </div>
+
+        <div class="setting-group" style="margin-bottom: 0;">
+          <label class="setting-label">
+            Groq API
+            <span class="validation-status" id="groq-status" style="display:none;"></span>
+          </label>
+          <div class="setting-row">
+            <input type="password" class="setting-input" id="groqApiKey" placeholder="gsk_...">
+            <select class="model-select" id="groqModel">
+              <option value="llama-3.1-70b-versatile">llama-3.1-70b</option>
+              <option value="llama-3.1-8b-instant">llama-3.1-8b</option>
+            </select>
+          </div>
+          <div class="setting-hint">
+            <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a> から取得（高速・低コスト）
+          </div>
+        </div>
+      </div>
+
+      <!-- LLM優先順位 -->
+      <div class="setting-group">
+        <label class="setting-label">💬 LLM優先順位</label>
+        <select class="model-select" id="llmPriority" style="width: 100%;">
+          <option value="auto">自動選択（設定されたAPIを順に使用）</option>
+          <option value="gemini">Gemini を優先</option>
+          <option value="claude">Claude を優先</option>
+          <option value="openai">OpenAI を優先</option>
+          <option value="groq">Groq を優先</option>
+        </select>
+        <div class="setting-hint">
+          自動選択の場合: Claude → OpenAI → Gemini → Groq の順で、APIキーが設定されているものを使用
+        </div>
+      </div>
+
+      <div class="security-options">
+        <div class="security-options-title">🛡️ セキュリティオプション</div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="clearOnClose">
+          <label for="clearOnClose">ブラウザを閉じたらAPIキーを自動削除（共有PC向け）</label>
+        </div>
+      </div>
+
+      <div class="security-options" style="background: #eff6ff; border-color: #bfdbfe;">
+        <div class="security-options-title" style="color: #1e40af;">💰 コストアラート</div>
+        <div class="setting-group" style="margin-bottom: 0.5rem;">
+          <label class="setting-label" style="font-size: 0.8rem;">1セッションの上限金額（円）</label>
+          <input type="number" class="setting-input" id="costLimit" placeholder="例: 100" value="100" min="0" step="10" style="max-width: 150px;">
+        </div>
+        <div class="checkbox-group">
+          <input type="checkbox" id="costAlertEnabled" checked>
+          <label for="costAlertEnabled" style="color: #1e40af;">上限の80%で警告を表示</label>
+        </div>
+      </div>
+
+      <div class="settings-transfer">
+        <div class="settings-transfer-title">📦 設定のバックアップ</div>
+        <div class="settings-transfer-buttons">
+          <button class="btn btn-secondary" onclick="exportSettings()">📤 エクスポート</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 インポート</button>
+          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importSettings(event)">
+          <button class="btn btn-danger" onclick="clearAllSettings()">🗑️ 全削除</button>
+        </div>
+        <div class="settings-transfer-hint">
+          エクスポートファイルは暗号化されています。他のデバイスへの移行に使用できます。
+        </div>
+      </div>
+
+      <div class="action-buttons">
+        <a href="index.html" class="btn btn-secondary">キャンセル</a>
+        <button class="btn btn-primary" onclick="saveSettings()">💾 保存</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/secure-storage.js"></script>
+  <script>
+    // =====================================
+    // 初期化
+    // =====================================
+    document.addEventListener('DOMContentLoaded', function() {
+      loadSavedSettings();
+    });
+
+    function loadSavedSettings() {
+      // APIキーを入力欄に復元
+      const providers = ['gemini', 'claude', 'openai', 'groq'];
+      providers.forEach(p => {
+        const key = SecureStorage.getApiKey(p);
+        const model = SecureStorage.getModel(p);
+        if (key) document.getElementById(`${p}ApiKey`).value = key;
+        if (model) document.getElementById(`${p}Model`).value = model;
+      });
+
+      // オプション
+      document.getElementById('clearOnClose').checked = SecureStorage.getOption('clearOnClose', false);
+      document.getElementById('costAlertEnabled').checked = SecureStorage.getOption('costAlertEnabled', true);
+      document.getElementById('costLimit').value = SecureStorage.getOption('costLimit', 100);
+      document.getElementById('llmPriority').value = SecureStorage.getOption('llmPriority', 'auto');
+    }
+
+    async function saveSettings() {
+      const providers = ['gemini', 'claude', 'openai', 'groq'];
+
+      // APIキーを保存
+      providers.forEach(p => {
+        const key = document.getElementById(`${p}ApiKey`).value.trim();
+        const model = document.getElementById(`${p}Model`).value;
+        SecureStorage.setApiKey(p, key);
+        SecureStorage.setModel(p, model);
+      });
+
+      // オプションを保存
+      SecureStorage.setOption('clearOnClose', document.getElementById('clearOnClose').checked);
+      SecureStorage.setOption('costAlertEnabled', document.getElementById('costAlertEnabled').checked);
+      SecureStorage.setOption('costLimit', parseInt(document.getElementById('costLimit').value) || 100);
+      SecureStorage.setOption('llmPriority', document.getElementById('llmPriority').value);
+
+      // 文字起こし用APIが少なくとも1つ設定されているか確認
+      const geminiKey = SecureStorage.getApiKey('gemini');
+      const openaiKey = SecureStorage.getApiKey('openai');
+
+      if (!geminiKey && !openaiKey) {
+        showError('文字起こし用に、Gemini APIまたはOpenAI APIのいずれかを設定してください。');
+        return;
+      }
+
+      // 設定されたAPIキーを検証
+      if (geminiKey) {
+        const isValid = await validateApiKey('gemini', geminiKey);
+        if (!isValid) {
+          showError('Gemini APIキーが無効です。正しいキーを入力してください。');
+          return;
+        }
+      }
+
+      if (openaiKey) {
+        const isValid = await validateApiKey('openai', openaiKey);
+        if (!isValid) {
+          showError('OpenAI APIキーが無効です。正しいキーを入力してください。');
+          return;
+        }
+      }
+
+      showSuccess('設定を保存しました。メイン画面に戻って利用を開始できます。');
+
+      // 3秒後にメイン画面に自動遷移
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 3000);
+    }
+
+    // APIキーの検証
+    async function validateApiKey(provider, key) {
+      const statusEl = document.getElementById(`${provider}-status`);
+      if (!statusEl) return true;
+
+      statusEl.style.display = 'inline-flex';
+      statusEl.className = 'validation-status validation-pending';
+      statusEl.textContent = '検証中...';
+
+      try {
+        let isValid = false;
+
+        if (provider === 'gemini') {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+          isValid = res.ok;
+        } else if (provider === 'openai') {
+          const res = await fetch('https://api.openai.com/v1/models', {
+            headers: { 'Authorization': `Bearer ${key}` }
+          });
+          isValid = res.ok;
+        } else if (provider === 'groq') {
+          const res = await fetch('https://api.groq.com/openai/v1/models', {
+            headers: { 'Authorization': `Bearer ${key}` }
+          });
+          isValid = res.ok;
+        } else {
+          isValid = true;
+        }
+
+        statusEl.className = isValid ? 'validation-status validation-success' : 'validation-status validation-error';
+        statusEl.textContent = isValid ? '✓ 有効' : '✗ 無効';
+        return isValid;
+      } catch (e) {
+        statusEl.className = 'validation-status validation-error';
+        statusEl.textContent = '✗ エラー';
+        return false;
+      }
+    }
+
+    // 設定エクスポート
+    function exportSettings() {
+      const password = prompt('エクスポート用パスワードを設定してください（インポート時に必要）:');
+      if (!password) return;
+
+      const encrypted = SecureStorage.exportAll(password);
+      const blob = new Blob([JSON.stringify({ data: encrypted, v: 1 })], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `ai-meeting-settings-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      showSuccess('設定をエクスポートしました。パスワードは安全に保管してください。');
+    }
+
+    // 設定インポート
+    function importSettings(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const json = JSON.parse(e.target.result);
+          const password = prompt('インポート用パスワードを入力してください:');
+          if (!password) return;
+
+          const success = SecureStorage.importAll(json.data, password);
+          if (success) {
+            showSuccess('設定をインポートしました');
+            loadSavedSettings();
+          } else {
+            showError('インポートに失敗しました。パスワードが正しいか確認してください。');
+          }
+        } catch (err) {
+          showError('ファイルの読み込みに失敗しました');
+        }
+      };
+      reader.readAsText(file);
+      event.target.value = '';
+    }
+
+    // 全設定削除
+    function clearAllSettings() {
+      if (confirm('すべての設定（APIキー含む）を削除しますか？この操作は取り消せません。')) {
+        SecureStorage.clearAll();
+        loadSavedSettings();
+        showSuccess('設定を削除しました');
+      }
+    }
+
+    function showSuccess(message) {
+      const el = document.getElementById('successMessage');
+      el.textContent = '✓ ' + message;
+      el.style.display = 'block';
+      document.getElementById('errorMessage').style.display = 'none';
+
+      // スクロールしてメッセージを表示
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+
+      setTimeout(() => {
+        el.style.display = 'none';
+      }, 5000);
+    }
+
+    function showError(message) {
+      const el = document.getElementById('errorMessage');
+      el.textContent = '✗ ' + message;
+      el.style.display = 'block';
+      document.getElementById('successMessage').style.display = 'none';
+
+      // スクロールしてメッセージを表示
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  </script>
+</body>
+</html>
