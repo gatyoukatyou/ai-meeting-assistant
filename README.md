@@ -55,9 +55,9 @@ All dynamic URL assignments that may involve user-controlled input (e.g., `a.hre
 
 ### Content Security Policy (Report-Only) / コンテンツセキュリティポリシー（報告モード）
 
-A strict Content-Security-Policy-Report-Only meta tag is now included in both entrypoints. It locks down `default-src`, `script-src`, and `connect-src` (limited to `self`, Google Generative Language, OpenAI, Anthropic, Groq) and runs inline scripts only when they carry the shared nonce (`nonce=YWktbWVldGluZw==`). `style-src` currently includes `'unsafe-inline'` because large inline `<style>` blocks and attributes remain; removing it requires future CSS extraction. Once logs show no violations, replace the Report-Only meta with the provided enforced CSP string.
+A strict Content-Security-Policy-Report-Only meta tag is now included in both entrypoints. After migrating all inline scripts into external files (`js/app.js`, `js/config.js`), `script-src` only needs `'self'` (the nonce has been removed). `connect-src` is limited to Google Generative Language, OpenAI, Anthropic, and Groq endpoints used by the app. `style-src` still includes `'unsafe-inline'` because the inline `<style>` blocks remain; removing it requires future CSS extraction. Once DevTools shows no violations, replace the Report-Only meta with the provided enforced CSP string.
 
-両エントリーポイントに Content-Security-Policy-Report-Only メタタグを追加しました。`default-src`、`script-src`、`connect-src` を厳格化し（`self` と Google Generative Language / OpenAI / Anthropic / Groq への接続のみ許可）、インラインスクリプトは共有ノンス（`nonce=YWktbWVldGluZw==`）を付与した場合のみ実行されます。`style-src` には既存の大規模な `<style>` ブロックとインライン属性のため一時的に `'unsafe-inline'` を含めていますが、今後 CSS を外部化して削減します。検証で違反が出ないことを確認後、案内している強制版 CSP に差し替えてください。
+両エントリーポイントに Content-Security-Policy-Report-Only メタタグを適用しています。すべてのインラインスクリプトを外部ファイル（`js/app.js`、`js/config.js`）へ移行したため、`script-src` は `'self'` のみで済み、ノンス指定は不要になりました。`connect-src` は本アプリが利用する Google Generative Language / OpenAI / Anthropic / Groq の API だけを許可しています。`style-src` には依然として `'unsafe-inline'` が必要ですが、これは今後 CSS を外部化して削減します。DevTools コンソールで違反が出ないことを確認できたら、案内している強制版 CSP へ切り替えてください。
 
 ## Verification / 検証方法
 

@@ -156,8 +156,8 @@ All dynamic URL assignments that may involve user-controlled input (e.g., `a.hre
 
 ### Content Security Policy (Report-Only) / コンテンツセキュリティポリシー（報告モード）
 
-A Content-Security-Policy-Report-Only meta tag now protects both HTML entrypoints. The policy restricts `default-src`, enforces `script-src 'self' 'nonce-YWktbWVldGluZw=='`, and allows network calls only to Google Generative Language, OpenAI, Anthropic, and Groq APIs. Inline scripts execute solely via the shared nonce. `style-src` currently includes `'unsafe-inline'` because legacy inline styles remain; this is documented debt for future CSS refactoring. After monitoring the report-only logs, enable the enforced CSP string noted near each meta tag.
+A Content-Security-Policy-Report-Only meta tag now protects both HTML entrypoints. After relocating all inline scripts into external modules, `script-src` is simply `'self'` (no nonce needed) while `connect-src` is restricted to the Google Generative Language, OpenAI, Anthropic, and Groq APIs used for transcription/LLM calls. `style-src` temporarily includes `'unsafe-inline'` because large inline style blocks remain; this is documented debt for future CSS refactoring. Verification is currently done via DevTools console; once no violations appear, enable the enforced CSP string noted near each meta tag.
 
-両方のHTMLエントリーポイントに Content-Security-Policy-Report-Only メタタグを追加しました。`default-src` を自己ドメインに限定し、`script-src 'self' 'nonce-YWktbWVldGluZw=='` で制御、外部通信は Google Generative Language / OpenAI / Anthropic / Groq API への接続のみ許可します。インラインスクリプトは共有ノンス経由でのみ動作します。`style-src` は既存のインラインスタイルが残るため暫定的に `'unsafe-inline'` を含み、今後のCSSリファクタで解消予定です。Report-Onlyのログに問題がないことを確認したら、メタタグ付近に記載した強制版CSPへ切り替えてください。
+両方のHTMLエントリーポイントに Content-Security-Policy-Report-Only メタタグを適用しています。すべてのインラインスクリプトを外部モジュールへ移したため、`script-src` は `'self'` のみで成立し、ノンス指定は不要になりました。`connect-src` は利用中の Google Generative Language / OpenAI / Anthropic / Groq API に限定しています。`style-src` は大きなインラインスタイルが残るため暫定的に `'unsafe-inline'` を含めており、今後のCSSリファクタで解消予定です。現在はDevToolsコンソールでReport-Only違反を確認しており、問題がなければメタタグ付近に記載した強制版CSPへ切り替えます。
 
 セキュリティ上の問題を発見した場合は、GitHubのIssueでご報告ください。
