@@ -819,8 +819,8 @@
         <option value="60">60秒</option>
         <option value="120">2分</option>
       </select>
-      <button class="btn btn-primary" id="recordBtn" onclick="toggleRecording()">🎤 録音開始</button>
-      <button class="btn btn-secondary" onclick="openExportModal()">📥 エクスポート</button>
+      <button class="btn btn-primary" id="recordBtn">🎤 録音開始</button>
+      <button class="btn btn-secondary" id="openExportBtn">📥 エクスポート</button>
       <a href="config.html" class="btn btn-ghost">⚙️ 設定</a>
     </div>
   </header>
@@ -830,13 +830,13 @@
     <div class="panel">
       <div class="panel-header">
         <span class="panel-title">📝 文字起こし</span>
-        <button class="btn btn-ghost" onclick="clearTranscript()" style="font-size: 0.75rem;">クリア</button>
+        <button class="btn btn-ghost" id="clearTranscriptBtn" style="font-size: 0.75rem;">クリア</button>
       </div>
       <div class="panel-body" id="transcriptBody">
         <div class="transcript-text" id="transcriptText"></div>
       </div>
       <div class="cost-display" id="transcriptCostPanel">
-        <div class="cost-header" onclick="toggleCostDetails('transcript')">
+        <div class="cost-header" data-cost-target="transcript">
           <span>💰 文字起こしコスト</span>
           <span><span id="transcriptCostTotal">¥0</span> <span id="transcriptCostBadge" class="cost-badge cost-badge-low">低</span></span>
         </div>
@@ -887,21 +887,21 @@
       
       <div class="ai-section" style="padding: 1rem; padding-bottom: 0;">
         <div class="ai-buttons">
-          <button class="btn btn-primary" onclick="askAI('summary')">📋 要約</button>
-          <button class="btn btn-secondary" onclick="askAI('opinion')">💭 意見を聞く</button>
-          <button class="btn btn-secondary" onclick="askAI('idea')">💡 アイデア</button>
+          <button class="btn btn-primary ask-ai-btn" data-ai-type="summary">📋 要約</button>
+          <button class="btn btn-secondary ask-ai-btn" data-ai-type="opinion">💭 意見を聞く</button>
+          <button class="btn btn-secondary ask-ai-btn" data-ai-type="idea">💡 アイデア</button>
         </div>
         <div class="custom-question">
-          <input type="text" id="customQuestion" placeholder="自由に質問..." onkeypress="if(event.key==='Enter')askAI('custom')">
-          <button class="btn btn-primary" onclick="askAI('custom')">送信</button>
+          <input type="text" id="customQuestion" placeholder="自由に質問...">
+          <button class="btn btn-primary" id="askCustomBtn">送信</button>
         </div>
       </div>
 
       <div class="tabs">
-        <button class="tab active" data-tab="summary" onclick="switchTab('summary')">要約</button>
-        <button class="tab" data-tab="opinion" onclick="switchTab('opinion')">意見</button>
-        <button class="tab" data-tab="idea" onclick="switchTab('idea')">アイデア</button>
-        <button class="tab" data-tab="custom" onclick="switchTab('custom')">Q&A</button>
+        <button class="tab active" data-tab="summary">要約</button>
+        <button class="tab" data-tab="opinion">意見</button>
+        <button class="tab" data-tab="idea">アイデア</button>
+        <button class="tab" data-tab="custom">Q&A</button>
       </div>
 
       <div class="tab-content active" id="tab-summary">
@@ -918,7 +918,7 @@
       </div>
 
       <div class="cost-display" id="llmCostPanel">
-        <div class="cost-header" onclick="toggleCostDetails('llm')">
+        <div class="cost-header" data-cost-target="llm">
           <span>💰 LLMコスト</span>
           <span><span id="llmCostTotal">¥0</span> <span id="llmCostBadge" class="cost-badge cost-badge-low">低</span></span>
         </div>
@@ -1028,7 +1028,7 @@
     <div class="modal" style="max-width: 700px;">
       <div class="modal-header">
         <h2>📥 エクスポート</h2>
-        <button class="modal-close" onclick="closeExportModal()">×</button>
+        <button class="modal-close" id="closeExportModalBtn">×</button>
       </div>
       <div class="modal-body">
         <div class="setting-group">
@@ -1037,8 +1037,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeExportModal()">閉じる</button>
-        <button class="btn btn-primary" onclick="downloadExport()">📥 ダウンロード</button>
+        <button class="btn btn-secondary" id="closeExportModalFooterBtn">閉じる</button>
+        <button class="btn btn-primary" id="downloadExportBtn">📥 ダウンロード</button>
       </div>
     </div>
   </div>
@@ -1147,6 +1147,78 @@
           SecureStorage.clearApiKeys();
         }
       });
+
+      const recordBtn = document.getElementById('recordBtn');
+      if (recordBtn) {
+        recordBtn.addEventListener('click', toggleRecording);
+      }
+
+      const exportBtn = document.getElementById('openExportBtn');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', openExportModal);
+      }
+
+      const clearTranscriptBtn = document.getElementById('clearTranscriptBtn');
+      if (clearTranscriptBtn) {
+        clearTranscriptBtn.addEventListener('click', clearTranscript);
+      }
+
+      document.querySelectorAll('.cost-header[data-cost-target]').forEach(header => {
+        header.addEventListener('click', () => {
+          const target = header.getAttribute('data-cost-target');
+          if (target) {
+            toggleCostDetails(target);
+          }
+        });
+      });
+
+      document.querySelectorAll('.ask-ai-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+          const type = btn.getAttribute('data-ai-type');
+          if (type) {
+            askAI(type);
+          }
+        });
+      });
+
+      const askCustomBtn = document.getElementById('askCustomBtn');
+      if (askCustomBtn) {
+        askCustomBtn.addEventListener('click', () => askAI('custom'));
+      }
+
+      const customQuestionInput = document.getElementById('customQuestion');
+      if (customQuestionInput) {
+        customQuestionInput.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            askAI('custom');
+          }
+        });
+      }
+
+      document.querySelectorAll('.tabs .tab[data-tab]').forEach(tab => {
+        tab.addEventListener('click', () => {
+          const tabName = tab.getAttribute('data-tab');
+          if (tabName) {
+            switchTab(tabName);
+          }
+        });
+      });
+
+      const closeExportModalBtn = document.getElementById('closeExportModalBtn');
+      if (closeExportModalBtn) {
+        closeExportModalBtn.addEventListener('click', closeExportModal);
+      }
+
+      const closeExportModalFooterBtn = document.getElementById('closeExportModalFooterBtn');
+      if (closeExportModalFooterBtn) {
+        closeExportModalFooterBtn.addEventListener('click', closeExportModal);
+      }
+
+      const downloadExportBtn = document.getElementById('downloadExportBtn');
+      if (downloadExportBtn) {
+        downloadExportBtn.addEventListener('click', downloadExport);
+      }
     });
 
     // 録音機能
@@ -1429,9 +1501,30 @@
       // ローディング表示
       if (type === 'custom') {
         const qaHistory = document.getElementById('qa-history');
-        qaHistory.innerHTML += `<div class="qa-item"><div class="qa-question">Q: ${customQ}</div><div class="qa-answer"><span class="loading"></span> 回答を生成中...</div></div>`;
+        const qaItem = document.createElement('div');
+        qaItem.className = 'qa-item';
+
+        const questionEl = document.createElement('div');
+        questionEl.className = 'qa-question';
+        questionEl.textContent = `Q: ${customQ}`;
+
+        const answerEl = document.createElement('div');
+        answerEl.className = 'qa-answer';
+        const loading = document.createElement('span');
+        loading.className = 'loading';
+        answerEl.appendChild(loading);
+        answerEl.appendChild(document.createTextNode(' 回答を生成中...'));
+
+        qaItem.appendChild(questionEl);
+        qaItem.appendChild(answerEl);
+        qaHistory.appendChild(qaItem);
       } else {
-        document.getElementById(`response-${type}`).innerHTML = '<span class="loading"></span> 回答を生成中...';
+        const responseEl = document.getElementById(`response-${type}`);
+        responseEl.textContent = '';
+        const loading = document.createElement('span');
+        loading.className = 'loading';
+        responseEl.appendChild(loading);
+        responseEl.appendChild(document.createTextNode(' 回答を生成中...'));
       }
 
       try {

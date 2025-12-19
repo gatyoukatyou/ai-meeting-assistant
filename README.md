@@ -27,6 +27,48 @@ GitHub Pages: https://gatyoukatyou.github.io/ai-meeting-assistant/
 
 詳細は [SECURITY.md](docs/SECURITY.md) をご覧ください。
 
+## Language Policy / 言語表記について
+
+This project is primarily intended for users in Japan. Therefore, all important documentation (README, Security Notes, etc.) is written in **Japanese with English provided alongside**.
+
+本プロジェクトは主に日本国内の利用を想定しています。そのため、README やセキュリティノートなどの重要な文書は、**日本語を主とし、必ず英語表記を併記**する方針としています。
+
+> Note / 注意: Any future documentation updates must include both Japanese and English text. 日本語のみ、または英語のみの記述はレビュー対象となります。
+
+## Security Notes / セキュリティに関する注意
+
+### DOM Hardening (XSS Mitigation) / DOMハードニング（XSS対策）
+
+All inline event handlers (onclick, onchange, onkeypress, etc.) have been removed from the HTML. All user interactions are now handled exclusively via JavaScript event listeners registered after DOMContentLoaded.
+
+すべての inline イベントハンドラ（onclick、onchange、onkeypress など）は HTML から完全に削除されました。現在、すべてのユーザー操作は DOMContentLoaded 後に登録される JavaScript の event listener 経由でのみ処理されます。
+
+As a result, no user-controlled data is executed during HTML parsing, which significantly reduces the risk of XSS attacks.
+
+その結果、HTML パース時にユーザー入力が実行される経路は存在せず、XSS 攻撃のリスクが大幅に低減されています。
+
+## Verification / 検証方法
+
+No automated tests are available for this static application. The following checks were performed manually:
+
+- Searched for HTML injection APIs (innerHTML, insertAdjacentHTML, outerHTML)
+- Verified that no inline event handlers remain
+- Reviewed DOM update paths to ensure textContent / DOM node creation is used
+
+本アプリは静的アプリケーションであり、自動テストは存在しません。以下の方法で手動検証を行いました。
+
+- innerHTML / insertAdjacentHTML / outerHTML の残存確認
+- onclick / onchange / onkeypress 等の inline handler が存在しないことを確認
+- DOM 更新が textContent および DOM ノード生成経由で行われていることを確認
+
+## Planned Improvements / 今後の改善予定
+
+- Add Content Security Policy (CSP) without 'unsafe-inline'
+- Guard dynamic URL assignments against javascript: and data: schemes
+
+- unsafe-inline を含まない Content Security Policy (CSP) の導入
+- javascript: / data: スキームを排除する URL ガードの実装
+
 ## 必要条件
 
 - モダンブラウザ（Chrome / Edge 推奨）

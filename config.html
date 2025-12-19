@@ -513,10 +513,10 @@
       <div class="settings-transfer">
         <div class="settings-transfer-title">📦 設定のバックアップ</div>
         <div class="settings-transfer-buttons">
-          <button class="btn btn-secondary" onclick="exportSettings()">📤 エクスポート</button>
-          <button class="btn btn-secondary" onclick="document.getElementById('importFile').click()">📥 インポート</button>
-          <input type="file" id="importFile" accept=".json" style="display:none;" onchange="importSettings(event)">
-          <button class="btn btn-danger" onclick="clearAllSettings()">🗑️ 全削除</button>
+          <button class="btn btn-secondary" id="exportSettingsBtn">📤 エクスポート</button>
+          <button class="btn btn-secondary" id="importSettingsTrigger">📥 インポート</button>
+          <input type="file" id="importFile" accept=".json" style="display:none;">
+          <button class="btn btn-danger" id="clearAllSettingsBtn">🗑️ 全削除</button>
         </div>
         <div class="settings-transfer-hint">
           エクスポートファイルは暗号化されています。他のデバイスへの移行に使用できます。
@@ -525,7 +525,7 @@
 
       <div class="action-buttons">
         <a href="index.html" class="btn btn-secondary">キャンセル</a>
-        <button class="btn btn-primary" onclick="saveSettings()">💾 保存</button>
+        <button class="btn btn-primary" id="saveSettingsBtn">💾 保存</button>
       </div>
     </div>
   </main>
@@ -537,6 +537,30 @@
     // =====================================
     document.addEventListener('DOMContentLoaded', function() {
       loadSavedSettings();
+
+      const exportBtn = document.getElementById('exportSettingsBtn');
+      if (exportBtn) {
+        exportBtn.addEventListener('click', exportSettings);
+      }
+
+      const importFileInput = document.getElementById('importFile');
+      const importTrigger = document.getElementById('importSettingsTrigger');
+      if (importTrigger && importFileInput) {
+        importTrigger.addEventListener('click', () => importFileInput.click());
+      }
+      if (importFileInput) {
+        importFileInput.addEventListener('change', importSettings);
+      }
+
+      const clearAllBtn = document.getElementById('clearAllSettingsBtn');
+      if (clearAllBtn) {
+        clearAllBtn.addEventListener('click', clearAllSettings);
+      }
+
+      const saveBtn = document.getElementById('saveSettingsBtn');
+      if (saveBtn) {
+        saveBtn.addEventListener('click', saveSettings);
+      }
     });
 
     function loadSavedSettings() {

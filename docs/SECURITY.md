@@ -8,6 +8,12 @@
 
 本アプリは**完全にクライアントサイドで動作**します。サーバーへのデータ送信は一切行いません。ユーザーのデータは、ユーザー自身のブラウザ内でのみ処理されます。
 
+## Language Policy / 言語表記について
+
+This document follows the repository-wide policy of writing security notes in **Japanese with English provided alongside**.
+
+本ドキュメントは、リポジトリ全体の方針に従い、**日本語と英語を常に併記**しています。
+
 ## APIキーの保存方法
 
 ### 暗号化ローカル保存
@@ -129,5 +135,17 @@ function encrypt(text) {
 - セキュリティに関する懸念がある場合は、使用を控えてください
 
 ## 問題の報告
+
+## Security Notes / セキュリティに関する注意
+
+### DOM Hardening (XSS Mitigation) / DOMハードニング（XSS対策）
+
+All inline event handlers (onclick, onchange, onkeypress, etc.) have been removed from the HTML. All user interactions are now handled exclusively via JavaScript event listeners registered after DOMContentLoaded.
+
+すべての inline イベントハンドラ（onclick、onchange、onkeypress など）は HTML から完全に削除されました。現在、すべてのユーザー操作は DOMContentLoaded 後に登録される JavaScript の event listener 経由でのみ処理されます。
+
+As a result, no user-controlled data is executed during HTML parsing, which significantly reduces the risk of XSS attacks.
+
+その結果、HTML パース時にユーザー入力が実行される経路は存在せず、XSS 攻撃のリスクが大幅に低減されています。
 
 セキュリティ上の問題を発見した場合は、GitHubのIssueでご報告ください。
