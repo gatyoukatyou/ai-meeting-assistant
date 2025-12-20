@@ -400,7 +400,7 @@
 
       <!-- 文字起こし用API -->
       <div class="api-section transcription">
-        <div class="api-section-title">🎤 文字起こし用API（いずれか1つ必須）</div>
+        <div class="api-section-title">🎤 必須API（いずれか1つ - 会議の文字起こしとAI回答の両方で使います）</div>
 
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label">
@@ -416,7 +416,7 @@
             </select>
           </div>
           <div class="setting-hint">
-            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> から取得（文字起こし＆LLM両方に使用可能）
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> から取得
           </div>
         </div>
 
@@ -433,14 +433,14 @@
             </select>
           </div>
           <div class="setting-hint">
-            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得（Whisper文字起こし＆LLM両方に使用可能）
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得（ChatGPTでAI回答もできます）
           </div>
         </div>
       </div>
 
       <!-- LLM専用API -->
       <div class="api-section llm">
-        <div class="api-section-title">💬 AI質問応答用API（任意・高度な回答に使用）</div>
+        <div class="api-section-title">💬 追加のAI（任意 - より賢い回答が欲しい場合）</div>
 
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label">
@@ -473,6 +473,13 @@
           </div>
           <div class="setting-hint">
             <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a> から取得（高速・低コスト）
+          </div>
+        </div>
+
+        <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-blue); border-radius: 0.5rem; border: 1px solid var(--accent-border-blue);">
+          <div style="font-size: 0.85rem; color: var(--text);">
+            💡 <strong>ChatGPT（OpenAI）を使いたい場合</strong><br>
+            上の「必須API」セクションでOpenAI APIを設定してください。文字起こしとAI回答の両方に使えます。
           </div>
         </div>
       </div>
