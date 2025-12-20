@@ -323,7 +323,9 @@ async function transcribeWithGemini(audioBlob) {
   );
 
   if (!response.ok) {
-    throw new Error(`Gemini API error: ${response.status}`);
+    const errorBody = await response.text();
+    console.error('Gemini API error response:', errorBody);
+    throw new Error(`Gemini API error: ${response.status} - ${errorBody}`);
   }
 
   const data = await response.json();
@@ -362,7 +364,9 @@ async function transcribeWithWhisper(audioBlob) {
   });
 
   if (!response.ok) {
-    throw new Error(`Whisper API error: ${response.status}`);
+    const errorBody = await response.text();
+    console.error('Whisper API error response:', errorBody);
+    throw new Error(`Whisper API error: ${response.status} - ${errorBody}`);
   }
 
   const data = await response.json();
