@@ -223,10 +223,13 @@ async function startRecording() {
     mediaRecorder.ondataavailable = (e) => {
       if (e.data.size > 0) {
         audioChunks.push(e.data);
+        console.log('Audio data received, size:', e.data.size);
       }
     };
 
-    mediaRecorder.start();
+    // 1秒ごとにデータを収集（タイムスライス）
+    mediaRecorder.start(1000);
+    console.log('MediaRecorder started with 1s timeslice');
     isRecording = true;
     updateUI();
 
@@ -270,7 +273,7 @@ async function processAudioChunk() {
   // 新しい録音を開始
   if (isRecording && mediaRecorder.state === 'recording') {
     mediaRecorder.stop();
-    mediaRecorder.start();
+    mediaRecorder.start(1000);
   }
 
   try {
