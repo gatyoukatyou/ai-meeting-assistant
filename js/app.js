@@ -260,9 +260,11 @@ function stopRecording() {
 }
 
 async function processAudioChunk() {
+  console.log('processAudioChunk called, chunks:', audioChunks.length);
   if (audioChunks.length === 0) return;
 
   const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+  console.log('Audio blob created, size:', audioBlob.size, 'bytes');
   audioChunks = [];
 
   // 新しい録音を開始
@@ -273,9 +275,11 @@ async function processAudioChunk() {
 
   try {
     const provider = document.getElementById('transcriptProvider').value;
-    const text = provider === 'openai' 
+    console.log('Transcription provider:', provider);
+    const text = provider === 'openai'
       ? await transcribeWithWhisper(audioBlob)
       : await transcribeWithGemini(audioBlob);
+    console.log('Transcription result:', text);
 
     if (text && text.trim()) {
       const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
@@ -288,12 +292,16 @@ async function processAudioChunk() {
     }
   } catch (err) {
     console.error('文字起こしエラー:', err);
+    alert(`文字起こしエラー: ${err.message}`);
   }
 }
 
 async function transcribeWithGemini(audioBlob) {
+  console.log('transcribeWithGemini called');
   const geminiKey = SecureStorage.getApiKey('gemini');
+  console.log('Gemini API key exists:', !!geminiKey);
   const base64Audio = await blobToBase64(audioBlob);
+  console.log('Base64 audio length:', base64Audio.length);
 
   const response = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiKey}`,
