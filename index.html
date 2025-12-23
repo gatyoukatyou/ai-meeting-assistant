@@ -2,9 +2,17 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self';">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self'; manifest-src 'self';">
+
+  <!-- PWA Manifest -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="AI会議">
+
   <title>AI参加会議</title>
   <style>
     :root {
@@ -753,23 +761,127 @@
       margin-top: 0.5rem;
     }
 
-    /* レスポンシブ */
+    /* レスポンシブ（スマホ最適化） */
     @media (max-width: 640px) {
       .header {
-        padding: 0.75rem 1rem;
+        padding: 1rem;
+        flex-direction: column;
+        gap: 0.75rem;
       }
 
       .header h1 {
-        font-size: 1rem;
+        font-size: 1.125rem;
+        width: 100%;
+        text-align: center;
+      }
+
+      .header-controls {
+        width: 100%;
+        justify-content: center;
       }
 
       .btn {
-        padding: 0.4rem 0.75rem;
-        font-size: 0.8rem;
+        padding: 0.75rem 1rem;
+        font-size: 0.9rem;
+        min-height: 44px; /* タッチターゲット最小サイズ */
+        min-width: 44px;
       }
 
       .main-container {
         padding: 0.75rem;
+        gap: 0.75rem;
+      }
+
+      .panel-body {
+        max-height: 300px;
+        font-size: 0.95rem;
+      }
+
+      .model-select {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.875rem;
+        min-height: 44px;
+      }
+
+      .status-badge {
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+      }
+
+      /* スマホでは文字起こし用APIボタンをフル幅に */
+      #transcriptProvider,
+      #transcriptInterval {
+        min-width: auto;
+        flex: 1;
+      }
+
+      /* エクスポートと設定ボタンを小さく */
+      #openExportBtn,
+      .header-controls a {
+        padding: 0.5rem 0.75rem;
+        font-size: 0.75rem;
+      }
+
+      /* AI質問ボタンを大きく */
+      .ai-buttons .btn {
+        flex: 1;
+        min-width: 0;
+        padding: 0.75rem 0.5rem;
+      }
+
+      /* カスタム質問入力を大きく */
+      .custom-question input {
+        font-size: 1rem; /* iOSズーム防止 */
+        min-height: 44px;
+      }
+
+      /* タブを大きく */
+      .tab {
+        padding: 1rem;
+        font-size: 0.875rem;
+        min-height: 44px;
+      }
+
+      /* トースト通知をスマホ用に調整 */
+      .toast-container {
+        top: auto;
+        bottom: 1rem;
+        left: 1rem;
+        right: 1rem;
+        max-width: none;
+      }
+
+      /* モーダルをスマホ用に調整 */
+      .modal {
+        max-width: 95%;
+        max-height: 95vh;
+      }
+
+      .modal-body {
+        max-height: calc(95vh - 140px);
+      }
+
+      /* 録音ボタンを目立たせる */
+      #recordBtn {
+        padding: 1rem 1.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        min-height: 50px;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      }
+
+      #recordBtn.btn-danger {
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        animation: pulse-recording 2s infinite;
+      }
+
+      @keyframes pulse-recording {
+        0%, 100% {
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        50% {
+          box-shadow: 0 4px 20px rgba(220, 38, 38, 0.5);
+        }
       }
     }
 
@@ -804,6 +916,75 @@
       color: #991b1b;
       border-color: #fecaca;
     }
+
+    /* トースト通知 */
+    .toast-container {
+      position: fixed;
+      top: 80px;
+      right: 1rem;
+      z-index: 2000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      max-width: 400px;
+    }
+
+    .toast {
+      background: var(--card-bg);
+      border-radius: 0.75rem;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      border-left: 4px solid var(--primary);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: slideIn 0.3s ease-out;
+    }
+
+    .toast.error {
+      border-left-color: var(--danger);
+    }
+
+    .toast.success {
+      border-left-color: var(--success);
+    }
+
+    .toast.warning {
+      border-left-color: var(--warning);
+    }
+
+    .toast-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .toast-message {
+      flex: 1;
+      font-size: 0.875rem;
+      line-height: 1.4;
+    }
+
+    @keyframes slideIn {
+      from {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(400px);
+        opacity: 0;
+      }
+    }
   </style>
 </head>
 <body>
@@ -816,8 +997,10 @@
         <option value="openai">🎤 OpenAI</option>
       </select>
       <select id="transcriptInterval" class="model-select" style="min-width: 80px;">
-        <option value="15">15秒</option>
-        <option value="30" selected>30秒</option>
+        <option value="5">5秒</option>
+        <option value="10">10秒</option>
+        <option value="15" selected>15秒</option>
+        <option value="30">30秒</option>
         <option value="60">60秒</option>
         <option value="120">2分</option>
       </select>
@@ -1044,6 +1227,10 @@
       </div>
     </div>
   </div>
+
+  <!-- トースト通知コンテナ -->
+  <div class="toast-container" id="toastContainer"></div>
+
   <script src="js/secure-storage.js" defer></script>
   <script src="js/app.js" defer></script>
 </body>

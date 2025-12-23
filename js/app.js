@@ -237,9 +237,13 @@ async function startRecording() {
     const interval = parseInt(document.getElementById('transcriptInterval').value) * 1000;
     transcriptIntervalId = setInterval(processAudioChunk, interval);
 
+    // 録音開始の通知
+    const intervalText = document.getElementById('transcriptInterval').selectedOptions[0].text;
+    showToast(`録音を開始しました（${intervalText}ごとに文字起こし）`, 'success');
+
   } catch (err) {
     console.error('録音開始エラー:', err);
-    alert('マイクへのアクセスに失敗しました');
+    showToast('マイクへのアクセスに失敗しました', 'error');
   }
 }
 
@@ -260,6 +264,7 @@ function stopRecording() {
 
   isRecording = false;
   updateUI();
+  showToast('録音を停止しました', 'info');
 }
 
 async function processAudioChunk() {
@@ -268,12 +273,14 @@ async function processAudioChunk() {
 
   const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
   console.log('Audio blob created, size:', audioBlob.size, 'bytes');
+
+  // 音声データをクリア（録音は継続）
   audioChunks = [];
 
-  // 新しい録音を開始
-  if (isRecording && mediaRecorder.state === 'recording') {
-    mediaRecorder.stop();
-    mediaRecorder.start(1000);
+  // 音声データが小さすぎる場合はスキップ
+  if (audioBlob.size < 1000) {
+    console.log('Audio blob too small, skipping transcription');
+    return;
   }
 
   try {
@@ -295,7 +302,8 @@ async function processAudioChunk() {
     }
   } catch (err) {
     console.error('文字起こしエラー:', err);
-    alert(`文字起こしエラー: ${err.message}`);
+    showToast(`文字起こしエラー: ${err.message}`, 'error');
+    // エラーが発生しても録音は継続
   }
 }
 
@@ -306,7 +314,7 @@ async function transcribeWithGemini(audioBlob) {
   const base64Audio = await blobToBase64(audioBlob);
   console.log('Base64 audio length:', base64Audio.length);
 
-  const response = await fetch(
+  const response = await fetchWithRetry(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiKey}`,
     {
       method: 'POST',
@@ -355,7 +363,7 @@ async function transcribeWithWhisper(audioBlob) {
   formData.append('model', 'whisper-1');
   formData.append('language', 'ja');
 
-  const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+  const response = await fetchWithRetry('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
     headers: {
       'Authorization': `Bearer ${openaiKey}`
@@ -398,6 +406,64 @@ function blobToBase64(blob) {
     reader.onerror = reject;
     reader.readAsDataURL(blob);
   });
+}
+
+// =====================================
+// トースト通知
+// =====================================
+function showToast(message, type = 'info') {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+
+  const toast = document.createElement('div');
+  toast.className = `toast ${type}`;
+
+  const icons = {
+    info: 'ℹ️',
+    success: '✅',
+    warning: '⚠️',
+    error: '❌'
+  };
+
+  toast.innerHTML = `
+    <span class="toast-icon">${icons[type] || icons.info}</span>
+    <span class="toast-message">${message}</span>
+  `;
+
+  container.appendChild(toast);
+
+  // 4秒後に削除
+  setTimeout(() => {
+    toast.style.animation = 'slideOut 0.3s ease-out';
+    setTimeout(() => {
+      container.removeChild(toast);
+    }, 300);
+  }, 4000);
+}
+
+// =====================================
+// リトライ機能付きAPI呼び出し
+// =====================================
+async function fetchWithRetry(url, options, maxRetries = 3) {
+  let lastError;
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const response = await fetch(url, options);
+      return response;
+    } catch (error) {
+      lastError = error;
+      console.warn(`API呼び出し失敗 (${i + 1}/${maxRetries}):`, error);
+
+      if (i < maxRetries - 1) {
+        // 指数バックオフ: 1秒, 2秒, 4秒
+        const delay = Math.pow(2, i) * 1000;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  throw lastError;
 }
 
 // =====================================
@@ -558,7 +624,7 @@ async function callLLM(provider, prompt) {
 
   switch(provider) {
     case 'gemini':
-      response = await fetch(
+      response = await fetchWithRetry(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
@@ -576,7 +642,7 @@ async function callLLM(provider, prompt) {
       break;
 
     case 'claude':
-      response = await fetch('https://api.anthropic.com/v1/messages', {
+      response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -598,7 +664,7 @@ async function callLLM(provider, prompt) {
       break;
 
     case 'openai':
-      response = await fetch('https://api.openai.com/v1/chat/completions', {
+      response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -617,7 +683,7 @@ async function callLLM(provider, prompt) {
       break;
 
     case 'groq':
-      response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+      response = await fetchWithRetry('https://api.groq.com/openai/v1/chat/completions', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
