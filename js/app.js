@@ -227,48 +227,35 @@ async function startRecording() {
   }
 
   try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    currentAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-    // Geminiがサポートする形式を優先的に選択
-    // サポート: WAV, MP3, AIFF, AAC, OGG, FLAC
-    // ブラウザ互換性: OGG (Chrome/Firefox), MP4/AAC (Safari), WebM (Chrome/Firefox)
-    let mimeType = 'audio/webm'; // デフォルト
+    // 最適なMIMEタイプを選択
     const preferredTypes = [
-      'audio/ogg;codecs=opus',  // Gemini対応 + Chrome/Firefox
-      'audio/ogg',               // Gemini対応 + Chrome/Firefox
-      'audio/mp4',               // Gemini対応(AAC) + Safari
-      'audio/webm;codecs=opus',  // Chrome/Firefox (Geminiは非対応だがWhisperで使える)
-      'audio/webm'               // フォールバック
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/ogg;codecs=opus',
+      'audio/ogg'
     ];
+    selectedMimeType = 'audio/webm';
     for (const type of preferredTypes) {
       if (MediaRecorder.isTypeSupported(type)) {
-        mimeType = type;
+        selectedMimeType = type;
         break;
       }
     }
-    console.log('Selected MediaRecorder mimeType:', mimeType);
+    console.log('Selected MediaRecorder mimeType:', selectedMimeType);
 
-    mediaRecorder = new MediaRecorder(stream, { mimeType });
-    audioChunks = [];
+    // 最初のMediaRecorderを開始
+    startNewMediaRecorder();
 
-    mediaRecorder.ondataavailable = (e) => {
-      if (e.data.size > 0) {
-        audioChunks.push(e.data);
-        console.log('Audio data received, size:', e.data.size);
-      }
-    };
-
-    // 1秒ごとにデータを収集（タイムスライス）
-    mediaRecorder.start(1000);
-    console.log('MediaRecorder started with 1s timeslice');
     isRecording = true;
     updateUI();
 
-    // 定期的に文字起こし
+    // 定期的にstop/restartで完結したBlobを生成
     const interval = parseInt(document.getElementById('transcriptInterval').value) * 1000;
-    transcriptIntervalId = setInterval(processAudioChunk, interval);
+    transcriptIntervalId = setInterval(stopAndRestartRecording, interval);
 
-    // 録音開始の通知
     const intervalText = document.getElementById('transcriptInterval').selectedOptions[0].text;
     showToast(`録音を開始しました（${intervalText}ごとに文字起こし）`, 'success');
 
@@ -278,78 +265,154 @@ async function startRecording() {
   }
 }
 
+// グローバル変数追加
+let currentAudioStream = null;
+let selectedMimeType = 'audio/webm';
+let pendingBlob = null;
+
+// 新しいMediaRecorderを開始
+function startNewMediaRecorder() {
+  if (!currentAudioStream) return;
+
+  mediaRecorder = new MediaRecorder(currentAudioStream, { mimeType: selectedMimeType });
+  audioChunks = [];
+
+  mediaRecorder.ondataavailable = (e) => {
+    if (e.data.size > 0) {
+      audioChunks.push(e.data);
+      console.log('Audio data received, size:', e.data.size);
+    }
+  };
+
+  mediaRecorder.onstop = () => {
+    // stop時に完結したBlobを生成
+    if (audioChunks.length > 0) {
+      pendingBlob = new Blob(audioChunks, { type: selectedMimeType });
+      console.log('Complete audio blob created, size:', pendingBlob.size, 'bytes');
+
+      // ヘッダー確認用デバッグログ
+      pendingBlob.slice(0, 16).arrayBuffer().then(buf => {
+        const arr = new Uint8Array(buf);
+        const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
+        console.log('Blob header (first 16 bytes):', hex);
+      });
+
+      // 文字起こし実行（キューに追加）
+      processCompleteBlob(pendingBlob);
+    }
+    audioChunks = [];
+  };
+
+  // timesliceなしで開始（stopするまで1つの完結したファイルになる）
+  mediaRecorder.start();
+  console.log('MediaRecorder started (no timeslice - will create complete file on stop)');
+}
+
+// 定期的にstop→restart（完結したBlobを生成）
+function stopAndRestartRecording() {
+  if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
+  if (!isRecording) return;
+
+  console.log('Stopping MediaRecorder to create complete blob...');
+  mediaRecorder.stop();
+
+  // 少し待ってから新しいMediaRecorderを開始（onstopの処理完了を待つ）
+  setTimeout(() => {
+    if (isRecording && currentAudioStream) {
+      startNewMediaRecorder();
+    }
+  }, 100);
+}
+
 function stopRecording() {
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-    mediaRecorder.stream.getTracks().forEach(track => track.stop());
-  }
+  isRecording = false;
+
   if (transcriptIntervalId) {
     clearInterval(transcriptIntervalId);
     transcriptIntervalId = null;
   }
 
-  // 残りの音声を処理
-  if (audioChunks.length > 0) {
-    processAudioChunk();
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
   }
 
-  isRecording = false;
+  // ストリームを停止
+  if (currentAudioStream) {
+    currentAudioStream.getTracks().forEach(track => track.stop());
+    currentAudioStream = null;
+  }
+
   updateUI();
   showToast('録音を停止しました', 'info');
 }
 
-// 並列送信防止用フラグ
-let isTranscribing = false;
+// キュー方式で直列化
+const transcriptionQueue = [];
+let isProcessingQueue = false;
 
-async function processAudioChunk() {
-  console.log('processAudioChunk called, chunks:', audioChunks.length);
-  if (audioChunks.length === 0) return;
-
-  // 並列送信防止：前のリクエストが完了していない場合はスキップ
-  if (isTranscribing) {
-    console.log('Previous transcription still in progress, skipping this chunk');
+// 完結したBlobをキューに追加して処理
+function processCompleteBlob(audioBlob) {
+  if (!audioBlob || audioBlob.size < 1000) {
+    console.log('Audio blob too small, skipping:', audioBlob?.size);
     return;
   }
 
-  // MediaRecorderの実際のMIMEタイプを使用
-  const actualMimeType = mediaRecorder?.mimeType || 'audio/webm';
-  const audioBlob = new Blob(audioChunks, { type: actualMimeType });
-  console.log('Audio blob created, size:', audioBlob.size, 'bytes, type:', audioBlob.type);
+  // キューに追加
+  transcriptionQueue.push(audioBlob);
+  console.log('Added blob to queue, queue length:', transcriptionQueue.length);
 
-  // 音声データをクリア（録音は継続）
-  audioChunks = [];
-
-  // 音声データが小さすぎる場合はスキップ
-  if (audioBlob.size < 1000) {
-    console.log('Audio blob too small, skipping transcription');
-    return;
+  // キューが溜まりすぎたら古いのを捨てる（リアルタイム優先）
+  while (transcriptionQueue.length > 3) {
+    const dropped = transcriptionQueue.shift();
+    console.log('Dropped old blob from queue, size:', dropped.size);
   }
 
-  isTranscribing = true;
-  try {
-    const provider = document.getElementById('transcriptProvider').value;
-    console.log('Transcription provider:', provider);
-    const text = provider === 'openai'
-      ? await transcribeWithWhisper(audioBlob)
-      : await transcribeWithGemini(audioBlob);
-    console.log('Transcription result:', text);
+  // キュー処理を開始
+  processQueue();
+}
 
-    if (text && text.trim()) {
-      const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-      fullTranscript += `[${timestamp}] ${text}\n`;
-      document.getElementById('transcriptText').textContent = fullTranscript;
+// キューを順次処理
+async function processQueue() {
+  if (isProcessingQueue) return;
+  if (transcriptionQueue.length === 0) return;
 
-      // スクロール
-      const body = document.getElementById('transcriptBody');
-      body.scrollTop = body.scrollHeight;
+  isProcessingQueue = true;
+
+  while (transcriptionQueue.length > 0) {
+    const audioBlob = transcriptionQueue.shift();
+    console.log('Processing blob from queue, size:', audioBlob.size, 'remaining:', transcriptionQueue.length);
+
+    try {
+      const provider = document.getElementById('transcriptProvider').value;
+      console.log('Transcription provider:', provider);
+
+      const text = provider === 'openai'
+        ? await transcribeWithWhisper(audioBlob)
+        : await transcribeWithGemini(audioBlob);
+
+      console.log('Transcription result:', text);
+
+      if (text && text.trim()) {
+        const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+        fullTranscript += `[${timestamp}] ${text}\n`;
+        document.getElementById('transcriptText').textContent = fullTranscript;
+
+        const body = document.getElementById('transcriptBody');
+        body.scrollTop = body.scrollHeight;
+      }
+    } catch (err) {
+      console.error('文字起こしエラー:', err);
+      showToast(`文字起こしエラー: ${err.message}`, 'error');
+      // エラーでもキュー処理は継続
     }
-  } catch (err) {
-    console.error('文字起こしエラー:', err);
-    showToast(`文字起こしエラー: ${err.message}`, 'error');
-    // エラーが発生しても録音は継続
-  } finally {
-    isTranscribing = false;
+
+    // 連続リクエストを避けるため少し待機
+    if (transcriptionQueue.length > 0) {
+      await new Promise(resolve => setTimeout(resolve, 500));
+    }
   }
+
+  isProcessingQueue = false;
 }
 
 async function transcribeWithGemini(audioBlob) {
@@ -362,34 +425,10 @@ async function transcribeWithGemini(audioBlob) {
   const model = SecureStorage.getModel('gemini') || 'gemini-2.0-flash-exp';
   console.log('Using Gemini model for transcription:', model);
 
-  // Geminiがサポートする音声形式: WAV, MP3, AIFF, AAC, OGG, FLAC
-  // WebM/MP4は非サポートなので、対応形式に変換
-  let mimeType = audioBlob.type || 'audio/ogg';
-  console.log('Original audio blob mimeType:', mimeType);
-
-  // codecs部分を除去（例: audio/ogg;codecs=opus → audio/ogg）
-  const baseMimeType = mimeType.split(';')[0];
-
-  // Gemini対応形式へのマッピング
-  const mimeTypeMap = {
-    'audio/webm': 'audio/ogg',   // WebM(Opus) → OGG(Opus) 互換
-    'audio/mp4': 'audio/aac',    // MP4 → AAC（Gemini公式サポート）
-    'audio/x-m4a': 'audio/aac',  // M4A → AAC
-  };
-
-  if (mimeTypeMap[baseMimeType]) {
-    mimeType = mimeTypeMap[baseMimeType];
-    console.log(`Converting ${baseMimeType} to ${mimeType} for Gemini compatibility`);
-  } else {
-    mimeType = baseMimeType;
-  }
-
-  // Vorbisコーデックの場合は警告
-  if (audioBlob.type.includes('vorbis')) {
-    console.warn('Vorbis codec detected - may not be compatible with Gemini');
-  }
-
-  console.log('Final mimeType for Gemini:', mimeType);
+  // MIMEタイプは実データのcontainerと一致させる（ラベル変換は不要）
+  // Geminiはaudio/mp4, audio/webmも受け付ける
+  const mimeType = (audioBlob.type || 'audio/webm').split(';')[0];
+  console.log('Audio mimeType for Gemini:', mimeType);
 
   const base64Audio = await blobToBase64(audioBlob);
   console.log('Base64 audio length:', base64Audio.length);
