@@ -193,6 +193,17 @@ document.addEventListener('DOMContentLoaded', function() {
   if (downloadExportBtn) {
     downloadExportBtn.addEventListener('click', downloadExport);
   }
+
+  // ウェルカムモーダルの閉じるボタン
+  const closeWelcomeModalBtn = document.getElementById('closeWelcomeModalBtn');
+  if (closeWelcomeModalBtn) {
+    closeWelcomeModalBtn.addEventListener('click', closeWelcomeModal);
+  }
+
+  const skipWelcomeBtn = document.getElementById('skipWelcomeBtn');
+  if (skipWelcomeBtn) {
+    skipWelcomeBtn.addEventListener('click', closeWelcomeModal);
+  }
 });
 
 // 録音機能
@@ -875,6 +886,10 @@ function openExportModal() {
 
 function closeExportModal() {
   document.getElementById('exportModal').classList.remove('active');
+}
+
+function closeWelcomeModal() {
+  document.getElementById('welcomeModal').classList.remove('active');
 }
 
 function generateExportMarkdown() {

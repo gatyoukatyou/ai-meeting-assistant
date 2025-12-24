@@ -1170,12 +1170,14 @@
   <!-- ウェルカムモーダル -->
   <div class="modal-overlay" id="welcomeModal">
     <div class="modal">
+      <div class="modal-header">
+        <h2>🤖 AI参加会議へようこそ</h2>
+        <button class="modal-close" id="closeWelcomeModalBtn">×</button>
+      </div>
       <div class="modal-body">
         <div class="welcome-content">
-          <div class="welcome-icon">🤖</div>
-          <h2 class="welcome-title">AI参加会議へようこそ</h2>
           <p class="welcome-desc">会議中にAIがリアルタイムで参加し、<br>文字起こし・要約・意見・アイデア提案を行います</p>
-          
+
           <div class="welcome-features">
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🎤</span>
@@ -1195,14 +1197,14 @@
             </div>
           </div>
 
-          <a href="config.html" class="btn btn-primary welcome-btn">
-            ⚙️ 設定を開始する
-          </a>
-          
           <div style="margin-top: 1rem; font-size: 0.75rem; color: var(--text-secondary); text-align: center;">
             利用開始により、<a href="docs/TERMS.md" target="_blank" style="color: var(--primary);">利用規約</a>と<a href="docs/PRIVACY.md" target="_blank" style="color: var(--primary);">プライバシーポリシー</a>に同意したものとみなされます。
           </div>
         </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="skipWelcomeBtn">後で設定する</button>
+        <a href="config.html" class="btn btn-primary">⚙️ 設定を開始する</a>
       </div>
     </div>
   </div>
