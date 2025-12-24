@@ -357,12 +357,9 @@ async function transcribeWithGemini(audioBlob) {
   const geminiKey = SecureStorage.getApiKey('gemini');
   console.log('Gemini API key exists:', !!geminiKey);
 
-  // 音声文字起こし用のモデルを取得（2.0系の場合は1.5にフォールバック）
-  let model = SecureStorage.getModel('gemini') || 'gemini-1.5-flash';
-  if (model.includes('2.0')) {
-    model = 'gemini-1.5-flash'; // 2.0系は音声サポートが限定的なので1.5を使用
-    console.log('Using gemini-1.5-flash for audio transcription (2.0 fallback)');
-  }
+  // 音声文字起こし用のモデルを取得
+  // gemini-2.0-flash-exp は音声をサポート（フィールド名とMIMEタイプが正しければ動作）
+  const model = SecureStorage.getModel('gemini') || 'gemini-2.0-flash-exp';
   console.log('Using Gemini model for transcription:', model);
 
   // Geminiがサポートする音声形式: WAV, MP3, AIFF, AAC, OGG, FLAC
