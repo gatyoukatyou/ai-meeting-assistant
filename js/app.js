@@ -370,8 +370,13 @@ async function transcribeWithGemini(audioBlob) {
   let mimeType = audioBlob.type || 'audio/ogg';
   console.log('Original audio blob mimeType:', mimeType);
 
+  // Vorbisコーデックの場合は警告（OGGとの変換互換性がない）
+  if (mimeType.includes('vorbis')) {
+    console.warn('Vorbis codec detected - may not be compatible with Gemini');
+  }
+
   // WebM形式の場合はOGGとして送信（内部コーデックはOpusで同じ）
-  if (mimeType.includes('webm')) {
+  if (mimeType.includes('webm') && !mimeType.includes('vorbis')) {
     mimeType = 'audio/ogg';
     console.log('Converting webm mimeType to ogg for Gemini compatibility');
   }
