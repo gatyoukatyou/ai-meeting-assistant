@@ -322,11 +322,20 @@ async function transcribeWithGemini(audioBlob) {
   console.log('transcribeWithGemini called');
   const geminiKey = SecureStorage.getApiKey('gemini');
   console.log('Gemini API key exists:', !!geminiKey);
+
+  // 音声文字起こし用のモデルを取得（2.0系の場合は1.5にフォールバック）
+  let model = SecureStorage.getModel('gemini') || 'gemini-1.5-flash';
+  if (model.includes('2.0')) {
+    model = 'gemini-1.5-flash'; // 2.0系は音声サポートが限定的なので1.5を使用
+    console.log('Using gemini-1.5-flash for audio transcription (2.0 fallback)');
+  }
+  console.log('Using Gemini model for transcription:', model);
+
   const base64Audio = await blobToBase64(audioBlob);
   console.log('Base64 audio length:', base64Audio.length);
 
   const response = await fetchWithRetry(
-    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${geminiKey}`,
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
