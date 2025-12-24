@@ -1,6 +1,6 @@
 function safeURL(input) {
   try {
-    const url = new URL(input, window.location.origin);
+    const url = new URL(input, window.location.href);
     if (url.protocol === 'http:' || url.protocol === 'https:') {
       return url.href;
     }
