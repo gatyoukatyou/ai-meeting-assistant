@@ -363,22 +363,32 @@ async function transcribeWithGemini(audioBlob) {
   console.log('Using Gemini model for transcription:', model);
 
   // Geminiがサポートする音声形式: WAV, MP3, AIFF, AAC, OGG, FLAC
-  // WebMは非サポートなので、OGGとして送信を試みる
+  // WebM/MP4は非サポートなので、対応形式に変換
   let mimeType = audioBlob.type || 'audio/ogg';
   console.log('Original audio blob mimeType:', mimeType);
 
-  // Vorbisコーデックの場合は警告（OGGとの変換互換性がない）
-  if (mimeType.includes('vorbis')) {
+  // codecs部分を除去（例: audio/ogg;codecs=opus → audio/ogg）
+  const baseMimeType = mimeType.split(';')[0];
+
+  // Gemini対応形式へのマッピング
+  const mimeTypeMap = {
+    'audio/webm': 'audio/ogg',   // WebM(Opus) → OGG(Opus) 互換
+    'audio/mp4': 'audio/aac',    // MP4 → AAC（Gemini公式サポート）
+    'audio/x-m4a': 'audio/aac',  // M4A → AAC
+  };
+
+  if (mimeTypeMap[baseMimeType]) {
+    mimeType = mimeTypeMap[baseMimeType];
+    console.log(`Converting ${baseMimeType} to ${mimeType} for Gemini compatibility`);
+  } else {
+    mimeType = baseMimeType;
+  }
+
+  // Vorbisコーデックの場合は警告
+  if (audioBlob.type.includes('vorbis')) {
     console.warn('Vorbis codec detected - may not be compatible with Gemini');
   }
 
-  // WebM形式の場合はOGGとして送信（内部コーデックはOpusで同じ）
-  if (mimeType.includes('webm') && !mimeType.includes('vorbis')) {
-    mimeType = 'audio/ogg';
-    console.log('Converting webm mimeType to ogg for Gemini compatibility');
-  }
-  // codecs部分を除去（例: audio/ogg;codecs=opus → audio/ogg）
-  mimeType = mimeType.split(';')[0];
   console.log('Final mimeType for Gemini:', mimeType);
 
   const base64Audio = await blobToBase64(audioBlob);
