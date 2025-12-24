@@ -228,7 +228,27 @@ async function startRecording() {
 
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    mediaRecorder = new MediaRecorder(stream, { mimeType: 'audio/webm' });
+
+    // Geminiがサポートする形式を優先的に選択
+    // サポート: WAV, MP3, AIFF, AAC, OGG, FLAC
+    // ブラウザ互換性: OGG (Chrome/Firefox), MP4/AAC (Safari), WebM (Chrome/Firefox)
+    let mimeType = 'audio/webm'; // デフォルト
+    const preferredTypes = [
+      'audio/ogg;codecs=opus',  // Gemini対応 + Chrome/Firefox
+      'audio/ogg',               // Gemini対応 + Chrome/Firefox
+      'audio/mp4',               // Gemini対応(AAC) + Safari
+      'audio/webm;codecs=opus',  // Chrome/Firefox (Geminiは非対応だがWhisperで使える)
+      'audio/webm'               // フォールバック
+    ];
+    for (const type of preferredTypes) {
+      if (MediaRecorder.isTypeSupported(type)) {
+        mimeType = type;
+        break;
+      }
+    }
+    console.log('Selected MediaRecorder mimeType:', mimeType);
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
     audioChunks = [];
 
     mediaRecorder.ondataavailable = (e) => {
@@ -278,12 +298,23 @@ function stopRecording() {
   showToast('録音を停止しました', 'info');
 }
 
+// 並列送信防止用フラグ
+let isTranscribing = false;
+
 async function processAudioChunk() {
   console.log('processAudioChunk called, chunks:', audioChunks.length);
   if (audioChunks.length === 0) return;
 
-  const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
-  console.log('Audio blob created, size:', audioBlob.size, 'bytes');
+  // 並列送信防止：前のリクエストが完了していない場合はスキップ
+  if (isTranscribing) {
+    console.log('Previous transcription still in progress, skipping this chunk');
+    return;
+  }
+
+  // MediaRecorderの実際のMIMEタイプを使用
+  const actualMimeType = mediaRecorder?.mimeType || 'audio/webm';
+  const audioBlob = new Blob(audioChunks, { type: actualMimeType });
+  console.log('Audio blob created, size:', audioBlob.size, 'bytes, type:', audioBlob.type);
 
   // 音声データをクリア（録音は継続）
   audioChunks = [];
@@ -294,6 +325,7 @@ async function processAudioChunk() {
     return;
   }
 
+  isTranscribing = true;
   try {
     const provider = document.getElementById('transcriptProvider').value;
     console.log('Transcription provider:', provider);
@@ -315,6 +347,8 @@ async function processAudioChunk() {
     console.error('文字起こしエラー:', err);
     showToast(`文字起こしエラー: ${err.message}`, 'error');
     // エラーが発生しても録音は継続
+  } finally {
+    isTranscribing = false;
   }
 }
 
@@ -331,6 +365,20 @@ async function transcribeWithGemini(audioBlob) {
   }
   console.log('Using Gemini model for transcription:', model);
 
+  // Geminiがサポートする音声形式: WAV, MP3, AIFF, AAC, OGG, FLAC
+  // WebMは非サポートなので、OGGとして送信を試みる
+  let mimeType = audioBlob.type || 'audio/ogg';
+  console.log('Original audio blob mimeType:', mimeType);
+
+  // WebM形式の場合はOGGとして送信（内部コーデックはOpusで同じ）
+  if (mimeType.includes('webm')) {
+    mimeType = 'audio/ogg';
+    console.log('Converting webm mimeType to ogg for Gemini compatibility');
+  }
+  // codecs部分を除去（例: audio/ogg;codecs=opus → audio/ogg）
+  mimeType = mimeType.split(';')[0];
+  console.log('Final mimeType for Gemini:', mimeType);
+
   const base64Audio = await blobToBase64(audioBlob);
   console.log('Base64 audio length:', base64Audio.length);
 
@@ -343,7 +391,7 @@ async function transcribeWithGemini(audioBlob) {
         contents: [{
           parts: [
             { text: '以下の音声を日本語で文字起こししてください。話者が複数いる場合は区別してください。音声がない場合や聞き取れない場合は「（音声なし）」と返してください。' },
-            { inline_data: { mime_type: 'audio/webm', data: base64Audio } }
+            { inlineData: { mimeType: mimeType, data: base64Audio } }
           ]
         }]
       })
