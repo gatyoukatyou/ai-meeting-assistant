@@ -992,8 +992,11 @@
     <h1>🤖 AI参加会議</h1>
     <div class="header-controls">
       <span class="status-badge status-ready" id="statusBadge">⏸ 待機中</span>
-      <select id="transcriptProvider" class="model-select" style="min-width: 110px;" title="文字起こしAPI（STT専用）">
-        <option value="openai" selected>🎤 OpenAI STT</option>
+      <select id="transcriptProvider" class="model-select" style="min-width: 140px;" title="文字起こしAPI（STT専用）">
+        <option value="openai_stt" selected>🎤 OpenAI Whisper</option>
+        <option value="deepgram_realtime">⚡ Deepgram</option>
+        <option value="assemblyai_realtime">🔊 AssemblyAI</option>
+        <option value="gcp_stt_proxy">☁️ GCP STT</option>
       </select>
       <select id="transcriptInterval" class="model-select" style="min-width: 80px;">
         <option value="5">5秒</option>
@@ -1039,23 +1042,31 @@
           <div class="cost-section">
             <div class="cost-section-title">💵 プロバイダー別</div>
             <div class="cost-item">
-              <span class="cost-item-label">Gemini Audio:</span>
-              <span id="geminiTranscriptCost">¥0</span>
-            </div>
-            <div class="cost-item">
               <span class="cost-item-label">OpenAI Whisper:</span>
               <span id="openaiTranscriptCost">¥0</span>
+            </div>
+            <div class="cost-item">
+              <span class="cost-item-label">Deepgram:</span>
+              <span id="deepgramTranscriptCost">¥0</span>
+            </div>
+            <div class="cost-item">
+              <span class="cost-item-label">AssemblyAI:</span>
+              <span id="assemblyaiTranscriptCost">¥0</span>
             </div>
           </div>
           <div class="cost-section">
             <div class="cost-section-title">📈 レート</div>
             <div class="cost-item">
-              <span class="cost-item-label">Gemini:</span>
-              <span>¥0.0015/秒</span>
-            </div>
-            <div class="cost-item">
               <span class="cost-item-label">Whisper:</span>
               <span>¥0.9/分</span>
+            </div>
+            <div class="cost-item">
+              <span class="cost-item-label">Deepgram:</span>
+              <span>~¥0.36/分</span>
+            </div>
+            <div class="cost-item">
+              <span class="cost-item-label">AssemblyAI:</span>
+              <span>~¥0.55/分</span>
             </div>
           </div>
         </div>
@@ -1233,6 +1244,14 @@
   <div class="toast-container" id="toastContainer"></div>
 
   <script src="js/secure-storage.js" defer></script>
+  <!-- STT Provider抽象化レイヤー -->
+  <script src="js/audio/pcm_stream.js" defer></script>
+  <script src="js/stt/index.js" defer></script>
+  <script src="js/stt/providers/openai_chunked.js" defer></script>
+  <script src="js/stt/providers/deepgram_ws.js" defer></script>
+  <script src="js/stt/providers/assemblyai_ws.js" defer></script>
+  <script src="js/stt/providers/gcp_proxy_ws.js" defer></script>
+  <!-- メインアプリ -->
   <script src="js/app.js" defer></script>
 </body>
 </html>

@@ -400,30 +400,116 @@
 
       <!-- 文字起こし専用API（STT） -->
       <div class="api-section transcription">
-        <div class="api-section-title">🎤 文字起こし（必須）- OpenAI Whisper STT</div>
+        <div class="api-section-title">🎤 文字起こし（STT）- プロバイダー選択</div>
 
-        <div class="setting-group" style="margin-bottom: 0;">
-          <label class="setting-label">
-            OpenAI API
-            <span class="validation-status" id="openai-status" style="display:none;"></span>
-          </label>
-          <div class="setting-row">
-            <input type="password" class="setting-input" id="openaiApiKey" placeholder="sk-...">
-            <select class="model-select" id="openaiModel">
-              <option value="whisper-1" selected>whisper-1（STT専用・推奨）</option>
-              <option value="gpt-4o-transcribe">gpt-4o-transcribe</option>
-              <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe</option>
-            </select>
-          </div>
-          <div class="setting-hint">
-            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得 - 文字起こしにはSTT専用モデルを使用します
+        <!-- STTプロバイダー選択 -->
+        <div class="setting-group" style="margin-bottom: 1rem;">
+          <label class="setting-label">STTプロバイダー</label>
+          <select class="model-select" id="sttProvider" style="width: 100%;">
+            <option value="openai_stt" selected>🎤 OpenAI Whisper（チャンク送信・安定）</option>
+            <option value="deepgram_realtime">⚡ Deepgram Realtime（WebSocket・高速）</option>
+            <option value="assemblyai_realtime">🔊 AssemblyAI Realtime（WebSocket・高精度）</option>
+            <option value="gcp_stt_proxy" id="gcp_stt_option">☁️ Google Cloud STT（バックエンド経由）</option>
+          </select>
+          <div class="setting-hint" id="sttProviderHint">
+            STTプロバイダーを選択してください。WebSocket系はリアルタイム性に優れます。
           </div>
         </div>
 
-        <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 0.5rem; border: 1px solid #fef08a;">
-          <div style="font-size: 0.85rem; color: #92400e;">
-            ⚠️ <strong>文字起こしにはOpenAI STT（Whisper）が必須です</strong><br>
-            Geminiなど他のAIは文字起こしには使用できません。要約やAI回答には下のLLMセクションで設定してください。
+        <!-- OpenAI STT設定 -->
+        <div class="stt-provider-settings" id="openai_stt_settings">
+          <div class="setting-group" style="margin-bottom: 0;">
+            <label class="setting-label">
+              OpenAI API Key
+              <span class="validation-status" id="openai-status" style="display:none;"></span>
+            </label>
+            <div class="setting-row">
+              <input type="password" class="setting-input" id="openaiApiKey" placeholder="sk-...">
+              <select class="model-select" id="openaiModel">
+                <option value="whisper-1" selected>whisper-1（推奨）</option>
+                <option value="gpt-4o-transcribe">gpt-4o-transcribe</option>
+                <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe</option>
+              </select>
+            </div>
+            <div class="setting-hint">
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得
+            </div>
+          </div>
+        </div>
+
+        <!-- Deepgram設定 -->
+        <div class="stt-provider-settings" id="deepgram_realtime_settings" style="display: none;">
+          <div class="setting-group" style="margin-bottom: 0;">
+            <label class="setting-label">
+              Deepgram API Key
+              <span class="validation-status" id="deepgram-status" style="display:none;"></span>
+            </label>
+            <div class="setting-row">
+              <input type="password" class="setting-input" id="deepgramApiKey" placeholder="dg-...">
+              <select class="model-select" id="deepgramModel">
+                <option value="nova-2" selected>nova-2（推奨・高精度）</option>
+                <option value="nova">nova</option>
+                <option value="enhanced">enhanced</option>
+                <option value="base">base（低コスト）</option>
+              </select>
+            </div>
+            <div class="setting-hint">
+              <a href="https://console.deepgram.com/" target="_blank" rel="noopener">Deepgram Console</a> から取得 - WebSocketでリアルタイム送信
+            </div>
+          </div>
+        </div>
+
+        <!-- AssemblyAI設定 -->
+        <div class="stt-provider-settings" id="assemblyai_realtime_settings" style="display: none;">
+          <div class="setting-group" style="margin-bottom: 0;">
+            <label class="setting-label">
+              AssemblyAI API Key
+              <span class="validation-status" id="assemblyai-status" style="display:none;"></span>
+            </label>
+            <div class="setting-row">
+              <input type="password" class="setting-input" id="assemblyaiApiKey" placeholder="...">
+            </div>
+            <div class="setting-hint">
+              <a href="https://www.assemblyai.com/app" target="_blank" rel="noopener">AssemblyAI Dashboard</a> から取得 - WebSocketでリアルタイム送信
+            </div>
+          </div>
+        </div>
+
+        <!-- GCP STT Proxy設定 -->
+        <div class="stt-provider-settings" id="gcp_stt_proxy_settings" style="display: none;">
+          <div class="setting-group" style="margin-bottom: 0.75rem;">
+            <label class="setting-label">
+              バックエンドURL（必須）
+              <span class="validation-status" id="gcp-status" style="display:none;"></span>
+            </label>
+            <div class="setting-row">
+              <input type="text" class="setting-input" id="gcpProxyUrl" placeholder="wss://your-server.com/gcp-stt">
+            </div>
+            <div class="setting-hint">
+              GCP STTはgRPCが必要なため、バックエンドプロキシ経由でのみ使用可能
+            </div>
+          </div>
+          <div class="setting-group" style="margin-bottom: 0;">
+            <label class="setting-label">共有トークン（任意）</label>
+            <div class="setting-row">
+              <input type="password" class="setting-input" id="gcpProxyToken" placeholder="認証用トークン（サーバー側で設定）">
+            </div>
+          </div>
+          <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 0.5rem; border: 1px solid #fef08a;">
+            <div style="font-size: 0.85rem; color: #92400e;">
+              ⚠️ <strong>バックエンドサーバーが必要です</strong><br>
+              GitHub Pages等の静的ホスティングでは使用できません。サーバーを別途用意してください。
+            </div>
+          </div>
+        </div>
+
+        <!-- 共通の注意事項 -->
+        <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-blue); border-radius: 0.5rem; border: 1px solid var(--accent-border-blue);">
+          <div style="font-size: 0.85rem; color: var(--text);">
+            💡 <strong>STTプロバイダーについて</strong><br>
+            • <strong>OpenAI Whisper</strong>: 安定性重視。チャンク送信で擬似リアルタイム<br>
+            • <strong>Deepgram/AssemblyAI</strong>: WebSocketで真のリアルタイム。低遅延<br>
+            • <strong>GCP STT</strong>: 高精度だがバックエンドサーバーが必須
           </div>
         </div>
       </div>

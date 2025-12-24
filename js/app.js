@@ -10,12 +10,35 @@ let fullTranscript = '';
 // =====================================
 // STT専用プロバイダー/モデル許可リスト
 // =====================================
-const ALLOWED_STT_PROVIDERS = new Set(['openai']);
+// chunked系: HTTP経由でBlobを送信（擬似リアルタイム）
+// streaming系: WebSocket経由でPCMストリーム送信（真のリアルタイム）
+const ALLOWED_STT_PROVIDERS = new Set([
+  'openai_stt',       // chunked (HTTP)
+  'deepgram_realtime', // streaming (WebSocket)
+  'assemblyai_realtime', // streaming (WebSocket)
+  'gcp_stt_proxy'     // streaming (WebSocket via backend proxy)
+]);
+
+// chunked系プロバイダー
+const CHUNKED_PROVIDERS = new Set(['openai_stt']);
+
+// streaming系プロバイダー
+const STREAMING_PROVIDERS = new Set([
+  'deepgram_realtime',
+  'assemblyai_realtime',
+  'gcp_stt_proxy'
+]);
+
+// OpenAI STT用モデル
 const ALLOWED_STT_MODELS = new Set([
   'whisper-1',
   'gpt-4o-transcribe',
   'gpt-4o-mini-transcribe',
 ]);
+
+// STTプロバイダーインスタンス
+let currentSTTProvider = null;
+let pcmStreamProcessor = null;
 
 // コスト管理（詳細版）
 let costs = {
@@ -24,8 +47,9 @@ let costs = {
     duration: 0,      // 処理した音声の秒数
     calls: 0,         // API呼び出し回数
     byProvider: {
-      gemini: 0,
-      openai: 0
+      openai: 0,      // OpenAI Whisper (chunked)
+      deepgram: 0,    // Deepgram Realtime (WebSocket)
+      assemblyai: 0   // AssemblyAI Realtime (WebSocket)
     }
   },
   llm: {
@@ -44,15 +68,20 @@ let costs = {
 
 // 料金レート（2024年12月時点、1ドル=150円換算）
 const PRICING = {
-  // 文字起こしAPI
+  // 文字起こしAPI（STT専用）
   transcription: {
-    gemini: {
-      // Gemini 2.0 Flash - Audio input: $0.00001/second
-      perSecond: 0.00001 * 150  // ¥0.0015/秒
-    },
     openai: {
       // Whisper - $0.006/minute
       perMinute: 0.006 * 150  // ¥0.9/分
+    },
+    deepgram: {
+      // Deepgram Nova-2 - $0.0043/minute (pay-as-you-go)
+      perMinute: 0.0043 * 150  // ~¥0.65/分
+    },
+    assemblyai: {
+      // AssemblyAI - $0.00025/second = $0.015/minute
+      perMinute: 0.015 * 150  // ~¥2.25/分 (Best tier)
+      // Note: Nano tier is $0.00012/sec = $0.0072/min = ~¥1.08/分
     }
   },
   // LLM料金（$/1M tokens）
@@ -220,59 +249,285 @@ document.addEventListener('DOMContentLoaded', function() {
 // =====================================
 async function toggleRecording() {
   if (isRecording) {
-    stopRecording();
+    await stopRecording();
   } else {
     await startRecording();
   }
 }
 
 async function startRecording() {
-  const provider = document.getElementById('transcriptProvider').value;
-  const apiKey = SecureStorage.getApiKey(provider);
+  let provider = document.getElementById('transcriptProvider').value;
+  console.log('=== startRecording ===');
+  console.log('Selected STT provider:', provider);
 
-  if (!apiKey) {
-    alert(`${provider === 'gemini' ? 'Gemini' : 'OpenAI'} APIキーを設定してください`);
-    navigateTo('config.html');
+  // プロバイダー検証
+  if (!ALLOWED_STT_PROVIDERS.has(provider)) {
+    console.warn(`Provider "${provider}" is not allowed, falling back to openai_stt`);
+    provider = 'openai_stt';
+    document.getElementById('transcriptProvider').value = provider;
+  }
+
+  // プロバイダータイプに応じた検証
+  const validationResult = await validateSTTProviderForRecording(provider);
+  if (!validationResult.valid) {
+    showToast(validationResult.message, 'error');
+    if (validationResult.redirectToConfig) {
+      navigateTo('config.html');
+    }
     return;
   }
 
   try {
-    currentAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
-
-    // 最適なMIMEタイプを選択
-    const preferredTypes = [
-      'audio/webm;codecs=opus',
-      'audio/webm',
-      'audio/mp4',
-      'audio/ogg;codecs=opus',
-      'audio/ogg'
-    ];
-    selectedMimeType = 'audio/webm';
-    for (const type of preferredTypes) {
-      if (MediaRecorder.isTypeSupported(type)) {
-        selectedMimeType = type;
-        break;
-      }
+    // プロバイダータイプに応じて録音を開始
+    if (STREAMING_PROVIDERS.has(provider)) {
+      await startStreamingRecording(provider);
+    } else {
+      await startChunkedRecording(provider);
     }
-    console.log('Selected MediaRecorder mimeType:', selectedMimeType);
-
-    // 最初のMediaRecorderを開始
-    startNewMediaRecorder();
 
     isRecording = true;
     updateUI();
 
-    // 定期的にstop/restartで完結したBlobを生成
-    const interval = parseInt(document.getElementById('transcriptInterval').value) * 1000;
-    transcriptIntervalId = setInterval(stopAndRestartRecording, interval);
-
-    const intervalText = document.getElementById('transcriptInterval').selectedOptions[0].text;
-    showToast(`録音を開始しました（${intervalText}ごとに文字起こし）`, 'success');
+    const providerName = getProviderDisplayName(provider);
+    showToast(`録音を開始しました（${providerName}）`, 'success');
 
   } catch (err) {
     console.error('録音開始エラー:', err);
-    showToast('マイクへのアクセスに失敗しました', 'error');
+    showToast(`録音の開始に失敗しました: ${err.message}`, 'error');
+    await cleanupRecording();
   }
+}
+
+// STTプロバイダーの検証（録音開始時）
+async function validateSTTProviderForRecording(provider) {
+  switch (provider) {
+    case 'openai_stt': {
+      const key = SecureStorage.getApiKey('openai');
+      if (!key) {
+        return { valid: false, message: 'OpenAI APIキーを設定してください', redirectToConfig: true };
+      }
+      return { valid: true };
+    }
+    case 'deepgram_realtime': {
+      const key = SecureStorage.getApiKey('deepgram');
+      if (!key) {
+        return { valid: false, message: 'Deepgram APIキーを設定してください', redirectToConfig: true };
+      }
+      return { valid: true };
+    }
+    case 'assemblyai_realtime': {
+      const key = SecureStorage.getApiKey('assemblyai');
+      if (!key) {
+        return { valid: false, message: 'AssemblyAI APIキーを設定してください', redirectToConfig: true };
+      }
+      return { valid: true };
+    }
+    case 'gcp_stt_proxy': {
+      const url = SecureStorage.getOption('gcpProxyUrl', '');
+      if (!url) {
+        return { valid: false, message: 'GCP STTにはバックエンドURLが必要です', redirectToConfig: true };
+      }
+      return { valid: true };
+    }
+    default:
+      return { valid: false, message: `不明なプロバイダー: ${provider}`, redirectToConfig: true };
+  }
+}
+
+// プロバイダー表示名を取得
+function getProviderDisplayName(provider) {
+  const names = {
+    'openai_stt': 'OpenAI Whisper',
+    'deepgram_realtime': 'Deepgram Realtime',
+    'assemblyai_realtime': 'AssemblyAI Realtime',
+    'gcp_stt_proxy': 'GCP STT'
+  };
+  return names[provider] || provider;
+}
+
+// =====================================
+// Chunked系録音（OpenAI Whisper）
+// =====================================
+async function startChunkedRecording(provider) {
+  console.log('[Chunked] Starting recording for provider:', provider);
+
+  currentAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+  // 最適なMIMEタイプを選択
+  const preferredTypes = [
+    'audio/webm;codecs=opus',
+    'audio/webm',
+    'audio/mp4',
+    'audio/ogg;codecs=opus',
+    'audio/ogg'
+  ];
+  selectedMimeType = 'audio/webm';
+  for (const type of preferredTypes) {
+    if (MediaRecorder.isTypeSupported(type)) {
+      selectedMimeType = type;
+      break;
+    }
+  }
+  console.log('[Chunked] Selected mimeType:', selectedMimeType);
+
+  // OpenAI Whisperプロバイダーを作成
+  currentSTTProvider = new OpenAIChunkedProvider({
+    apiKey: SecureStorage.getApiKey('openai'),
+    model: SecureStorage.getModel('openai') || 'whisper-1'
+  });
+
+  currentSTTProvider.setOnTranscript((text, isFinal) => {
+    handleTranscriptResult(text, isFinal);
+  });
+
+  currentSTTProvider.setOnError((error) => {
+    console.error('[Chunked] STT error:', error);
+    showToast(`文字起こしエラー: ${error.message}`, 'error');
+  });
+
+  await currentSTTProvider.start();
+
+  // MediaRecorderを開始
+  startNewMediaRecorder();
+
+  // 定期的にstop/restartで完結したBlobを生成
+  const interval = parseInt(document.getElementById('transcriptInterval').value) * 1000;
+  transcriptIntervalId = setInterval(stopAndRestartRecording, interval);
+}
+
+// =====================================
+// Streaming系録音（Deepgram/AssemblyAI/GCP）
+// =====================================
+async function startStreamingRecording(provider) {
+  console.log('[Streaming] Starting recording for provider:', provider);
+
+  // プロバイダーインスタンスを作成
+  switch (provider) {
+    case 'deepgram_realtime':
+      currentSTTProvider = new DeepgramWSProvider({
+        apiKey: SecureStorage.getApiKey('deepgram'),
+        model: SecureStorage.getModel('deepgram') || 'nova-2'
+      });
+      break;
+    case 'assemblyai_realtime':
+      currentSTTProvider = new AssemblyAIWSProvider({
+        apiKey: SecureStorage.getApiKey('assemblyai')
+      });
+      break;
+    case 'gcp_stt_proxy':
+      currentSTTProvider = new GCPProxyWSProvider({
+        proxyUrl: SecureStorage.getOption('gcpProxyUrl'),
+        authToken: SecureStorage.getOption('gcpProxyToken')
+      });
+      break;
+    default:
+      throw new Error(`Unknown streaming provider: ${provider}`);
+  }
+
+  // イベントハンドラを設定
+  currentSTTProvider.setOnTranscript((text, isFinal) => {
+    handleTranscriptResult(text, isFinal);
+  });
+
+  currentSTTProvider.setOnError((error) => {
+    console.error('[Streaming] STT error:', error);
+    showToast(`文字起こしエラー: ${error.message}`, 'error');
+  });
+
+  currentSTTProvider.setOnStatusChange((status) => {
+    console.log('[Streaming] Status:', status);
+    if (status === 'connected') {
+      updateStatusBadge('🎙️ 接続中', 'recording');
+    } else if (status === 'reconnecting') {
+      updateStatusBadge('🔄 再接続中', 'ready');
+    } else if (status === 'disconnected') {
+      updateStatusBadge('⚠️ 切断', 'ready');
+    }
+  });
+
+  // WebSocket接続を開始
+  await currentSTTProvider.start();
+
+  // PCMストリームプロセッサを作成
+  pcmStreamProcessor = new PCMStreamProcessor({
+    sampleRate: 16000,
+    sendInterval: 100
+  });
+
+  pcmStreamProcessor.setOnAudioData((pcmData) => {
+    if (currentSTTProvider && currentSTTProvider.isConnected) {
+      currentSTTProvider.sendAudioData(pcmData);
+    }
+  });
+
+  pcmStreamProcessor.setOnError((error) => {
+    console.error('[Streaming] Audio error:', error);
+    showToast(`音声処理エラー: ${error.message}`, 'error');
+  });
+
+  // PCMストリーミングを開始
+  await pcmStreamProcessor.start();
+}
+
+// 文字起こし結果を処理
+function handleTranscriptResult(text, isFinal) {
+  if (!text || !text.trim()) return;
+
+  const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+  if (isFinal) {
+    // 確定結果を履歴に追加
+    fullTranscript += `[${timestamp}] ${text}\n`;
+    document.getElementById('transcriptText').textContent = fullTranscript;
+  } else {
+    // 途中結果を表示（オプション）
+    // partialTranscriptを表示するUI要素があれば更新
+    const partialEl = document.getElementById('partialTranscript');
+    if (partialEl) {
+      partialEl.textContent = `(入力中) ${text}`;
+    }
+  }
+
+  // スクロール
+  const body = document.getElementById('transcriptBody');
+  if (body) {
+    body.scrollTop = body.scrollHeight;
+  }
+}
+
+// 録音のクリーンアップ
+async function cleanupRecording() {
+  // PCMストリームを停止
+  if (pcmStreamProcessor) {
+    await pcmStreamProcessor.stop();
+    pcmStreamProcessor = null;
+  }
+
+  // STTプロバイダーを停止
+  if (currentSTTProvider) {
+    await currentSTTProvider.stop();
+    currentSTTProvider = null;
+  }
+
+  // MediaRecorderを停止
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  mediaRecorder = null;
+
+  // オーディオストリームを停止
+  if (currentAudioStream) {
+    currentAudioStream.getTracks().forEach(track => track.stop());
+    currentAudioStream = null;
+  }
+
+  // インターバルをクリア
+  if (transcriptIntervalId) {
+    clearInterval(transcriptIntervalId);
+    transcriptIntervalId = null;
+  }
+
+  isRecording = false;
 }
 
 // グローバル変数追加
@@ -334,23 +589,11 @@ function stopAndRestartRecording() {
   }, 100);
 }
 
-function stopRecording() {
-  isRecording = false;
+async function stopRecording() {
+  console.log('=== stopRecording ===');
 
-  if (transcriptIntervalId) {
-    clearInterval(transcriptIntervalId);
-    transcriptIntervalId = null;
-  }
-
-  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
-    mediaRecorder.stop();
-  }
-
-  // ストリームを停止
-  if (currentAudioStream) {
-    currentAudioStream.getTracks().forEach(track => track.stop());
-    currentAudioStream = null;
-  }
+  // クリーンアップ処理を呼び出し
+  await cleanupRecording();
 
   updateUI();
   showToast('録音を停止しました', 'info');
@@ -381,7 +624,7 @@ function processCompleteBlob(audioBlob) {
   processQueue();
 }
 
-// キューを順次処理
+// キューを順次処理（chunked系プロバイダー用）
 async function processQueue() {
   if (isProcessingQueue) return;
   if (transcriptionQueue.length === 0) return;
@@ -389,51 +632,31 @@ async function processQueue() {
   isProcessingQueue = true;
 
   // デバッグ: STT設定のサマリーを出力
-  console.log('=== STT Configuration ===');
-  console.log('Allowed STT Providers:', [...ALLOWED_STT_PROVIDERS]);
-  console.log('Allowed STT Models:', [...ALLOWED_STT_MODELS]);
-  console.log('=========================');
+  console.log('=== processQueue: STT Configuration ===');
+  console.log('Current STT Provider:', currentSTTProvider?.getInfo?.() || 'none');
+  console.log('Queue length:', transcriptionQueue.length);
 
   while (transcriptionQueue.length > 0) {
     const audioBlob = transcriptionQueue.shift();
     console.log('Processing blob from queue, size:', audioBlob.size, 'type:', audioBlob.type, 'remaining:', transcriptionQueue.length);
 
     try {
-      // プロバイダーをSTT専用に強制（Gemini等は使用不可）
-      let provider = document.getElementById('transcriptProvider').value;
-      console.log('Selected provider from UI:', provider);
-
-      // 許可リストチェック
-      if (!ALLOWED_STT_PROVIDERS.has(provider)) {
-        console.warn(`⚠️ Provider "${provider}" is NOT in ALLOWED_STT_PROVIDERS. Forcing to "openai".`);
-        provider = 'openai';
-        // UI側も更新
-        document.getElementById('transcriptProvider').value = 'openai';
+      // currentSTTProviderがあればそれを使用
+      if (currentSTTProvider && typeof currentSTTProvider.transcribeBlob === 'function') {
+        const text = await currentSTTProvider.transcribeBlob(audioBlob);
+        console.log('Transcription result:', text);
+        // handleTranscriptResultは既にcurrentSTTProvider内で呼ばれるはず
+        // 念のためここでも処理
+        if (text && text.trim()) {
+          handleTranscriptResult(text, true);
+        }
       } else {
-        console.log(`✓ Provider "${provider}" is allowed for STT.`);
-      }
-
-      console.log('Final transcription provider:', provider);
-
-      // OpenAI APIキーがない場合はエラー
-      const openaiKey = SecureStorage.getApiKey('openai');
-      if (!openaiKey) {
-        showToast('文字起こしにはOpenAI APIキーが必須です。設定画面で設定してください。', 'error');
-        throw new Error('OpenAI API key is required for transcription');
-      }
-
-      // STT専用：Whisperのみ使用
-      const text = await transcribeWithWhisper(audioBlob);
-
-      console.log('Transcription result:', text);
-
-      if (text && text.trim()) {
-        const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-        fullTranscript += `[${timestamp}] ${text}\n`;
-        document.getElementById('transcriptText').textContent = fullTranscript;
-
-        const body = document.getElementById('transcriptBody');
-        body.scrollTop = body.scrollHeight;
+        // フォールバック: 直接Whisper APIを呼び出し
+        console.warn('No currentSTTProvider, falling back to transcribeWithWhisper');
+        const text = await transcribeWithWhisper(audioBlob);
+        if (text && text.trim()) {
+          handleTranscriptResult(text, true);
+        }
       }
     } catch (err) {
       console.error('文字起こしエラー:', err);
@@ -450,72 +673,13 @@ async function processQueue() {
   isProcessingQueue = false;
 }
 
-async function transcribeWithGemini(audioBlob) {
-  // 【重要】Gemini APIは文字起こし用途では使用禁止
-  // 理由: MediaRecorderのtimeslice使用時、2回目以降のチャンクにヘッダーがなく400エラーが発生する
-  // STT（音声文字起こし）にはOpenAI Whisper APIを使用すること
-  throw new Error(
-    'transcribeWithGemini is deprecated for STT. Use transcribeWithWhisper instead. ' +
-    'Gemini API should only be used for LLM tasks (summarization, Q&A, etc.).'
-  );
-
-  // 以下は参照用に残すが、実行されることはない
-  console.log('transcribeWithGemini called');
-  const geminiKey = SecureStorage.getApiKey('gemini');
-  console.log('Gemini API key exists:', !!geminiKey);
-
-  // 音声文字起こし用のモデルを取得
-  // gemini-2.0-flash-exp は音声をサポート（フィールド名とMIMEタイプが正しければ動作）
-  const model = SecureStorage.getModel('gemini') || 'gemini-2.0-flash-exp';
-  console.log('Using Gemini model for transcription:', model);
-
-  // MIMEタイプは実データのcontainerと一致させる（ラベル変換は不要）
-  // Geminiはaudio/mp4, audio/webmも受け付ける
-  const mimeType = (audioBlob.type || 'audio/webm').split(';')[0];
-  console.log('Audio mimeType for Gemini:', mimeType);
-
-  const base64Audio = await blobToBase64(audioBlob);
-  console.log('Base64 audio length:', base64Audio.length);
-
-  const response = await fetchWithRetry(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`,
-    {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        contents: [{
-          parts: [
-            { text: '以下の音声を日本語で文字起こししてください。話者が複数いる場合は区別してください。音声がない場合や聞き取れない場合は「（音声なし）」と返してください。' },
-            { inlineData: { mimeType: mimeType, data: base64Audio } }
-          ]
-        }]
-      })
-    }
-  );
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error('Gemini API error response:', errorBody);
-    throw new Error(`Gemini API error: ${response.status} - ${errorBody}`);
-  }
-
-  const data = await response.json();
-  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-  // コスト計算
-  const estimatedSeconds = Math.max(audioBlob.size / 4000, 1);
-  const audioCost = estimatedSeconds * PRICING.transcription.gemini.perSecond;
-
-  costs.transcript.duration += estimatedSeconds;
-  costs.transcript.calls += 1;
-  costs.transcript.byProvider.gemini += audioCost;
-  costs.transcript.total += audioCost;
-
-  updateCosts();
-  checkCostAlert();
-
-  return text.replace('（音声なし）', '').trim();
-}
+// =====================================
+// [削除済み] transcribeWithGemini
+// =====================================
+// Gemini generateContent APIは音声文字起こし（STT）には使用しない。
+// 理由: MediaRecorderのtimeslice使用時、2回目以降のチャンクにヘッダーがなく400エラーが発生する。
+// STTには専用API（OpenAI Whisper, Deepgram, AssemblyAI等）を使用すること。
+// Gemini APIはLLMタスク（要約、Q&A等）専用として残す。
 
 async function transcribeWithWhisper(audioBlob) {
   console.log('=== transcribeWithWhisper ===');
@@ -932,6 +1096,26 @@ function updateUI() {
   }
 }
 
+// ステータスバッジを直接更新（streaming系プロバイダー用）
+function updateStatusBadge(text, status) {
+  const badge = document.getElementById('statusBadge');
+  if (!badge) return;
+
+  badge.textContent = text;
+  badge.classList.remove('status-ready', 'status-recording', 'status-error');
+
+  switch (status) {
+    case 'recording':
+      badge.classList.add('status-recording');
+      break;
+    case 'error':
+      badge.classList.add('status-error');
+      break;
+    default:
+      badge.classList.add('status-ready');
+  }
+}
+
 function updateCosts() {
   const total = costs.transcript.total + costs.llm.total;
 
@@ -939,8 +1123,9 @@ function updateCosts() {
   document.getElementById('transcriptCostTotal').textContent = formatCost(costs.transcript.total);
   document.getElementById('transcriptDuration').textContent = formatDuration(costs.transcript.duration);
   document.getElementById('transcriptCalls').textContent = `${costs.transcript.calls}回`;
-  document.getElementById('geminiTranscriptCost').textContent = formatCost(costs.transcript.byProvider.gemini);
   document.getElementById('openaiTranscriptCost').textContent = formatCost(costs.transcript.byProvider.openai);
+  document.getElementById('deepgramTranscriptCost').textContent = formatCost(costs.transcript.byProvider.deepgram);
+  document.getElementById('assemblyaiTranscriptCost').textContent = formatCost(costs.transcript.byProvider.assemblyai);
 
   // 文字起こしコストバッジ
   const transcriptBadge = document.getElementById('transcriptCostBadge');
@@ -1090,11 +1275,12 @@ function generateExportMarkdown() {
 
   md += `---\n\n`;
   md += `## 💰 コスト詳細\n\n`;
-  md += `### 文字起こし\n`;
+  md += `### 文字起こし（STT）\n`;
   md += `- 処理時間: ${formatDuration(costs.transcript.duration)}\n`;
   md += `- API呼び出し: ${costs.transcript.calls}回\n`;
-  md += `- Gemini Audio: ${formatCost(costs.transcript.byProvider.gemini)}\n`;
   md += `- OpenAI Whisper: ${formatCost(costs.transcript.byProvider.openai)}\n`;
+  md += `- Deepgram: ${formatCost(costs.transcript.byProvider.deepgram)}\n`;
+  md += `- AssemblyAI: ${formatCost(costs.transcript.byProvider.assemblyai)}\n`;
   md += `- 小計: ${formatCost(costs.transcript.total)}\n\n`;
   md += `### LLM（AI回答）\n`;
   md += `- 入力トークン: ${formatNumber(costs.llm.inputTokens)}\n`;

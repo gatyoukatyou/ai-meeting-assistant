@@ -20,10 +20,21 @@ function navigateTo(target) {
 }
 
 // =====================================
+// STTプロバイダー許可リスト
+// =====================================
+const ALLOWED_STT_PROVIDERS = new Set([
+  'openai_stt',
+  'deepgram_realtime',
+  'assemblyai_realtime',
+  'gcp_stt_proxy'
+]);
+
+// =====================================
 // 初期化
 // =====================================
 document.addEventListener('DOMContentLoaded', function() {
   loadSavedSettings();
+  setupSTTProviderSelector();
 
   const exportBtn = document.getElementById('exportSettingsBtn');
   if (exportBtn) {
@@ -50,15 +61,112 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
+// =====================================
+// STTプロバイダー選択UI
+// =====================================
+function setupSTTProviderSelector() {
+  const selector = document.getElementById('sttProvider');
+  if (!selector) return;
+
+  selector.addEventListener('change', function() {
+    updateSTTProviderUI(this.value);
+  });
+
+  // 初期状態を設定
+  updateSTTProviderUI(selector.value);
+}
+
+function updateSTTProviderUI(provider) {
+  // すべてのプロバイダー設定を非表示
+  const allSettings = document.querySelectorAll('.stt-provider-settings');
+  allSettings.forEach(el => {
+    el.style.display = 'none';
+  });
+
+  // 選択されたプロバイダーの設定を表示
+  const selectedSettings = document.getElementById(`${provider}_settings`);
+  if (selectedSettings) {
+    selectedSettings.style.display = 'block';
+  }
+
+  // GCPプロキシの場合、バックエンドURLが必要な旨を強調
+  const gcpOption = document.getElementById('gcp_stt_option');
+  const gcpProxyUrl = document.getElementById('gcpProxyUrl');
+  if (gcpOption && gcpProxyUrl) {
+    const hasBackendUrl = gcpProxyUrl.value.trim() !== '';
+    if (!hasBackendUrl && provider !== 'gcp_stt_proxy') {
+      gcpOption.textContent = '☁️ Google Cloud STT（バックエンドURL未設定）';
+    } else {
+      gcpOption.textContent = '☁️ Google Cloud STT（バックエンド経由）';
+    }
+  }
+}
+
+// =====================================
+// 設定の読み込み
+// =====================================
 function loadSavedSettings() {
-  // APIキーを入力欄に復元
-  const providers = ['gemini', 'claude', 'openai', 'groq'];
-  providers.forEach(p => {
+  // STTプロバイダーを読み込み（旧設定からの移行も処理）
+  let sttProvider = SecureStorage.getOption('sttProvider', 'openai_stt');
+
+  // 旧設定からの移行: gemini/openai -> openai_stt
+  if (sttProvider === 'gemini' || sttProvider === 'openai') {
+    console.warn(`Migrating old STT provider "${sttProvider}" to "openai_stt"`);
+    sttProvider = 'openai_stt';
+    SecureStorage.setOption('sttProvider', sttProvider);
+    showMigrationNotice();
+  }
+
+  // 許可リストにないプロバイダーは強制的にopenai_sttに
+  if (!ALLOWED_STT_PROVIDERS.has(sttProvider)) {
+    console.warn(`Unknown STT provider "${sttProvider}", falling back to "openai_stt"`);
+    sttProvider = 'openai_stt';
+  }
+
+  const sttSelector = document.getElementById('sttProvider');
+  if (sttSelector) {
+    sttSelector.value = sttProvider;
+    updateSTTProviderUI(sttProvider);
+  }
+
+  // LLM用APIキーを入力欄に復元
+  const llmProviders = ['gemini', 'claude', 'groq'];
+  llmProviders.forEach(p => {
     const key = SecureStorage.getApiKey(p);
     const model = SecureStorage.getModel(p);
-    if (key) document.getElementById(`${p}ApiKey`).value = key;
-    if (model) document.getElementById(`${p}Model`).value = model;
+    const keyEl = document.getElementById(`${p}ApiKey`);
+    const modelEl = document.getElementById(`${p}Model`);
+    if (keyEl && key) keyEl.value = key;
+    if (modelEl && model) modelEl.value = model;
   });
+
+  // STT用APIキー
+  // OpenAI
+  const openaiKey = SecureStorage.getApiKey('openai');
+  const openaiModel = SecureStorage.getModel('openai');
+  if (openaiKey) document.getElementById('openaiApiKey').value = openaiKey;
+  if (openaiModel) document.getElementById('openaiModel').value = openaiModel;
+
+  // Deepgram
+  const deepgramKey = SecureStorage.getApiKey('deepgram');
+  const deepgramModel = SecureStorage.getModel('deepgram');
+  const deepgramKeyEl = document.getElementById('deepgramApiKey');
+  const deepgramModelEl = document.getElementById('deepgramModel');
+  if (deepgramKeyEl && deepgramKey) deepgramKeyEl.value = deepgramKey;
+  if (deepgramModelEl && deepgramModel) deepgramModelEl.value = deepgramModel;
+
+  // AssemblyAI
+  const assemblyaiKey = SecureStorage.getApiKey('assemblyai');
+  const assemblyaiKeyEl = document.getElementById('assemblyaiApiKey');
+  if (assemblyaiKeyEl && assemblyaiKey) assemblyaiKeyEl.value = assemblyaiKey;
+
+  // GCP Proxy
+  const gcpProxyUrl = SecureStorage.getOption('gcpProxyUrl', '');
+  const gcpProxyToken = SecureStorage.getOption('gcpProxyToken', '');
+  const gcpUrlEl = document.getElementById('gcpProxyUrl');
+  const gcpTokenEl = document.getElementById('gcpProxyToken');
+  if (gcpUrlEl) gcpUrlEl.value = gcpProxyUrl;
+  if (gcpTokenEl) gcpTokenEl.value = gcpProxyToken;
 
   // オプション
   document.getElementById('clearOnClose').checked = SecureStorage.getOption('clearOnClose', false);
@@ -67,16 +175,53 @@ function loadSavedSettings() {
   document.getElementById('llmPriority').value = SecureStorage.getOption('llmPriority', 'auto');
 }
 
-async function saveSettings() {
-  const providers = ['gemini', 'claude', 'openai', 'groq'];
+function showMigrationNotice() {
+  // 旧設定からの移行通知
+  setTimeout(() => {
+    showSuccess('旧設定を移行しました。STTプロバイダーがOpenAI Whisperに設定されています。');
+  }, 500);
+}
 
-  // APIキーを保存
-  providers.forEach(p => {
-    const key = document.getElementById(`${p}ApiKey`).value.trim();
-    const model = document.getElementById(`${p}Model`).value;
-    SecureStorage.setApiKey(p, key);
-    SecureStorage.setModel(p, model);
+// =====================================
+// 設定の保存
+// =====================================
+async function saveSettings() {
+  const sttProvider = document.getElementById('sttProvider').value;
+
+  // STTプロバイダーを保存
+  SecureStorage.setOption('sttProvider', sttProvider);
+
+  // LLM用APIキーを保存
+  const llmProviders = ['gemini', 'claude', 'groq'];
+  llmProviders.forEach(p => {
+    const keyEl = document.getElementById(`${p}ApiKey`);
+    const modelEl = document.getElementById(`${p}Model`);
+    if (keyEl) SecureStorage.setApiKey(p, keyEl.value.trim());
+    if (modelEl) SecureStorage.setModel(p, modelEl.value);
   });
+
+  // STT用APIキーを保存
+  // OpenAI
+  const openaiKey = document.getElementById('openaiApiKey').value.trim();
+  const openaiModel = document.getElementById('openaiModel').value;
+  SecureStorage.setApiKey('openai', openaiKey);
+  SecureStorage.setModel('openai', openaiModel);
+
+  // Deepgram
+  const deepgramKeyEl = document.getElementById('deepgramApiKey');
+  const deepgramModelEl = document.getElementById('deepgramModel');
+  if (deepgramKeyEl) SecureStorage.setApiKey('deepgram', deepgramKeyEl.value.trim());
+  if (deepgramModelEl) SecureStorage.setModel('deepgram', deepgramModelEl.value);
+
+  // AssemblyAI
+  const assemblyaiKeyEl = document.getElementById('assemblyaiApiKey');
+  if (assemblyaiKeyEl) SecureStorage.setApiKey('assemblyai', assemblyaiKeyEl.value.trim());
+
+  // GCP Proxy
+  const gcpUrlEl = document.getElementById('gcpProxyUrl');
+  const gcpTokenEl = document.getElementById('gcpProxyToken');
+  if (gcpUrlEl) SecureStorage.setOption('gcpProxyUrl', gcpUrlEl.value.trim());
+  if (gcpTokenEl) SecureStorage.setOption('gcpProxyToken', gcpTokenEl.value.trim());
 
   // オプションを保存
   SecureStorage.setOption('clearOnClose', document.getElementById('clearOnClose').checked);
@@ -84,22 +229,14 @@ async function saveSettings() {
   SecureStorage.setOption('costLimit', parseInt(document.getElementById('costLimit').value) || 100);
   SecureStorage.setOption('llmPriority', document.getElementById('llmPriority').value);
 
-  // 文字起こし用にOpenAI APIが必須
-  const openaiKey = SecureStorage.getApiKey('openai');
-
-  if (!openaiKey) {
-    showError('文字起こし用にOpenAI APIキーが必須です。設定してください。');
+  // 選択されたSTTプロバイダーに応じたバリデーション
+  const validationResult = await validateSTTProvider(sttProvider);
+  if (!validationResult.valid) {
+    showError(validationResult.message);
     return;
   }
 
-  // OpenAI APIキーを検証
-  const isValid = await validateApiKey('openai', openaiKey);
-  if (!isValid) {
-    showError('OpenAI APIキーが無効です。正しいキーを入力してください。');
-    return;
-  }
-
-  // Gemini APIキーが設定されている場合は検証（LLM用途）
+  // LLM用APIキーの検証（設定されている場合のみ）
   const geminiKey = SecureStorage.getApiKey('gemini');
   if (geminiKey) {
     const isGeminiValid = await validateApiKey('gemini', geminiKey);
@@ -117,52 +254,151 @@ async function saveSettings() {
   }, 3000);
 }
 
+// =====================================
+// STTプロバイダーの検証
+// =====================================
+async function validateSTTProvider(provider) {
+  switch (provider) {
+    case 'openai_stt': {
+      const key = SecureStorage.getApiKey('openai');
+      if (!key) {
+        return { valid: false, message: 'OpenAI APIキーが必要です。' };
+      }
+      const isValid = await validateApiKey('openai', key);
+      if (!isValid) {
+        return { valid: false, message: 'OpenAI APIキーが無効です。' };
+      }
+      return { valid: true };
+    }
+
+    case 'deepgram_realtime': {
+      const key = SecureStorage.getApiKey('deepgram');
+      if (!key) {
+        return { valid: false, message: 'Deepgram APIキーが必要です。' };
+      }
+      // Deepgramのキー検証（簡易）
+      const isValid = await validateApiKey('deepgram', key);
+      if (!isValid) {
+        return { valid: false, message: 'Deepgram APIキーが無効です。' };
+      }
+      return { valid: true };
+    }
+
+    case 'assemblyai_realtime': {
+      const key = SecureStorage.getApiKey('assemblyai');
+      if (!key) {
+        return { valid: false, message: 'AssemblyAI APIキーが必要です。' };
+      }
+      // AssemblyAIのキー検証（簡易）
+      const isValid = await validateApiKey('assemblyai', key);
+      if (!isValid) {
+        return { valid: false, message: 'AssemblyAI APIキーが無効です。' };
+      }
+      return { valid: true };
+    }
+
+    case 'gcp_stt_proxy': {
+      const url = SecureStorage.getOption('gcpProxyUrl', '');
+      if (!url) {
+        return { valid: false, message: 'GCP STTにはバックエンドURLが必要です。' };
+      }
+      // URLの形式チェック
+      try {
+        const parsed = new URL(url);
+        if (!parsed.protocol.startsWith('ws')) {
+          return { valid: false, message: 'バックエンドURLはwss://またはws://で始まる必要があります。' };
+        }
+      } catch (e) {
+        return { valid: false, message: 'バックエンドURLの形式が正しくありません。' };
+      }
+      return { valid: true };
+    }
+
+    default:
+      return { valid: false, message: `不明なSTTプロバイダー: ${provider}` };
+  }
+}
+
+// =====================================
 // APIキーの検証
+// =====================================
 async function validateApiKey(provider, key) {
   const statusEl = document.getElementById(`${provider}-status`);
-  if (!statusEl) return true;
-
-  statusEl.style.display = 'inline-flex';
-  statusEl.className = 'validation-status validation-pending';
-  statusEl.textContent = '検証中...';
+  if (statusEl) {
+    statusEl.style.display = 'inline-flex';
+    statusEl.className = 'validation-status validation-pending';
+    statusEl.textContent = '検証中...';
+  }
 
   try {
     let isValid = false;
 
-    if (provider === 'gemini') {
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-      isValid = res.ok;
-    } else if (provider === 'openai') {
-      const res = await fetch('https://api.openai.com/v1/models', {
-        headers: { 'Authorization': `Bearer ${key}` }
-      });
-      isValid = res.ok;
-    } else if (provider === 'groq') {
-      const res = await fetch('https://api.groq.com/openai/v1/models', {
-        headers: { 'Authorization': `Bearer ${key}` }
-      });
-      isValid = res.ok;
-    } else {
-      isValid = true;
+    switch (provider) {
+      case 'gemini':
+        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        isValid = geminiRes.ok;
+        break;
+
+      case 'openai':
+        const openaiRes = await fetch('https://api.openai.com/v1/models', {
+          headers: { 'Authorization': `Bearer ${key}` }
+        });
+        isValid = openaiRes.ok;
+        break;
+
+      case 'groq':
+        const groqRes = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: { 'Authorization': `Bearer ${key}` }
+        });
+        isValid = groqRes.ok;
+        break;
+
+      case 'deepgram':
+        // Deepgram APIキー検証（プロジェクト取得）
+        const deepgramRes = await fetch('https://api.deepgram.com/v1/projects', {
+          headers: { 'Authorization': `Token ${key}` }
+        });
+        isValid = deepgramRes.ok;
+        break;
+
+      case 'assemblyai':
+        // AssemblyAI APIキー検証（アカウント情報取得）
+        const assemblyaiRes = await fetch('https://api.assemblyai.com/v2/transcript', {
+          method: 'GET',
+          headers: { 'Authorization': key }
+        });
+        // 認証成功なら200系、認証失敗なら401
+        isValid = assemblyaiRes.status !== 401;
+        break;
+
+      default:
+        isValid = true;
     }
 
-    statusEl.className = isValid ? 'validation-status validation-success' : 'validation-status validation-error';
-    statusEl.textContent = isValid ? '✓ 有効' : '✗ 無効';
+    if (statusEl) {
+      statusEl.className = isValid ? 'validation-status validation-success' : 'validation-status validation-error';
+      statusEl.textContent = isValid ? '✓ 有効' : '✗ 無効';
+    }
     return isValid;
   } catch (e) {
-    statusEl.className = 'validation-status validation-error';
-    statusEl.textContent = '✗ エラー';
+    console.error(`API key validation error for ${provider}:`, e);
+    if (statusEl) {
+      statusEl.className = 'validation-status validation-error';
+      statusEl.textContent = '✗ エラー';
+    }
     return false;
   }
 }
 
+// =====================================
 // 設定エクスポート
+// =====================================
 function exportSettings() {
   const password = prompt('エクスポート用パスワードを設定してください（インポート時に必要）:');
   if (!password) return;
 
   const encrypted = SecureStorage.exportAll(password);
-  const blob = new Blob([JSON.stringify({ data: encrypted, v: 1 })], { type: 'application/json' });
+  const blob = new Blob([JSON.stringify({ data: encrypted, v: 2 })], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -173,7 +409,9 @@ function exportSettings() {
   showSuccess('設定をエクスポートしました。パスワードは安全に保管してください。');
 }
 
+// =====================================
 // 設定インポート
+// =====================================
 function importSettings(event) {
   const file = event.target.files[0];
   if (!file) return;
@@ -200,7 +438,9 @@ function importSettings(event) {
   event.target.value = '';
 }
 
+// =====================================
 // 全設定削除
+// =====================================
 function clearAllSettings() {
   if (confirm('すべての設定（APIキー含む）を削除しますか？この操作は取り消せません。')) {
     SecureStorage.clearAll();
@@ -209,13 +449,15 @@ function clearAllSettings() {
   }
 }
 
+// =====================================
+// メッセージ表示
+// =====================================
 function showSuccess(message) {
   const el = document.getElementById('successMessage');
   el.textContent = '✓ ' + message;
   el.style.display = 'block';
   document.getElementById('errorMessage').style.display = 'none';
 
-  // スクロールしてメッセージを表示
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   setTimeout(() => {
@@ -229,6 +471,5 @@ function showError(message) {
   el.style.display = 'block';
   document.getElementById('successMessage').style.display = 'none';
 
-  // スクロールしてメッセージを表示
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
