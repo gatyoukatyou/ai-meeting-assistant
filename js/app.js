@@ -7,6 +7,16 @@ let audioChunks = [];
 let transcriptIntervalId = null;
 let fullTranscript = '';
 
+// =====================================
+// STT専用プロバイダー/モデル許可リスト
+// =====================================
+const ALLOWED_STT_PROVIDERS = new Set(['openai']);
+const ALLOWED_STT_MODELS = new Set([
+  'whisper-1',
+  'gpt-4o-transcribe',
+  'gpt-4o-mini-transcribe',
+]);
+
 // コスト管理（詳細版）
 let costs = {
   transcript: {
@@ -378,17 +388,42 @@ async function processQueue() {
 
   isProcessingQueue = true;
 
+  // デバッグ: STT設定のサマリーを出力
+  console.log('=== STT Configuration ===');
+  console.log('Allowed STT Providers:', [...ALLOWED_STT_PROVIDERS]);
+  console.log('Allowed STT Models:', [...ALLOWED_STT_MODELS]);
+  console.log('=========================');
+
   while (transcriptionQueue.length > 0) {
     const audioBlob = transcriptionQueue.shift();
-    console.log('Processing blob from queue, size:', audioBlob.size, 'remaining:', transcriptionQueue.length);
+    console.log('Processing blob from queue, size:', audioBlob.size, 'type:', audioBlob.type, 'remaining:', transcriptionQueue.length);
 
     try {
-      const provider = document.getElementById('transcriptProvider').value;
-      console.log('Transcription provider:', provider);
+      // プロバイダーをSTT専用に強制（Gemini等は使用不可）
+      let provider = document.getElementById('transcriptProvider').value;
+      console.log('Selected provider from UI:', provider);
 
-      const text = provider === 'openai'
-        ? await transcribeWithWhisper(audioBlob)
-        : await transcribeWithGemini(audioBlob);
+      // 許可リストチェック
+      if (!ALLOWED_STT_PROVIDERS.has(provider)) {
+        console.warn(`⚠️ Provider "${provider}" is NOT in ALLOWED_STT_PROVIDERS. Forcing to "openai".`);
+        provider = 'openai';
+        // UI側も更新
+        document.getElementById('transcriptProvider').value = 'openai';
+      } else {
+        console.log(`✓ Provider "${provider}" is allowed for STT.`);
+      }
+
+      console.log('Final transcription provider:', provider);
+
+      // OpenAI APIキーがない場合はエラー
+      const openaiKey = SecureStorage.getApiKey('openai');
+      if (!openaiKey) {
+        showToast('文字起こしにはOpenAI APIキーが必須です。設定画面で設定してください。', 'error');
+        throw new Error('OpenAI API key is required for transcription');
+      }
+
+      // STT専用：Whisperのみ使用
+      const text = await transcribeWithWhisper(audioBlob);
 
       console.log('Transcription result:', text);
 
@@ -416,6 +451,15 @@ async function processQueue() {
 }
 
 async function transcribeWithGemini(audioBlob) {
+  // 【重要】Gemini APIは文字起こし用途では使用禁止
+  // 理由: MediaRecorderのtimeslice使用時、2回目以降のチャンクにヘッダーがなく400エラーが発生する
+  // STT（音声文字起こし）にはOpenAI Whisper APIを使用すること
+  throw new Error(
+    'transcribeWithGemini is deprecated for STT. Use transcribeWithWhisper instead. ' +
+    'Gemini API should only be used for LLM tasks (summarization, Q&A, etc.).'
+  );
+
+  // 以下は参照用に残すが、実行されることはない
   console.log('transcribeWithGemini called');
   const geminiKey = SecureStorage.getApiKey('gemini');
   console.log('Gemini API key exists:', !!geminiKey);
@@ -474,12 +518,29 @@ async function transcribeWithGemini(audioBlob) {
 }
 
 async function transcribeWithWhisper(audioBlob) {
+  console.log('=== transcribeWithWhisper ===');
   const openaiKey = SecureStorage.getApiKey('openai');
+
+  // STTモデルの取得と検証
+  let sttModel = SecureStorage.getModel('openai') || 'whisper-1';
+  console.log('Requested STT model:', sttModel);
+
+  // 許可リストチェック
+  if (!ALLOWED_STT_MODELS.has(sttModel)) {
+    console.warn(`⚠️ Model "${sttModel}" is NOT in ALLOWED_STT_MODELS. Falling back to "whisper-1".`);
+    sttModel = 'whisper-1';
+  } else {
+    console.log(`✓ Model "${sttModel}" is allowed for STT.`);
+  }
+
+  console.log('Final STT model:', sttModel);
+  console.log('Audio blob size:', audioBlob.size, 'bytes');
+  console.log('Audio blob type:', audioBlob.type);
 
   // FormDataでファイルを送信
   const formData = new FormData();
   formData.append('file', audioBlob, 'audio.webm');
-  formData.append('model', 'whisper-1');
+  formData.append('model', sttModel);
   formData.append('language', 'ja');
 
   const response = await fetchWithRetry('https://api.openai.com/v1/audio/transcriptions', {

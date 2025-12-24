@@ -992,9 +992,8 @@
     <h1>🤖 AI参加会議</h1>
     <div class="header-controls">
       <span class="status-badge status-ready" id="statusBadge">⏸ 待機中</span>
-      <select id="transcriptProvider" class="model-select" style="min-width: 110px;" title="文字起こしAPI">
-        <option value="gemini">🎤 Gemini</option>
-        <option value="openai">🎤 OpenAI</option>
+      <select id="transcriptProvider" class="model-select" style="min-width: 110px;" title="文字起こしAPI（STT専用）">
+        <option value="openai" selected>🎤 OpenAI STT</option>
       </select>
       <select id="transcriptInterval" class="model-select" style="min-width: 80px;">
         <option value="5">5秒</option>
@@ -1181,7 +1180,7 @@
           <div class="welcome-features">
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🎤</span>
-              <span class="welcome-feature-text">高精度な音声文字起こし（Gemini Audio）</span>
+              <span class="welcome-feature-text">高精度な音声文字起こし（OpenAI Whisper）</span>
             </div>
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🧠</span>

@@ -84,28 +84,27 @@ async function saveSettings() {
   SecureStorage.setOption('costLimit', parseInt(document.getElementById('costLimit').value) || 100);
   SecureStorage.setOption('llmPriority', document.getElementById('llmPriority').value);
 
-  // 文字起こし用APIが少なくとも1つ設定されているか確認
-  const geminiKey = SecureStorage.getApiKey('gemini');
+  // 文字起こし用にOpenAI APIが必須
   const openaiKey = SecureStorage.getApiKey('openai');
 
-  if (!geminiKey && !openaiKey) {
-    showError('文字起こし用に、Gemini APIまたはOpenAI APIのいずれかを設定してください。');
+  if (!openaiKey) {
+    showError('文字起こし用にOpenAI APIキーが必須です。設定してください。');
     return;
   }
 
-  // 設定されたAPIキーを検証
-  if (geminiKey) {
-    const isValid = await validateApiKey('gemini', geminiKey);
-    if (!isValid) {
-      showError('Gemini APIキーが無効です。正しいキーを入力してください。');
-      return;
-    }
+  // OpenAI APIキーを検証
+  const isValid = await validateApiKey('openai', openaiKey);
+  if (!isValid) {
+    showError('OpenAI APIキーが無効です。正しいキーを入力してください。');
+    return;
   }
 
-  if (openaiKey) {
-    const isValid = await validateApiKey('openai', openaiKey);
-    if (!isValid) {
-      showError('OpenAI APIキーが無効です。正しいキーを入力してください。');
+  // Gemini APIキーが設定されている場合は検証（LLM用途）
+  const geminiKey = SecureStorage.getApiKey('gemini');
+  if (geminiKey) {
+    const isGeminiValid = await validateApiKey('gemini', geminiKey);
+    if (!isGeminiValid) {
+      showError('Gemini APIキーが無効です。正しいキーを入力してください。');
       return;
     }
   }

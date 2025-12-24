@@ -398,9 +398,39 @@
         </div>
       </div>
 
-      <!-- 文字起こし用API -->
+      <!-- 文字起こし専用API（STT） -->
       <div class="api-section transcription">
-        <div class="api-section-title">🎤 必須API（いずれか1つ - 会議の文字起こしとAI回答の両方で使います）</div>
+        <div class="api-section-title">🎤 文字起こし（必須）- OpenAI Whisper STT</div>
+
+        <div class="setting-group" style="margin-bottom: 0;">
+          <label class="setting-label">
+            OpenAI API
+            <span class="validation-status" id="openai-status" style="display:none;"></span>
+          </label>
+          <div class="setting-row">
+            <input type="password" class="setting-input" id="openaiApiKey" placeholder="sk-...">
+            <select class="model-select" id="openaiModel">
+              <option value="whisper-1" selected>whisper-1（STT専用・推奨）</option>
+              <option value="gpt-4o-transcribe">gpt-4o-transcribe</option>
+              <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe</option>
+            </select>
+          </div>
+          <div class="setting-hint">
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得 - 文字起こしにはSTT専用モデルを使用します
+          </div>
+        </div>
+
+        <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 0.5rem; border: 1px solid #fef08a;">
+          <div style="font-size: 0.85rem; color: #92400e;">
+            ⚠️ <strong>文字起こしにはOpenAI STT（Whisper）が必須です</strong><br>
+            Geminiなど他のAIは文字起こしには使用できません。要約やAI回答には下のLLMセクションで設定してください。
+          </div>
+        </div>
+      </div>
+
+      <!-- LLM用API（要約・AI回答） -->
+      <div class="api-section llm">
+        <div class="api-section-title">💬 AI回答・要約（任意）- LLMを選択</div>
 
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label">
@@ -416,31 +446,9 @@
             </select>
           </div>
           <div class="setting-hint">
-            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> から取得
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> から取得（要約・AI回答に使用）
           </div>
         </div>
-
-        <div class="setting-group" style="margin-bottom: 0;">
-          <label class="setting-label">
-            OpenAI API（Whisper）
-            <span class="validation-status" id="openai-status" style="display:none;"></span>
-          </label>
-          <div class="setting-row">
-            <input type="password" class="setting-input" id="openaiApiKey" placeholder="sk-...">
-            <select class="model-select" id="openaiModel">
-              <option value="gpt-4o">gpt-4o</option>
-              <option value="gpt-4o-mini">gpt-4o-mini</option>
-            </select>
-          </div>
-          <div class="setting-hint">
-            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得（ChatGPTでAI回答もできます）
-          </div>
-        </div>
-      </div>
-
-      <!-- LLM専用API -->
-      <div class="api-section llm">
-        <div class="api-section-title">💬 追加のAI（任意 - より賢い回答が欲しい場合）</div>
 
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label">
@@ -478,8 +486,8 @@
 
         <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-blue); border-radius: 0.5rem; border: 1px solid var(--accent-border-blue);">
           <div style="font-size: 0.85rem; color: var(--text);">
-            💡 <strong>ChatGPT（OpenAI）を使いたい場合</strong><br>
-            上の「必須API」セクションでOpenAI APIを設定してください。文字起こしとAI回答の両方に使えます。
+            💡 <strong>LLMを設定しない場合</strong><br>
+            文字起こしのOpenAI APIを使ってAI回答も行います（gpt-4o-miniを使用）。
           </div>
         </div>
       </div>
