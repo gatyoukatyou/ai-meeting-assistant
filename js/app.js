@@ -645,11 +645,8 @@ async function processQueue() {
       if (currentSTTProvider && typeof currentSTTProvider.transcribeBlob === 'function') {
         const text = await currentSTTProvider.transcribeBlob(audioBlob);
         console.log('Transcription result:', text);
-        // handleTranscriptResultは既にcurrentSTTProvider内で呼ばれるはず
-        // 念のためここでも処理
-        if (text && text.trim()) {
-          handleTranscriptResult(text, true);
-        }
+        // handleTranscriptResultはcurrentSTTProvider.emitTranscript経由で呼ばれる
+        // ここでは重複呼び出しを避けるため、直接呼び出さない
       } else {
         // フォールバック: 直接Whisper APIを呼び出し
         console.warn('No currentSTTProvider, falling back to transcribeWithWhisper');
