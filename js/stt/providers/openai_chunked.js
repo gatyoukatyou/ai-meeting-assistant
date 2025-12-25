@@ -11,8 +11,8 @@ class OpenAIChunkedProvider {
     this.apiKey = config.apiKey || SecureStorage.getApiKey('openai');
     this.model = config.model || SecureStorage.getModel('openai') || 'whisper-1';
     this.language = config.language || 'ja';
-    // ユーザー辞書（固有名詞のヒント）
-    this.userDictionary = config.userDictionary || '';
+    // ユーザー辞書（固有名詞のヒント）- ローマ字＋カタカナ併記で認識精度向上
+    this.userDictionary = config.userDictionary || 'AI Meeting Assistant, OpenAI, Anthropic, Gemini, Web Speech API, Whisper';
 
     this.onTranscript = null;
     this.onError = null;

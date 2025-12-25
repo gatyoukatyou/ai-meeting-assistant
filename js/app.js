@@ -7,6 +7,15 @@ let audioChunks = [];
 let transcriptIntervalId = null;
 let fullTranscript = '';
 
+// 停止時のレース防止用
+let isStopping = false;
+let finalStopPromise = null;
+let finalStopResolve = null;
+
+function createFinalStopPromise() {
+  finalStopPromise = new Promise(resolve => { finalStopResolve = resolve; });
+}
+
 // =====================================
 // STT専用プロバイダー/モデル許可リスト
 // =====================================
@@ -473,11 +482,15 @@ async function startStreamingRecording(provider) {
  * 崩れた数値を補正する後処理
  * 例: "1,2,3,4,5,6,7円" → "1234567円"
  * 例: "1,2,3,4,5,6,7" → "1234567"
+ *
+ * 注意: 通常の「1,234,567」を壊さないよう、4桁以上の連続に限定
+ * （1,2,3 のような短い列挙は変換しない）
  */
 function fixBrokenNumbers(text) {
   // 単桁がカンマで連なるパターンを検出して結合
-  // パターン: 数字1桁 + (カンマ + 数字1桁) の繰り返し
-  return text.replace(/\b(\d)(,\d)+\b/g, (match) => {
+  // パターン: 数字1桁 + (カンマ + 数字1桁) が3回以上繰り返し
+  // → 4桁以上の崩れた数値のみ対象（1,2,3のような短い列挙は除外）
+  return text.replace(/\b(\d)(,\d){3,}\b/g, (match) => {
     // カンマを除去して数字だけにする
     return match.replace(/,/g, '');
   });
@@ -516,50 +529,60 @@ function handleTranscriptResult(text, isFinal) {
 async function cleanupRecording() {
   console.log('[Cleanup] Starting cleanup...');
 
-  // 1. まず録音フラグをオフにして新しいblobの生成を止める
+  // 1. 停止フラグをオンにする（onstopで最終blobを処理するため）
+  isStopping = true;
+
+  // 2. 録音フラグをオフにして新しいblobの生成を止める
   isRecording = false;
 
-  // 2. インターバルをクリア（stop→restart の繰り返しを止める）
+  // 3. インターバルをクリア（stop→restart の繰り返しを止める）
   if (transcriptIntervalId) {
     clearInterval(transcriptIntervalId);
     transcriptIntervalId = null;
     console.log('[Cleanup] Interval cleared');
   }
 
-  // 3. PCMストリームを停止
+  // 4. PCMストリームを停止
   if (pcmStreamProcessor) {
     await pcmStreamProcessor.stop();
     pcmStreamProcessor = null;
     console.log('[Cleanup] PCM stream stopped');
   }
 
-  // 4. MediaRecorderを停止（最終blobがonstopで生成される）
+  // 5. MediaRecorderを停止（最終blobがonstopで生成される）
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
     console.log('[Cleanup] Stopping MediaRecorder (final blob will be generated)...');
     mediaRecorder.stop();
+    // ★ onstopで最終blob処理完了まで待つ（200ms sleepは削除）
+    if (finalStopPromise) {
+      console.log('[Cleanup] Waiting for onstop to complete...');
+      await finalStopPromise;
+      console.log('[Cleanup] onstop completed');
+    }
   }
-  mediaRecorder = null;
 
-  // 5. 最終blobがキューに入り、処理されるのを待つ
-  // onstopは非同期で発火するため、少し待機してからキュードレインを待つ
-  console.log('[Cleanup] Waiting for final blob processing...');
-  await new Promise(resolve => setTimeout(resolve, 200));
+  // 6. キューが空になるまで待つ
+  console.log('[Cleanup] Waiting for queue drain...');
   await waitForQueueDrain();
   console.log('[Cleanup] Queue drained');
 
-  // 6. キュー処理完了後にSTTプロバイダーを停止
+  // 7. キュー処理完了後にSTTプロバイダーを停止
   if (currentSTTProvider) {
     await currentSTTProvider.stop();
     currentSTTProvider = null;
     console.log('[Cleanup] STT provider stopped');
   }
 
-  // 7. オーディオストリームを停止
+  // 8. オーディオストリームを停止
   if (currentAudioStream) {
     currentAudioStream.getTracks().forEach(track => track.stop());
     currentAudioStream = null;
     console.log('[Cleanup] Audio stream stopped');
   }
+
+  // 9. MediaRecorderの参照破棄は最後
+  mediaRecorder = null;
+  isStopping = false;
 
   console.log('[Cleanup] Cleanup complete');
 }
@@ -573,6 +596,9 @@ let pendingBlob = null;
 function startNewMediaRecorder() {
   if (!currentAudioStream) return;
 
+  // 停止時のPromiseを作成
+  createFinalStopPromise();
+
   mediaRecorder = new MediaRecorder(currentAudioStream, { mimeType: selectedMimeType });
   audioChunks = [];
 
@@ -583,23 +609,35 @@ function startNewMediaRecorder() {
     }
   };
 
-  mediaRecorder.onstop = () => {
-    // stop時に完結したBlobを生成
-    if (audioChunks.length > 0) {
-      pendingBlob = new Blob(audioChunks, { type: selectedMimeType });
-      console.log('Complete audio blob created, size:', pendingBlob.size, 'bytes');
+  mediaRecorder.onstop = async () => {
+    console.log('[onstop] MediaRecorder stopped, isStopping:', isStopping);
+    try {
+      // stop時に完結したBlobを生成
+      // ※ isRecording=false でも isStopping=true の間は最終blobを処理する
+      if (audioChunks.length > 0) {
+        pendingBlob = new Blob(audioChunks, { type: selectedMimeType });
+        console.log('[onstop] Complete audio blob created, size:', pendingBlob.size, 'bytes');
 
-      // ヘッダー確認用デバッグログ
-      pendingBlob.slice(0, 16).arrayBuffer().then(buf => {
-        const arr = new Uint8Array(buf);
-        const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
-        console.log('Blob header (first 16 bytes):', hex);
-      });
+        // ヘッダー確認用デバッグログ
+        pendingBlob.slice(0, 16).arrayBuffer().then(buf => {
+          const arr = new Uint8Array(buf);
+          const hex = Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join(' ');
+          console.log('[onstop] Blob header (first 16 bytes):', hex);
+        });
 
-      // 文字起こし実行（キューに追加）
-      processCompleteBlob(pendingBlob);
+        // 文字起こし実行（キューに追加）- await で完了を待つ
+        await processCompleteBlob(pendingBlob);
+        console.log('[onstop] processCompleteBlob completed');
+      }
+      audioChunks = [];
+    } finally {
+      // 停止処理中の場合、Promiseを解決
+      if (isStopping && finalStopResolve) {
+        console.log('[onstop] Resolving finalStopPromise');
+        finalStopResolve();
+        finalStopResolve = null;
+      }
     }
-    audioChunks = [];
   };
 
   // timesliceなしで開始（stopするまで1つの完結したファイルになる）
@@ -652,15 +690,20 @@ async function processCompleteBlob(audioBlob) {
   audioBlob._enqueueTime = Date.now();
 
   // Duration算出（デバッグ用）
+  let audioContext;
   try {
-    const audioContext = new AudioContext();
+    audioContext = new AudioContext();
     const arrayBuffer = await audioBlob.arrayBuffer();
     const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
     audioBlob._duration = audioBuffer.duration;
     console.log(`[Blob Created] id=${blobId}, size=${audioBlob.size}, duration=${audioBuffer.duration.toFixed(2)}s`);
-    audioContext.close();
   } catch (e) {
     console.log(`[Blob Created] id=${blobId}, size=${audioBlob.size}, duration=unknown (${e.message})`);
+  } finally {
+    // AudioContextを確実にcloseする（リーク防止）
+    if (audioContext) {
+      await audioContext.close().catch(() => {});
+    }
   }
 
   // キューに追加
@@ -770,7 +813,8 @@ function resolveQueueDrain() {
 // Gemini APIはLLMタスク（要約、Q&A等）専用として残す。
 
 // ユーザー辞書（固有名詞のヒント）- 設定画面から更新可能
-let whisperUserDictionary = '';
+// ローマ字＋カタカナ併記で認識精度向上（OpenAI推奨）
+let whisperUserDictionary = 'AI Meeting Assistant, OpenAI, Anthropic, Gemini, Web Speech API, Whisper';
 
 async function transcribeWithWhisper(audioBlob) {
   console.log('=== transcribeWithWhisper ===');
