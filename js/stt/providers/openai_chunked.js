@@ -11,17 +11,23 @@ class OpenAIChunkedProvider {
     this.apiKey = config.apiKey || SecureStorage.getApiKey('openai');
     this.model = config.model || SecureStorage.getModel('openai') || 'whisper-1';
     this.language = config.language || 'ja';
+    // ユーザー辞書（固有名詞のヒント）
+    this.userDictionary = config.userDictionary || '';
 
     this.onTranscript = null;
     this.onError = null;
     this.onStatusChange = null;
     this.isActive = false;
+    this.lastTranscriptTail = '';  // 前チャンクの末尾
   }
 
   // イベントハンドラ設定
   setOnTranscript(callback) { this.onTranscript = callback; }
   setOnError(callback) { this.onError = callback; }
   setOnStatusChange(callback) { this.onStatusChange = callback; }
+
+  // ユーザー辞書を設定
+  setUserDictionary(dictionary) { this.userDictionary = dictionary; }
 
   /**
    * プロバイダーを開始
@@ -47,17 +53,31 @@ class OpenAIChunkedProvider {
   /**
    * 音声Blobを文字起こし
    * @param {Blob} audioBlob - 音声データ
+   * @param {string} [previousTail] - 前チャンクの末尾（prompt用、外部から渡す場合）
    * @returns {Promise<string>} 文字起こし結果
    */
-  async transcribeBlob(audioBlob) {
+  async transcribeBlob(audioBlob, previousTail = null) {
     if (!this.isActive) {
       throw new Error('Provider is not active');
     }
 
+    // promptを構築（前チャンクの末尾 + ユーザー辞書）
+    const promptParts = [];
+    const tailToUse = previousTail || this.lastTranscriptTail;
+    if (tailToUse) {
+      promptParts.push(tailToUse);
+    }
+    if (this.userDictionary) {
+      promptParts.push(this.userDictionary);
+    }
+    const prompt = promptParts.join(' ');
+
     console.log('[OpenAI STT] Transcribing blob:', {
       size: audioBlob.size,
       type: audioBlob.type,
-      model: this.model
+      model: this.model,
+      language: this.language,
+      promptLength: prompt.length
     });
 
     this.updateStatus('transcribing');
@@ -67,6 +87,12 @@ class OpenAIChunkedProvider {
       formData.append('file', audioBlob, 'audio.webm');
       formData.append('model', this.model);
       formData.append('language', this.language);
+
+      // promptパラメータを追加（空でない場合のみ）
+      if (prompt) {
+        formData.append('prompt', prompt);
+        console.log('[OpenAI STT] Using prompt:', prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''));
+      }
 
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
         method: 'POST',
@@ -86,8 +112,9 @@ class OpenAIChunkedProvider {
 
       this.updateStatus('ready');
 
-      // 文字起こし結果を通知
+      // 前チャンクの末尾を更新
       if (text.trim()) {
+        this.lastTranscriptTail = text.trim().slice(-200);
         this.emitTranscript(text.trim(), true);
       }
 

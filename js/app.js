@@ -469,22 +469,39 @@ async function startStreamingRecording(provider) {
   await pcmStreamProcessor.start();
 }
 
+/**
+ * 崩れた数値を補正する後処理
+ * 例: "1,2,3,4,5,6,7円" → "1234567円"
+ * 例: "1,2,3,4,5,6,7" → "1234567"
+ */
+function fixBrokenNumbers(text) {
+  // 単桁がカンマで連なるパターンを検出して結合
+  // パターン: 数字1桁 + (カンマ + 数字1桁) の繰り返し
+  return text.replace(/\b(\d)(,\d)+\b/g, (match) => {
+    // カンマを除去して数字だけにする
+    return match.replace(/,/g, '');
+  });
+}
+
 // 文字起こし結果を処理
 function handleTranscriptResult(text, isFinal) {
   if (!text || !text.trim()) return;
+
+  // 数値の後処理を適用
+  let processedText = fixBrokenNumbers(text.trim());
 
   const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
   if (isFinal) {
     // 確定結果を履歴に追加
-    fullTranscript += `[${timestamp}] ${text}\n`;
+    fullTranscript += `[${timestamp}] ${processedText}\n`;
     document.getElementById('transcriptText').textContent = fullTranscript;
   } else {
     // 途中結果を表示（オプション）
     // partialTranscriptを表示するUI要素があれば更新
     const partialEl = document.getElementById('partialTranscript');
     if (partialEl) {
-      partialEl.textContent = `(入力中) ${text}`;
+      partialEl.textContent = `(入力中) ${processedText}`;
     }
   }
 
@@ -497,37 +514,54 @@ function handleTranscriptResult(text, isFinal) {
 
 // 録音のクリーンアップ
 async function cleanupRecording() {
-  // PCMストリームを停止
+  console.log('[Cleanup] Starting cleanup...');
+
+  // 1. まず録音フラグをオフにして新しいblobの生成を止める
+  isRecording = false;
+
+  // 2. インターバルをクリア（stop→restart の繰り返しを止める）
+  if (transcriptIntervalId) {
+    clearInterval(transcriptIntervalId);
+    transcriptIntervalId = null;
+    console.log('[Cleanup] Interval cleared');
+  }
+
+  // 3. PCMストリームを停止
   if (pcmStreamProcessor) {
     await pcmStreamProcessor.stop();
     pcmStreamProcessor = null;
+    console.log('[Cleanup] PCM stream stopped');
   }
 
-  // STTプロバイダーを停止
-  if (currentSTTProvider) {
-    await currentSTTProvider.stop();
-    currentSTTProvider = null;
-  }
-
-  // MediaRecorderを停止
+  // 4. MediaRecorderを停止（最終blobがonstopで生成される）
   if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    console.log('[Cleanup] Stopping MediaRecorder (final blob will be generated)...');
     mediaRecorder.stop();
   }
   mediaRecorder = null;
 
-  // オーディオストリームを停止
+  // 5. 最終blobがキューに入り、処理されるのを待つ
+  // onstopは非同期で発火するため、少し待機してからキュードレインを待つ
+  console.log('[Cleanup] Waiting for final blob processing...');
+  await new Promise(resolve => setTimeout(resolve, 200));
+  await waitForQueueDrain();
+  console.log('[Cleanup] Queue drained');
+
+  // 6. キュー処理完了後にSTTプロバイダーを停止
+  if (currentSTTProvider) {
+    await currentSTTProvider.stop();
+    currentSTTProvider = null;
+    console.log('[Cleanup] STT provider stopped');
+  }
+
+  // 7. オーディオストリームを停止
   if (currentAudioStream) {
     currentAudioStream.getTracks().forEach(track => track.stop());
     currentAudioStream = null;
+    console.log('[Cleanup] Audio stream stopped');
   }
 
-  // インターバルをクリア
-  if (transcriptIntervalId) {
-    clearInterval(transcriptIntervalId);
-    transcriptIntervalId = null;
-  }
-
-  isRecording = false;
+  console.log('[Cleanup] Cleanup complete');
 }
 
 // グローバル変数追加
@@ -602,17 +636,36 @@ async function stopRecording() {
 // キュー方式で直列化
 const transcriptionQueue = [];
 let isProcessingQueue = false;
+let blobCounter = 0;  // Blob識別用カウンター
+let lastTranscriptTail = '';  // 前チャンクの末尾（Whisper prompt用）
 
 // 完結したBlobをキューに追加して処理
-function processCompleteBlob(audioBlob) {
+async function processCompleteBlob(audioBlob) {
   if (!audioBlob || audioBlob.size < 1000) {
     console.log('Audio blob too small, skipping:', audioBlob?.size);
     return;
   }
 
+  // Blob IDを生成
+  const blobId = `blob_${Date.now()}_${blobCounter++}`;
+  audioBlob._debugId = blobId;
+  audioBlob._enqueueTime = Date.now();
+
+  // Duration算出（デバッグ用）
+  try {
+    const audioContext = new AudioContext();
+    const arrayBuffer = await audioBlob.arrayBuffer();
+    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+    audioBlob._duration = audioBuffer.duration;
+    console.log(`[Blob Created] id=${blobId}, size=${audioBlob.size}, duration=${audioBuffer.duration.toFixed(2)}s`);
+    audioContext.close();
+  } catch (e) {
+    console.log(`[Blob Created] id=${blobId}, size=${audioBlob.size}, duration=unknown (${e.message})`);
+  }
+
   // キューに追加
   transcriptionQueue.push(audioBlob);
-  console.log('Added blob to queue, queue length:', transcriptionQueue.length);
+  console.log(`[Blob Enqueue] id=${blobId}, queue length:`, transcriptionQueue.length);
 
   // キューが溜まりすぎたら古いのを捨てる（リアルタイム優先）
   while (transcriptionQueue.length > 3) {
@@ -624,10 +677,17 @@ function processCompleteBlob(audioBlob) {
   processQueue();
 }
 
+// キュー完了待機用のPromise解決関数
+let queueDrainResolvers = [];
+
 // キューを順次処理（chunked系プロバイダー用）
 async function processQueue() {
   if (isProcessingQueue) return;
-  if (transcriptionQueue.length === 0) return;
+  if (transcriptionQueue.length === 0) {
+    // キューが空の場合、待機中のPromiseを解決
+    resolveQueueDrain();
+    return;
+  }
 
   isProcessingQueue = true;
 
@@ -636,27 +696,38 @@ async function processQueue() {
   console.log('Current STT Provider:', currentSTTProvider?.getInfo?.() || 'none');
   console.log('Queue length:', transcriptionQueue.length);
 
+  // stopRecording後もprovider参照を保持するためにキャプチャ
+  const providerSnapshot = currentSTTProvider;
+
   while (transcriptionQueue.length > 0) {
     const audioBlob = transcriptionQueue.shift();
-    console.log('Processing blob from queue, size:', audioBlob.size, 'type:', audioBlob.type, 'remaining:', transcriptionQueue.length);
+    const blobId = audioBlob._debugId || 'unknown';
+    const waitTime = audioBlob._enqueueTime ? Date.now() - audioBlob._enqueueTime : 0;
+    console.log(`[Blob Dequeue] id=${blobId}, size=${audioBlob.size}, waited=${waitTime}ms, remaining=${transcriptionQueue.length}`);
 
     try {
-      // currentSTTProviderがあればそれを使用
-      if (currentSTTProvider && typeof currentSTTProvider.transcribeBlob === 'function') {
-        const text = await currentSTTProvider.transcribeBlob(audioBlob);
-        console.log('Transcription result:', text);
-        // handleTranscriptResultはcurrentSTTProvider.emitTranscript経由で呼ばれる
+      // キャプチャしたproviderを使用（stopRecording後もnullにならない）
+      if (providerSnapshot && typeof providerSnapshot.transcribeBlob === 'function') {
+        const text = await providerSnapshot.transcribeBlob(audioBlob);
+        console.log(`[Transcription] id=${blobId}, result:`, text);
+        // handleTranscriptResultはprovider.emitTranscript経由で呼ばれる
         // ここでは重複呼び出しを避けるため、直接呼び出さない
+
+        // 前チャンクの末尾を保存（次回のWhisper prompt用）
+        if (text && text.trim()) {
+          lastTranscriptTail = text.trim().slice(-200);
+        }
       } else {
         // フォールバック: 直接Whisper APIを呼び出し
-        console.warn('No currentSTTProvider, falling back to transcribeWithWhisper');
+        console.warn(`[Fallback] id=${blobId}, No provider available, using transcribeWithWhisper`);
         const text = await transcribeWithWhisper(audioBlob);
         if (text && text.trim()) {
           handleTranscriptResult(text, true);
+          lastTranscriptTail = text.trim().slice(-200);
         }
       }
     } catch (err) {
-      console.error('文字起こしエラー:', err);
+      console.error(`[Transcription Error] id=${blobId}:`, err);
       showToast(`文字起こしエラー: ${err.message}`, 'error');
       // エラーでもキュー処理は継続
     }
@@ -668,6 +739,26 @@ async function processQueue() {
   }
 
   isProcessingQueue = false;
+
+  // キュー完了を通知
+  resolveQueueDrain();
+}
+
+// キューが空になるまで待機
+function waitForQueueDrain() {
+  if (transcriptionQueue.length === 0 && !isProcessingQueue) {
+    return Promise.resolve();
+  }
+  return new Promise(resolve => {
+    queueDrainResolvers.push(resolve);
+  });
+}
+
+// キュー完了を通知
+function resolveQueueDrain() {
+  const resolvers = queueDrainResolvers;
+  queueDrainResolvers = [];
+  resolvers.forEach(resolve => resolve());
 }
 
 // =====================================
@@ -677,6 +768,9 @@ async function processQueue() {
 // 理由: MediaRecorderのtimeslice使用時、2回目以降のチャンクにヘッダーがなく400エラーが発生する。
 // STTには専用API（OpenAI Whisper, Deepgram, AssemblyAI等）を使用すること。
 // Gemini APIはLLMタスク（要約、Q&A等）専用として残す。
+
+// ユーザー辞書（固有名詞のヒント）- 設定画面から更新可能
+let whisperUserDictionary = '';
 
 async function transcribeWithWhisper(audioBlob) {
   console.log('=== transcribeWithWhisper ===');
@@ -698,11 +792,27 @@ async function transcribeWithWhisper(audioBlob) {
   console.log('Audio blob size:', audioBlob.size, 'bytes');
   console.log('Audio blob type:', audioBlob.type);
 
+  // promptを構築（前チャンクの末尾 + ユーザー辞書）
+  const promptParts = [];
+  if (lastTranscriptTail) {
+    promptParts.push(lastTranscriptTail);
+  }
+  if (whisperUserDictionary) {
+    promptParts.push(whisperUserDictionary);
+  }
+  const prompt = promptParts.join(' ');
+
   // FormDataでファイルを送信
   const formData = new FormData();
   formData.append('file', audioBlob, 'audio.webm');
   formData.append('model', sttModel);
   formData.append('language', 'ja');
+
+  // promptパラメータを追加（空でない場合のみ）
+  if (prompt) {
+    formData.append('prompt', prompt);
+    console.log('Using Whisper prompt:', prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''));
+  }
 
   const response = await fetchWithRetry('https://api.openai.com/v1/audio/transcriptions', {
     method: 'POST',
