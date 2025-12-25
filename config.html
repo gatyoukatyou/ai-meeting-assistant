@@ -512,6 +512,21 @@
             • <strong>GCP STT</strong>: 高精度だがバックエンドサーバーが必須
           </div>
         </div>
+
+        <!-- ユーザー辞書（固有名詞ヒント） -->
+        <div class="setting-group" style="margin-top: 1rem;">
+          <label class="setting-label">📖 ユーザー辞書（固有名詞ヒント）</label>
+          <textarea
+            id="sttUserDictionary"
+            class="setting-input"
+            style="width: 100%; min-height: 80px; resize: vertical; font-family: inherit;"
+            placeholder="例: AI Meeting Assistant, ROBAMIMI ロバミミ, 中里 なかざと"
+          ></textarea>
+          <div class="setting-hint">
+            文字起こしで認識させたい固有名詞をカンマ区切りで入力。<br>
+            ローマ字＋読み仮名を併記すると認識精度が向上します（例: ROBAMIMI ロバミミ）
+          </div>
+        </div>
       </div>
 
       <!-- LLM用API（要約・AI回答） -->

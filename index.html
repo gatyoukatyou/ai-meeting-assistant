@@ -53,13 +53,15 @@
     .header {
       background: var(--card-bg);
       border-bottom: 1px solid var(--border);
-      padding: 1.25rem 1.5rem;
+      padding: 1rem 1.5rem;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    }
+
+    .header-top {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      flex-wrap: wrap;
-      gap: 1rem;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+      margin-bottom: 0.75rem;
     }
 
     .header h1 {
@@ -69,6 +71,184 @@
       align-items: center;
       gap: 0.5rem;
       color: var(--text);
+    }
+
+    .header-settings-btn {
+      padding: 0.5rem;
+      font-size: 1.25rem;
+    }
+
+    .header-main {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .record-btn-main {
+      flex: 1;
+      padding: 0.75rem 1.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .header-details {
+      border-top: 1px solid var(--border);
+      padding-top: 0.75rem;
+    }
+
+    .details-toggle {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+    }
+
+    .details-toggle-icon {
+      transition: transform 0.2s;
+    }
+
+    .details-toggle.active .details-toggle-icon {
+      transform: rotate(180deg);
+    }
+
+    .details-panel {
+      display: none;
+      padding: 0.75rem 0;
+    }
+
+    .details-panel.show {
+      display: block;
+    }
+
+    .details-row {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .details-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .details-label {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      min-width: 100px;
+    }
+
+    .details-row .model-select {
+      flex: 1;
+    }
+
+    .details-export-btn {
+      width: 100%;
+    }
+
+    /* PC表示（768px以上）では折りたたみなしで全表示 */
+    @media (min-width: 768px) {
+      .header {
+        padding: 1rem 1.5rem;
+      }
+
+      .header-top {
+        margin-bottom: 0;
+      }
+
+      .header-main {
+        position: absolute;
+        right: 1.5rem;
+        top: 50%;
+        transform: translateY(-50%);
+        margin-bottom: 0;
+      }
+
+      .header {
+        position: relative;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .header-top {
+        flex: 0 0 auto;
+      }
+
+      .header-settings-btn {
+        display: none;
+      }
+
+      .header-details {
+        flex: 1;
+        border-top: none;
+        padding-top: 0;
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+      }
+
+      .details-toggle {
+        display: none;
+      }
+
+      .details-panel {
+        display: flex !important;
+        align-items: center;
+        gap: 0.75rem;
+        padding: 0;
+      }
+
+      .details-row {
+        margin-bottom: 0;
+      }
+
+      .details-label {
+        display: none;
+      }
+
+      .details-row .model-select {
+        min-width: 140px;
+      }
+
+      .details-export-btn {
+        width: auto;
+      }
+
+      .header-main {
+        position: static;
+        transform: none;
+      }
+
+      .record-btn-main {
+        flex: 0 0 auto;
+      }
+
+      /* PCでは設定リンクを表示 */
+      .header-settings-link {
+        display: inline-flex;
+        align-items: center;
+        padding: 0.5rem 1rem;
+        background: transparent;
+        color: var(--text-secondary);
+        border-radius: 0.5rem;
+        font-size: 0.875rem;
+        text-decoration: none;
+        transition: background 0.15s;
+      }
+
+      .header-settings-link:hover {
+        background: var(--border);
+      }
+    }
+
+    /* スマホではPC用設定リンクを非表示 */
+    .header-settings-link {
+      display: none;
     }
 
     .header-controls {
@@ -762,28 +942,107 @@
     }
 
     /* レスポンシブ（スマホ最適化） */
-    @media (max-width: 640px) {
+    @media (max-width: 767px) {
       .header {
         padding: 1rem;
-        flex-direction: column;
-        gap: 0.75rem;
+      }
+
+      .header-top {
+        margin-bottom: 1rem;
       }
 
       .header h1 {
         font-size: 1.125rem;
-        width: 100%;
-        text-align: center;
       }
 
-      .header-controls {
-        width: 100%;
+      .header-settings-btn {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
         justify-content: center;
       }
 
+      .header-main {
+        flex-direction: column;
+        gap: 0.75rem;
+      }
+
+      .status-badge {
+        width: 100%;
+        text-align: center;
+        padding: 0.625rem 1rem;
+        font-size: 0.875rem;
+      }
+
+      /* 録音ボタンを大きく目立たせる */
+      .record-btn-main {
+        width: 100%;
+        padding: 1.25rem 1.5rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+        min-height: 60px;
+        border-radius: 0.75rem;
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
+      }
+
+      .record-btn-main.btn-danger {
+        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        animation: pulse-recording 2s infinite;
+      }
+
+      @keyframes pulse-recording {
+        0%, 100% {
+          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
+        }
+        50% {
+          box-shadow: 0 4px 20px rgba(220, 38, 38, 0.5);
+        }
+      }
+
+      .header-details {
+        margin-top: 0.5rem;
+      }
+
+      .details-toggle {
+        min-height: 44px;
+        border-radius: 0.5rem;
+      }
+
+      .details-toggle:hover {
+        background: var(--border-light);
+      }
+
+      .details-panel {
+        background: var(--border-light);
+        border-radius: 0.5rem;
+        padding: 1rem;
+        margin-top: 0.5rem;
+      }
+
+      .details-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
+      }
+
+      .details-label {
+        min-width: auto;
+        font-weight: 500;
+      }
+
+      .details-row .model-select {
+        min-height: 48px;
+        font-size: 1rem;
+      }
+
+      .details-export-btn {
+        min-height: 48px;
+        margin-top: 0.5rem;
+      }
+
       .btn {
-        padding: 0.75rem 1rem;
-        font-size: 0.9rem;
-        min-height: 44px; /* タッチターゲット最小サイズ */
+        min-height: 44px;
         min-width: 44px;
       }
 
@@ -803,43 +1062,35 @@
         min-height: 44px;
       }
 
-      .status-badge {
-        padding: 0.5rem 1rem;
-        font-size: 0.8rem;
-      }
-
-      /* スマホでは文字起こし用APIボタンをフル幅に */
-      #transcriptProvider,
-      #transcriptInterval {
-        min-width: auto;
-        flex: 1;
-      }
-
-      /* エクスポートと設定ボタンを小さく */
-      #openExportBtn,
-      .header-controls a {
-        padding: 0.5rem 0.75rem;
-        font-size: 0.75rem;
-      }
-
       /* AI質問ボタンを大きく */
       .ai-buttons .btn {
         flex: 1;
         min-width: 0;
         padding: 0.75rem 0.5rem;
+        min-height: 48px;
       }
 
       /* カスタム質問入力を大きく */
       .custom-question input {
         font-size: 1rem; /* iOSズーム防止 */
-        min-height: 44px;
+        min-height: 48px;
+      }
+
+      .custom-question .btn {
+        min-height: 48px;
       }
 
       /* タブを大きく */
       .tab {
-        padding: 1rem;
+        padding: 1rem 0.75rem;
         font-size: 0.875rem;
-        min-height: 44px;
+        min-height: 48px;
+        flex: 1;
+        text-align: center;
+      }
+
+      .tabs {
+        display: flex;
       }
 
       /* トースト通知をスマホ用に調整 */
@@ -861,27 +1112,9 @@
         max-height: calc(95vh - 140px);
       }
 
-      /* 録音ボタンを目立たせる */
-      #recordBtn {
-        padding: 1rem 1.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        min-height: 50px;
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.3);
-      }
-
-      #recordBtn.btn-danger {
-        box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-        animation: pulse-recording 2s infinite;
-      }
-
-      @keyframes pulse-recording {
-        0%, 100% {
-          box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
-        }
-        50% {
-          box-shadow: 0 4px 20px rgba(220, 38, 38, 0.5);
-        }
+      /* コスト表示を簡略化 */
+      .cost-display {
+        font-size: 0.8rem;
       }
     }
 
@@ -989,26 +1222,49 @@
 </head>
 <body>
   <header class="header">
-    <h1>🤖 AI参加会議</h1>
-    <div class="header-controls">
+    <div class="header-top">
+      <h1>🤖 AI参加会議</h1>
+      <a href="config.html" class="btn btn-ghost header-settings-btn" title="設定">⚙️</a>
+    </div>
+    
+    <!-- メイン操作エリア（スマホで目立つ） -->
+    <div class="header-main">
       <span class="status-badge status-ready" id="statusBadge">⏸ 待機中</span>
-      <select id="transcriptProvider" class="model-select" style="min-width: 140px;" title="文字起こしAPI（STT専用）">
-        <option value="openai_stt" selected>🎤 OpenAI Whisper</option>
-        <option value="deepgram_realtime">⚡ Deepgram</option>
-        <option value="assemblyai_realtime">🔊 AssemblyAI</option>
-        <option value="gcp_stt_proxy">☁️ GCP STT</option>
-      </select>
-      <select id="transcriptInterval" class="model-select" style="min-width: 80px;">
-        <option value="5">5秒</option>
-        <option value="10">10秒</option>
-        <option value="15" selected>15秒</option>
-        <option value="30">30秒</option>
-        <option value="60">60秒</option>
-        <option value="120">2分</option>
-      </select>
-      <button class="btn btn-primary" id="recordBtn">🎤 録音開始</button>
-      <button class="btn btn-secondary" id="openExportBtn">📥 エクスポート</button>
-      <a href="config.html" class="btn btn-ghost">⚙️ 設定</a>
+      <button class="btn btn-primary record-btn-main" id="recordBtn">🎤 録音開始</button>
+    </div>
+
+    <!-- 詳細設定（スマホでは折りたたみ） -->
+    <div class="header-details">
+      <button class="btn btn-ghost details-toggle" id="detailsToggle">
+        <span class="details-toggle-text">詳細設定</span>
+        <span class="details-toggle-icon">▼</span>
+      </button>
+      <div class="details-panel" id="detailsPanel">
+        <div class="details-row">
+          <label class="details-label">文字起こしAPI</label>
+          <select id="transcriptProvider" class="model-select" title="文字起こしAPI（STT専用）">
+            <option value="openai_stt" selected>🎤 OpenAI Whisper</option>
+            <option value="deepgram_realtime">⚡ Deepgram</option>
+            <option value="assemblyai_realtime">🔊 AssemblyAI</option>
+            <option value="gcp_stt_proxy">☁️ GCP STT</option>
+          </select>
+        </div>
+        <div class="details-row">
+          <label class="details-label">送信間隔</label>
+          <select id="transcriptInterval" class="model-select">
+            <option value="5">5秒</option>
+            <option value="10">10秒</option>
+            <option value="15" selected>15秒</option>
+            <option value="30">30秒</option>
+            <option value="60">60秒</option>
+            <option value="120">2分</option>
+          </select>
+        </div>
+        <div class="details-row">
+          <button class="btn btn-secondary details-export-btn" id="openExportBtn">📥 エクスポート</button>
+        </div>
+      </div>
+      <a href="config.html" class="header-settings-link">⚙️ 設定</a>
     </div>
   </header>
 

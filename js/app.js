@@ -170,6 +170,9 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
+  // ユーザー辞書を読み込み
+  loadUserDictionary();
+
   const recordBtn = document.getElementById('recordBtn');
   if (recordBtn) {
     recordBtn.addEventListener('click', toggleRecording);
@@ -252,6 +255,19 @@ document.addEventListener('DOMContentLoaded', function() {
   if (skipWelcomeBtn) {
     skipWelcomeBtn.addEventListener('click', closeWelcomeModal);
   }
+
+  // 詳細設定の折りたたみパネル（スマホ向け）
+  const detailsToggle = document.getElementById('detailsToggle');
+  const detailsPanel = document.getElementById('detailsPanel');
+  if (detailsToggle && detailsPanel) {
+    detailsToggle.addEventListener('click', () => {
+      detailsToggle.classList.toggle('active');
+      detailsPanel.classList.toggle('show');
+    });
+  }
+
+  // LLMインジケーターの更新
+  updateLLMIndicator();
 });
 
 // 録音機能
@@ -847,9 +863,23 @@ function resolveQueueDrain() {
 // STTには専用API（OpenAI Whisper, Deepgram, AssemblyAI等）を使用すること。
 // Gemini APIはLLMタスク（要約、Q&A等）専用として残す。
 
-// ユーザー辞書（固有名詞のヒント）- 設定画面から更新可能
+// ユーザー辞書（固有名詞のヒント）- 設定画面から登録可能
 // ローマ字＋カタカナ併記で認識精度向上（OpenAI推奨）
-let whisperUserDictionary = 'AI Meeting Assistant, OpenAI, Anthropic, Gemini, Web Speech API, Whisper';
+// デフォルト辞書 + ユーザー辞書を結合して使用
+const DEFAULT_DICTIONARY = 'AI Meeting Assistant, OpenAI, Anthropic, Gemini, Whisper';
+let whisperUserDictionary = '';
+
+// ユーザー辞書を読み込む
+function loadUserDictionary() {
+  const userDict = SecureStorage.getOption('sttUserDictionary', '');
+  // デフォルト辞書とユーザー辞書を結合
+  const parts = [DEFAULT_DICTIONARY];
+  if (userDict && userDict.trim()) {
+    parts.push(userDict.trim());
+  }
+  whisperUserDictionary = parts.join(', ');
+  console.log('[STT] User dictionary loaded:', whisperUserDictionary.substring(0, 100) + (whisperUserDictionary.length > 100 ? '...' : ''));
+}
 
 async function transcribeWithWhisper(audioBlob) {
   console.log('=== transcribeWithWhisper ===');
@@ -1494,4 +1524,36 @@ function downloadExport() {
   a.download = `meeting-${new Date().toISOString().split('T')[0]}.md`;
   a.click();
   URL.revokeObjectURL(url);
+}
+
+// =====================================
+// LLMインジケーター
+// =====================================
+function updateLLMIndicator() {
+  const indicator = document.getElementById('llmIndicator');
+  if (!indicator) return;
+
+  const llm = getAvailableLlm();
+  
+  if (llm) {
+    const providerNames = {
+      gemini: 'Gemini',
+      claude: 'Claude',
+      openai: 'OpenAI',
+      groq: 'Groq'
+    };
+    const providerEmoji = {
+      gemini: '✨',
+      claude: '🧠',
+      openai: '🚀',
+      groq: '⚡'
+    };
+    indicator.textContent = `${providerEmoji[llm.provider] || '🤖'} ${providerNames[llm.provider] || llm.provider}`;
+    indicator.classList.remove('no-api');
+    indicator.title = `使用中LLM: ${llm.model}`;
+  } else {
+    indicator.textContent = '⚠️ API未設定';
+    indicator.classList.add('no-api');
+    indicator.title = 'APIキーを設定してください';
+  }
 }

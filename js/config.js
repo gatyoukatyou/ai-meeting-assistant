@@ -168,6 +168,11 @@ function loadSavedSettings() {
   if (gcpUrlEl) gcpUrlEl.value = gcpProxyUrl;
   if (gcpTokenEl) gcpTokenEl.value = gcpProxyToken;
 
+  // ユーザー辞書（STT用固有名詞ヒント）
+  const userDictionary = SecureStorage.getOption('sttUserDictionary', '');
+  const userDictEl = document.getElementById('sttUserDictionary');
+  if (userDictEl) userDictEl.value = userDictionary;
+
   // オプション
   document.getElementById('clearOnClose').checked = SecureStorage.getOption('clearOnClose', false);
   document.getElementById('costAlertEnabled').checked = SecureStorage.getOption('costAlertEnabled', true);
@@ -222,6 +227,10 @@ async function saveSettings() {
   const gcpTokenEl = document.getElementById('gcpProxyToken');
   if (gcpUrlEl) SecureStorage.setOption('gcpProxyUrl', gcpUrlEl.value.trim());
   if (gcpTokenEl) SecureStorage.setOption('gcpProxyToken', gcpTokenEl.value.trim());
+
+  // ユーザー辞書（STT用固有名詞ヒント）を保存
+  const userDictEl = document.getElementById('sttUserDictionary');
+  if (userDictEl) SecureStorage.setOption('sttUserDictionary', userDictEl.value.trim());
 
   // オプションを保存
   SecureStorage.setOption('clearOnClose', document.getElementById('clearOnClose').checked);

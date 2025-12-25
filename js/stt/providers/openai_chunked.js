@@ -5,20 +5,38 @@
  * 音声Blobを一定間隔でHTTP経由で送信
  */
 
+// デフォルト辞書（認識精度向上用基本ワード）
+const DEFAULT_DICTIONARY = 'AI Meeting Assistant, OpenAI, Anthropic, Gemini, Whisper';
+
 class OpenAIChunkedProvider {
   constructor(config) {
     this.config = config;
     this.apiKey = config.apiKey || SecureStorage.getApiKey('openai');
     this.model = config.model || SecureStorage.getModel('openai') || 'whisper-1';
     this.language = config.language || 'ja';
-    // ユーザー辞書（固有名詞のヒント）- ローマ字＋カタカナ併記で認識精度向上
-    this.userDictionary = config.userDictionary || 'AI Meeting Assistant, OpenAI, Anthropic, Gemini, Web Speech API, Whisper';
+    // ユーザー辞書（固有名詞のヒント）- 設定画面から登録可能
+    // デフォルト辞書 + ユーザー辞書を結合
+    this.userDictionary = this._loadUserDictionary(config.userDictionary);
 
     this.onTranscript = null;
     this.onError = null;
     this.onStatusChange = null;
     this.isActive = false;
     this.lastTranscriptTail = '';  // 前チャンクの末尾
+  }
+
+  // ユーザー辞書を読み込む（デフォルト + ユーザー設定）
+  _loadUserDictionary(configDict) {
+    // configで明示的に指定されていればそれを使用
+    if (configDict) return configDict;
+
+    // localStorageから読み込み
+    const userDict = SecureStorage.getOption('sttUserDictionary', '');
+    const parts = [DEFAULT_DICTIONARY];
+    if (userDict && userDict.trim()) {
+      parts.push(userDict.trim());
+    }
+    return parts.join(', ');
   }
 
   // イベントハンドラ設定
