@@ -802,9 +802,14 @@ function waitForQueueDrain(timeoutMs = 15000) {
   if (transcriptionQueue.length === 0 && !isProcessingQueue) {
     return Promise.resolve();
   }
+
   return new Promise(resolve => {
+    let settled = false;  // 二重resolve防止フラグ
+
     // timeout保険：最大待機時間を超えたら警告を出しつつresolve
     const timeoutId = setTimeout(() => {
+      if (settled) return;
+      settled = true;
       console.warn('[QueueDrain] timeout - forcing resolve', {
         queueLength: transcriptionQueue.length,
         isProcessingQueue
@@ -814,6 +819,8 @@ function waitForQueueDrain(timeoutMs = 15000) {
 
     // 正常なresolve時はtimeoutをクリア
     queueDrainResolvers.push(() => {
+      if (settled) return;
+      settled = true;
       clearTimeout(timeoutId);
       resolve();
     });
