@@ -742,49 +742,58 @@ async function processQueue() {
   // stopRecording後もprovider参照を保持するためにキャプチャ
   const providerSnapshot = currentSTTProvider;
 
-  while (transcriptionQueue.length > 0) {
-    const audioBlob = transcriptionQueue.shift();
-    const blobId = audioBlob._debugId || 'unknown';
-    const waitTime = audioBlob._enqueueTime ? Date.now() - audioBlob._enqueueTime : 0;
-    console.log(`[Blob Dequeue] id=${blobId}, size=${audioBlob.size}, waited=${waitTime}ms, remaining=${transcriptionQueue.length}`);
+  try {
+    while (transcriptionQueue.length > 0) {
+      const audioBlob = transcriptionQueue.shift();
+      const blobId = audioBlob._debugId || 'unknown';
+      const waitTime = audioBlob._enqueueTime ? Date.now() - audioBlob._enqueueTime : 0;
+      console.log(`[Blob Dequeue] id=${blobId}, size=${audioBlob.size}, waited=${waitTime}ms, remaining=${transcriptionQueue.length}`);
 
-    try {
-      // キャプチャしたproviderを使用（stopRecording後もnullにならない）
-      if (providerSnapshot && typeof providerSnapshot.transcribeBlob === 'function') {
-        const text = await providerSnapshot.transcribeBlob(audioBlob);
-        console.log(`[Transcription] id=${blobId}, result:`, text);
-        // handleTranscriptResultはprovider.emitTranscript経由で呼ばれる
-        // ここでは重複呼び出しを避けるため、直接呼び出さない
+      try {
+        // キャプチャしたproviderを使用（stopRecording後もnullにならない）
+        if (providerSnapshot && typeof providerSnapshot.transcribeBlob === 'function') {
+          const text = await providerSnapshot.transcribeBlob(audioBlob);
+          console.log(`[Transcription] id=${blobId}, result:`, text);
+          // handleTranscriptResultはprovider.emitTranscript経由で呼ばれる
+          // ここでは重複呼び出しを避けるため、直接呼び出さない
 
-        // 前チャンクの末尾を保存（次回のWhisper prompt用）
-        if (text && text.trim()) {
-          lastTranscriptTail = text.trim().slice(-200);
+          // 前チャンクの末尾を保存（次回のWhisper prompt用）
+          if (text && text.trim()) {
+            lastTranscriptTail = text.trim().slice(-200);
+          }
+        } else {
+          // フォールバック: 直接Whisper APIを呼び出し
+          console.warn(`[Fallback] id=${blobId}, No provider available, using transcribeWithWhisper`);
+          const text = await transcribeWithWhisper(audioBlob);
+          if (text && text.trim()) {
+            handleTranscriptResult(text, true);
+            lastTranscriptTail = text.trim().slice(-200);
+          }
         }
-      } else {
-        // フォールバック: 直接Whisper APIを呼び出し
-        console.warn(`[Fallback] id=${blobId}, No provider available, using transcribeWithWhisper`);
-        const text = await transcribeWithWhisper(audioBlob);
-        if (text && text.trim()) {
-          handleTranscriptResult(text, true);
-          lastTranscriptTail = text.trim().slice(-200);
-        }
+      } catch (err) {
+        console.error(`[Transcription Error] id=${blobId}:`, err);
+        showToast(`文字起こしエラー: ${err.message}`, 'error');
+        // エラーでもキュー処理は継続
       }
-    } catch (err) {
-      console.error(`[Transcription Error] id=${blobId}:`, err);
-      showToast(`文字起こしエラー: ${err.message}`, 'error');
-      // エラーでもキュー処理は継続
-    }
 
-    // 連続リクエストを避けるため少し待機
+      // 連続リクエストを避けるため少し待機
+      if (transcriptionQueue.length > 0) {
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
+  } finally {
+    isProcessingQueue = false;
+
+    // ★ループ後に新規enqueueが入ってたら、もう一回処理を蹴る
     if (transcriptionQueue.length > 0) {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('[processQueue] New items enqueued during processing, restarting...');
+      processQueue();
+      return;
     }
+
+    // ★本当に空のときだけ解放
+    resolveQueueDrain();
   }
-
-  isProcessingQueue = false;
-
-  // キュー完了を通知
-  resolveQueueDrain();
 }
 
 // キューが空になるまで待機
@@ -797,8 +806,13 @@ function waitForQueueDrain() {
   });
 }
 
-// キュー完了を通知
+// キュー完了を通知（条件を満たすときのみ）
 function resolveQueueDrain() {
+  // ★条件を満たさないなら解放しない（レース防止）
+  if (transcriptionQueue.length !== 0 || isProcessingQueue) {
+    return;
+  }
+
   const resolvers = queueDrainResolvers;
   queueDrainResolvers = [];
   resolvers.forEach(resolve => resolve());
