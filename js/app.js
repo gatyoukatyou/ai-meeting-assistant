@@ -785,9 +785,10 @@ async function processQueue() {
     isProcessingQueue = false;
 
     // ★ループ後に新規enqueueが入ってたら、もう一回処理を蹴る
+    // setTimeoutでイベントループに返して多重呼び出しを防止
     if (transcriptionQueue.length > 0) {
-      console.log('[processQueue] New items enqueued during processing, restarting...');
-      processQueue();
+      console.log('[processQueue] New items enqueued during processing, scheduling restart...');
+      setTimeout(() => processQueue(), 0);
       return;
     }
 
@@ -796,13 +797,26 @@ async function processQueue() {
   }
 }
 
-// キューが空になるまで待機
-function waitForQueueDrain() {
+// キューが空になるまで待機（timeout保険付き）
+function waitForQueueDrain(timeoutMs = 15000) {
   if (transcriptionQueue.length === 0 && !isProcessingQueue) {
     return Promise.resolve();
   }
   return new Promise(resolve => {
-    queueDrainResolvers.push(resolve);
+    // timeout保険：最大待機時間を超えたら警告を出しつつresolve
+    const timeoutId = setTimeout(() => {
+      console.warn('[QueueDrain] timeout - forcing resolve', {
+        queueLength: transcriptionQueue.length,
+        isProcessingQueue
+      });
+      resolve();
+    }, timeoutMs);
+
+    // 正常なresolve時はtimeoutをクリア
+    queueDrainResolvers.push(() => {
+      clearTimeout(timeoutId);
+      resolve();
+    });
   });
 }
 
