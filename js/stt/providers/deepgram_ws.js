@@ -131,7 +131,11 @@ class DeepgramWSProvider {
       const message = JSON.parse(data);
 
       if (message.type === 'Results') {
-        const transcript = message.channel?.alternatives?.[0]?.transcript || '';
+        var transcript = '';
+        if (message.channel && message.channel.alternatives &&
+            message.channel.alternatives[0] && message.channel.alternatives[0].transcript) {
+          transcript = message.channel.alternatives[0].transcript;
+        }
         const isFinal = message.is_final || false;
 
         if (transcript) {

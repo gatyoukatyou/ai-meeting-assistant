@@ -185,6 +185,80 @@ function navigateTo(target) {
 }
 
 // =====================================
+// デバッグHUD（?debug パラメータ時のみ表示）
+// =====================================
+function initDebugHUD() {
+  var urlParams = new URLSearchParams(window.location.search);
+  if (!urlParams.has('debug')) return;
+
+  var hud = document.createElement('div');
+  hud.id = 'debugHUD';
+  hud.style.cssText = 'position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.85);color:#0f0;' +
+    'font-family:monospace;font-size:11px;padding:8px 12px;border-radius:6px;z-index:9999;' +
+    'max-width:300px;max-height:200px;overflow-y:auto;';
+  document.body.appendChild(hud);
+
+  function updateDebugInfo() {
+    var info = [];
+    info.push('=== Debug HUD ===');
+    info.push('Recording: ' + (isRecording ? 'YES' : 'NO'));
+    info.push('STT Provider: ' + (currentSTTProvider ? 'active' : 'none'));
+    info.push('Queue: ' + transcriptionQueue.length + ' items');
+    info.push('Chunks: ' + transcriptChunks.length);
+    info.push('Audio Stream: ' + (currentAudioStream ? 'active' : 'null'));
+    info.push('Cost (STT): ¥' + costs.transcript.total.toFixed(2));
+    info.push('Cost (LLM): ¥' + costs.llm.total.toFixed(2));
+    info.push('UA: ' + navigator.userAgent.substring(0, 50) + '...');
+    hud.textContent = info.join('\n');
+  }
+
+  // 500ms毎に更新
+  setInterval(updateDebugInfo, 500);
+  updateDebugInfo();
+  console.log('[Debug] Debug HUD enabled');
+}
+
+// =====================================
+// ブラウザ互換性チェック
+// =====================================
+function checkBrowserCompatibility() {
+  var recordBtn = document.getElementById('recordBtn');
+  var issues = [];
+
+  // getUserMedia チェック
+  var hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
+  if (!hasGetUserMedia) {
+    issues.push('マイクアクセス（getUserMedia）');
+  }
+
+  // MediaRecorder チェック
+  var hasMediaRecorder = typeof MediaRecorder !== 'undefined';
+  if (!hasMediaRecorder) {
+    issues.push('音声録音（MediaRecorder）');
+  }
+
+  // 問題があればUIに表示
+  if (issues.length > 0 && recordBtn) {
+    recordBtn.disabled = true;
+    recordBtn.textContent = '⚠️ 非対応ブラウザ';
+    recordBtn.title = '以下の機能が使用できません: ' + issues.join(', ');
+    recordBtn.style.cursor = 'not-allowed';
+    console.warn('[Compatibility] Browser does not support:', issues);
+
+    // 警告バナーを表示
+    var banner = document.createElement('div');
+    banner.className = 'compatibility-warning';
+    banner.innerHTML = '⚠️ お使いのブラウザは一部機能に対応していません。Chrome/Edge/Safari最新版をご利用ください。';
+    var header = document.querySelector('.header');
+    if (header && header.parentNode) {
+      header.parentNode.insertBefore(banner, header.nextSibling);
+    }
+  } else {
+    console.log('[Compatibility] Browser is compatible');
+  }
+}
+
+// =====================================
 // 初期化
 // =====================================
 document.addEventListener('DOMContentLoaded', function() {
@@ -213,6 +287,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // ユーザー辞書を読み込み
   loadUserDictionary();
+
+  // ブラウザ互換性チェック（iOS Safari対応）
+  checkBrowserCompatibility();
+
+  // デバッグHUD（?debug パラメータ時のみ）
+  initDebugHUD();
 
   const recordBtn = document.getElementById('recordBtn');
   if (recordBtn) {
@@ -905,7 +985,7 @@ let lastTranscriptTail = '';  // 前チャンクの末尾（Whisper prompt用）
 // 完結したBlobをキューに追加して処理
 async function processCompleteBlob(audioBlob) {
   if (!audioBlob || audioBlob.size < 1000) {
-    console.log('Audio blob too small, skipping:', audioBlob?.size);
+    console.log('Audio blob too small, skipping:', audioBlob ? audioBlob.size : 0);
     return;
   }
 
@@ -961,7 +1041,7 @@ async function processQueue() {
 
   // デバッグ: STT設定のサマリーを出力
   console.log('=== processQueue: STT Configuration ===');
-  console.log('Current STT Provider:', currentSTTProvider?.getInfo?.() || 'none');
+  console.log('Current STT Provider:', (currentSTTProvider && currentSTTProvider.getInfo) ? currentSTTProvider.getInfo() : 'none');
   console.log('Queue length:', transcriptionQueue.length);
 
   // stopRecording後もprovider参照を保持するためにキャプチャ
@@ -1539,10 +1619,17 @@ async function callLLM(provider, prompt) {
         }
       );
       data = await response.json();
-      if (!response.ok) throw new Error(data.error?.message || 'Gemini API error');
-      text = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-      inputTokens = data.usageMetadata?.promptTokenCount || Math.ceil(prompt.length / 4);
-      outputTokens = data.usageMetadata?.candidatesTokenCount || Math.ceil(text.length / 4);
+      if (!response.ok) {
+        var errMsg = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
+        throw new Error(errMsg);
+      }
+      text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
+              data.candidates[0].content.parts && data.candidates[0].content.parts[0])
+              ? data.candidates[0].content.parts[0].text : '';
+      inputTokens = (data.usageMetadata && data.usageMetadata.promptTokenCount)
+                    ? data.usageMetadata.promptTokenCount : Math.ceil(prompt.length / 4);
+      outputTokens = (data.usageMetadata && data.usageMetadata.candidatesTokenCount)
+                     ? data.usageMetadata.candidatesTokenCount : Math.ceil(text.length / 4);
       break;
 
     case 'claude':
@@ -1561,10 +1648,13 @@ async function callLLM(provider, prompt) {
         })
       });
       data = await response.json();
-      if (!response.ok) throw new Error(data.error?.message || 'Claude API error');
-      text = data.content?.[0]?.text || '';
-      inputTokens = data.usage?.input_tokens || Math.ceil(prompt.length / 4);
-      outputTokens = data.usage?.output_tokens || Math.ceil(text.length / 4);
+      if (!response.ok) {
+        var errMsg = (data && data.error && data.error.message) ? data.error.message : 'Claude API error';
+        throw new Error(errMsg);
+      }
+      text = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+      inputTokens = (data.usage && data.usage.input_tokens) ? data.usage.input_tokens : Math.ceil(prompt.length / 4);
+      outputTokens = (data.usage && data.usage.output_tokens) ? data.usage.output_tokens : Math.ceil(text.length / 4);
       break;
 
     case 'openai':
@@ -1580,10 +1670,14 @@ async function callLLM(provider, prompt) {
         })
       });
       data = await response.json();
-      if (!response.ok) throw new Error(data.error?.message || 'OpenAI API error');
-      text = data.choices?.[0]?.message?.content || '';
-      inputTokens = data.usage?.prompt_tokens || Math.ceil(prompt.length / 4);
-      outputTokens = data.usage?.completion_tokens || Math.ceil(text.length / 4);
+      if (!response.ok) {
+        var errMsg = (data && data.error && data.error.message) ? data.error.message : 'OpenAI API error';
+        throw new Error(errMsg);
+      }
+      text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+             ? data.choices[0].message.content : '';
+      inputTokens = (data.usage && data.usage.prompt_tokens) ? data.usage.prompt_tokens : Math.ceil(prompt.length / 4);
+      outputTokens = (data.usage && data.usage.completion_tokens) ? data.usage.completion_tokens : Math.ceil(text.length / 4);
       break;
 
     case 'groq':
@@ -1599,15 +1693,20 @@ async function callLLM(provider, prompt) {
         })
       });
       data = await response.json();
-      if (!response.ok) throw new Error(data.error?.message || 'Groq API error');
-      text = data.choices?.[0]?.message?.content || '';
-      inputTokens = data.usage?.prompt_tokens || Math.ceil(prompt.length / 4);
-      outputTokens = data.usage?.completion_tokens || Math.ceil(text.length / 4);
+      if (!response.ok) {
+        var errMsg = (data && data.error && data.error.message) ? data.error.message : 'Groq API error';
+        throw new Error(errMsg);
+      }
+      text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
+             ? data.choices[0].message.content : '';
+      inputTokens = (data.usage && data.usage.prompt_tokens) ? data.usage.prompt_tokens : Math.ceil(prompt.length / 4);
+      outputTokens = (data.usage && data.usage.completion_tokens) ? data.usage.completion_tokens : Math.ceil(text.length / 4);
       break;
   }
 
   // コスト計算（詳細版）
-  const pricing = PRICING[provider]?.[model] || { input: 1, output: 3 };
+  var pricingProvider = PRICING[provider];
+  var pricing = (pricingProvider && pricingProvider[model]) ? pricingProvider[model] : { input: 1, output: 3 };
   const cost = ((inputTokens * pricing.input + outputTokens * pricing.output) / 1000000) * PRICING.yenPerDollar;
 
   costs.llm.inputTokens += inputTokens;
@@ -1917,14 +2016,18 @@ function updateExportPreview() {
 }
 
 function getExportOptions() {
+  var getChecked = function(id) {
+    var el = document.getElementById(id);
+    return el ? el.checked : true;
+  };
   return {
-    minutes: document.getElementById('exportMinutes')?.checked ?? true,
-    summary: document.getElementById('exportSummary')?.checked ?? true,
-    opinion: document.getElementById('exportOpinion')?.checked ?? true,
-    idea: document.getElementById('exportIdea')?.checked ?? true,
-    qa: document.getElementById('exportQA')?.checked ?? true,
-    transcript: document.getElementById('exportTranscript')?.checked ?? true,
-    cost: document.getElementById('exportCost')?.checked ?? true
+    minutes: getChecked('exportMinutes'),
+    summary: getChecked('exportSummary'),
+    opinion: getChecked('exportOpinion'),
+    idea: getChecked('exportIdea'),
+    qa: getChecked('exportQA'),
+    transcript: getChecked('exportTranscript'),
+    cost: getChecked('exportCost')
   };
 }
 

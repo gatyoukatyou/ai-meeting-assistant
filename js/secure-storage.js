@@ -123,14 +123,14 @@ const SecureStorage = {
       }
       const data = JSON.parse(json);
 
-      if (data.gemini?.key) this.setApiKey('gemini', data.gemini.key);
-      if (data.gemini?.model) this.setModel('gemini', data.gemini.model);
-      if (data.claude?.key) this.setApiKey('claude', data.claude.key);
-      if (data.claude?.model) this.setModel('claude', data.claude.model);
-      if (data.openai?.key) this.setApiKey('openai', data.openai.key);
-      if (data.openai?.model) this.setModel('openai', data.openai.model);
-      if (data.groq?.key) this.setApiKey('groq', data.groq.key);
-      if (data.groq?.model) this.setModel('groq', data.groq.model);
+      if (data.gemini && data.gemini.key) this.setApiKey('gemini', data.gemini.key);
+      if (data.gemini && data.gemini.model) this.setModel('gemini', data.gemini.model);
+      if (data.claude && data.claude.key) this.setApiKey('claude', data.claude.key);
+      if (data.claude && data.claude.model) this.setModel('claude', data.claude.model);
+      if (data.openai && data.openai.key) this.setApiKey('openai', data.openai.key);
+      if (data.openai && data.openai.model) this.setModel('openai', data.openai.model);
+      if (data.groq && data.groq.key) this.setApiKey('groq', data.groq.key);
+      if (data.groq && data.groq.model) this.setModel('groq', data.groq.model);
       if (data.options) {
         this.setOption('clearOnClose', data.options.clearOnClose || false);
         this.setOption('costAlertEnabled', data.options.costAlertEnabled !== undefined ? data.options.costAlertEnabled : true);
