@@ -333,24 +333,45 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const recordBtn = document.getElementById('recordBtn');
   if (recordBtn) {
-    // 二重発火防止用タイムスタンプ
+    // 二重発火防止用タイムスタンプ（performance.nowで単調増加保証）
     var lastTouchEndAt = 0;
+    // 連打抑止用ガード
+    var recordGuard = false;
+
+    // performance.now()のポリフィル（古いブラウザ対応）
+    function getNow() {
+      return (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+    }
+
+    // 連打抑止付きトグル
+    function guardedToggleRecording() {
+      if (recordGuard) {
+        console.log('[Record] Ignoring rapid tap (guard active)');
+        return;
+      }
+      recordGuard = true;
+      try {
+        toggleRecording();
+      } finally {
+        setTimeout(function() { recordGuard = false; }, 500);
+      }
+    }
 
     // iOS Safari用にtouchendを追加（clickより先に発火）
     recordBtn.addEventListener('touchend', function(e) {
-      lastTouchEndAt = Date.now();
+      lastTouchEndAt = getNow();
       if (e.cancelable) e.preventDefault(); // ゴーストクリック防止
-      toggleRecording();
+      guardedToggleRecording();
     }, { passive: false });
 
     // 通常のclickイベント（デスクトップ用 + touchend後の二重発火防止）
     recordBtn.addEventListener('click', function(e) {
       // touchend直後のclickは無視（二重発火防止）
-      if (Date.now() - lastTouchEndAt < 600) {
+      if (getNow() - lastTouchEndAt < 600) {
         console.log('[Record] Ignoring click after touchend (anti-double-fire)');
         return;
       }
-      toggleRecording();
+      guardedToggleRecording();
     });
   }
 
