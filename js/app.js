@@ -7,6 +7,11 @@ let audioChunks = [];
 let transcriptIntervalId = null;
 let fullTranscript = '';
 
+// トリム機能（Issue #5対応）
+let transcriptChunks = []; // { id, timestamp, text, excluded, isMarkerStart }
+let chunkIdCounter = 0;
+let meetingStartMarkerId = null; // 会議開始マーカーのチャンクID
+
 // 停止時のレース防止用
 let isStopping = false;
 let finalStopPromise = null;
@@ -616,12 +621,23 @@ function handleTranscriptResult(text, isFinal) {
   const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
 
   if (isFinal) {
-    // 確定結果を履歴に追加
-    fullTranscript += `[${timestamp}] ${processedText}\n`;
-    document.getElementById('transcriptText').textContent = fullTranscript;
+    // チャンクとして保存
+    const chunkId = `chunk_${++chunkIdCounter}`;
+    transcriptChunks.push({
+      id: chunkId,
+      timestamp,
+      text: processedText,
+      excluded: false,
+      isMarkerStart: false
+    });
+
+    // 互換性のためfullTranscriptも更新
+    fullTranscript = getFullTranscriptText();
+
+    // UIを更新（削除ボタン付き）
+    renderTranscriptChunks();
   } else {
     // 途中結果を表示（オプション）
-    // partialTranscriptを表示するUI要素があれば更新
     const partialEl = document.getElementById('partialTranscript');
     if (partialEl) {
       partialEl.textContent = `(入力中) ${processedText}`;
@@ -633,6 +649,105 @@ function handleTranscriptResult(text, isFinal) {
   if (body) {
     body.scrollTop = body.scrollHeight;
   }
+}
+
+// 全チャンクをテキストに変換（互換性用）
+function getFullTranscriptText() {
+  return transcriptChunks
+    .map(c => `[${c.timestamp}] ${c.text}`)
+    .join('\n');
+}
+
+// エクスポート/AI用のフィルタリングされたテキストを取得
+function getFilteredTranscriptText() {
+  // 会議開始マーカー以降のみ取得
+  let startIndex = 0;
+  if (meetingStartMarkerId) {
+    const markerIdx = transcriptChunks.findIndex(c => c.id === meetingStartMarkerId);
+    if (markerIdx >= 0) {
+      startIndex = markerIdx;
+    }
+  }
+
+  return transcriptChunks
+    .slice(startIndex)
+    .filter(c => !c.excluded)
+    .map(c => `[${c.timestamp}] ${c.text}`)
+    .join('\n');
+}
+
+// チャンクを削除（トグル）
+function toggleChunkExcluded(chunkId) {
+  const chunk = transcriptChunks.find(c => c.id === chunkId);
+  if (chunk) {
+    chunk.excluded = !chunk.excluded;
+    renderTranscriptChunks();
+  }
+}
+
+// 会議開始マーカーを設定
+function setMeetingStartMarker(chunkId) {
+  // 既存のマーカーをクリア
+  transcriptChunks.forEach(c => c.isMarkerStart = false);
+
+  if (chunkId) {
+    const chunk = transcriptChunks.find(c => c.id === chunkId);
+    if (chunk) {
+      chunk.isMarkerStart = true;
+      meetingStartMarkerId = chunkId;
+    }
+  } else {
+    meetingStartMarkerId = null;
+  }
+  renderTranscriptChunks();
+}
+
+// チャンクをレンダリング
+function renderTranscriptChunks() {
+  const container = document.getElementById('transcriptText');
+  if (!container) return;
+
+  if (transcriptChunks.length === 0) {
+    container.innerHTML = '<span class="placeholder-text">録音を開始すると文字起こしが表示されます...</span>';
+    return;
+  }
+
+  let html = '';
+  transcriptChunks.forEach((chunk, idx) => {
+    const isExcluded = chunk.excluded;
+    const isBeforeMarker = meetingStartMarkerId && idx < transcriptChunks.findIndex(c => c.id === meetingStartMarkerId);
+    const isMarker = chunk.isMarkerStart;
+    const isGrayed = isExcluded || isBeforeMarker;
+
+    // マーカー行を表示
+    if (isMarker) {
+      html += `<div class="transcript-marker">📍 ここから会議開始</div>`;
+    }
+
+    html += `<div class="transcript-chunk ${isGrayed ? 'excluded' : ''}" data-id="${chunk.id}">`;
+    html += `<span class="chunk-time">[${chunk.timestamp}]</span> `;
+    html += `<span class="chunk-text">${escapeHtml(chunk.text)}</span>`;
+    html += `<span class="chunk-actions">`;
+    if (!isMarker) {
+      html += `<button class="btn-icon" onclick="setMeetingStartMarker('${chunk.id}')" title="ここから会議開始">📍</button>`;
+    } else {
+      html += `<button class="btn-icon active" onclick="setMeetingStartMarker(null)" title="マーカーを解除">📍</button>`;
+    }
+    html += `<button class="btn-icon ${isExcluded ? 'active' : ''}" onclick="toggleChunkExcluded('${chunk.id}')" title="${isExcluded ? '復元' : '除外'}">`;
+    html += isExcluded ? '♻️' : '🗑️';
+    html += `</button>`;
+    html += `</span>`;
+    html += `</div>`;
+  });
+
+  container.innerHTML = html;
+}
+
+// HTMLエスケープ
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
 }
 
 // 録音のクリーンアップ
@@ -1186,9 +1301,10 @@ async function askAI(type) {
     return;
   }
 
-  const transcript = fullTranscript.trim();
+  // フィルタリングされたテキストを使用（除外チャンク・マーカー前を除く）
+  const transcript = getFilteredTranscriptText().trim();
   if (!transcript) {
-    alert('文字起こしがありません');
+    alert('文字起こしがありません（除外された部分のみの可能性があります）');
     return;
   }
 
@@ -1773,7 +1889,10 @@ function updateMeetingModeTime() {
 function clearTranscript() {
   if (confirm('文字起こしをクリアしますか？')) {
     fullTranscript = '';
-    document.getElementById('transcriptText').textContent = '';
+    transcriptChunks = [];
+    chunkIdCounter = 0;
+    meetingStartMarkerId = null;
+    renderTranscriptChunks();
   }
 }
 
@@ -1921,8 +2040,9 @@ function generateExportMarkdown(options = null) {
   if (opts.transcript) {
     md += `---\n\n`;
     md += `## 📜 文字起こし\n\n`;
-    const transcriptText = fullTranscript || '（なし）';
-    const lineCount = transcriptText.split('\n').length;
+    // フィルタリングされたテキストを使用
+    const transcriptText = getFilteredTranscriptText() || '（なし）';
+    const lineCount = transcriptText.split('\n').filter(l => l.trim()).length;
     md += `<details>\n`;
     md += `<summary>クリックして展開（全${lineCount}行）</summary>\n\n`;
     md += `${transcriptText}\n\n`;
