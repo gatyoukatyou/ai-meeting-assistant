@@ -195,27 +195,64 @@ function initDebugHUD() {
   hud.id = 'debugHUD';
   hud.style.cssText = 'position:fixed;bottom:10px;left:10px;background:rgba(0,0,0,0.85);color:#0f0;' +
     'font-family:monospace;font-size:11px;padding:8px 12px;border-radius:6px;z-index:9999;' +
-    'max-width:300px;max-height:200px;overflow-y:auto;';
+    'max-width:320px;max-height:250px;overflow-y:auto;pointer-events:none;';
   document.body.appendChild(hud);
+
+  // 最後のタップ情報を保持
+  var lastTapInfo = 'None';
+  var tapCount = 0;
+
+  // イベント検出（capture phaseで全イベントを捕捉）
+  document.addEventListener('pointerdown', function(e) {
+    tapCount++;
+    var targetId = e.target.id || '(no id)';
+    var targetClass = e.target.className || '(no class)';
+    lastTapInfo = e.target.tagName + ' #' + targetId + ' .' + (typeof targetClass === 'string' ? targetClass.split(' ')[0] : '');
+    console.log('[Debug] pointerdown:', lastTapInfo);
+  }, true);
+
+  document.addEventListener('touchstart', function(e) {
+    console.log('[Debug] touchstart:', e.target.tagName, e.target.id);
+  }, true);
+
+  document.addEventListener('click', function(e) {
+    console.log('[Debug] click:', e.target.tagName, e.target.id);
+  }, true);
 
   function updateDebugInfo() {
     var info = [];
     info.push('=== Debug HUD ===');
     info.push('Recording: ' + (isRecording ? 'YES' : 'NO'));
-    info.push('STT Provider: ' + (currentSTTProvider ? 'active' : 'none'));
-    info.push('Queue: ' + transcriptionQueue.length + ' items');
+    info.push('STT: ' + (currentSTTProvider ? 'active' : 'none'));
+    info.push('Queue: ' + transcriptionQueue.length);
     info.push('Chunks: ' + transcriptChunks.length);
-    info.push('Audio Stream: ' + (currentAudioStream ? 'active' : 'null'));
-    info.push('Cost (STT): ¥' + costs.transcript.total.toFixed(2));
-    info.push('Cost (LLM): ¥' + costs.llm.total.toFixed(2));
-    info.push('UA: ' + navigator.userAgent.substring(0, 50) + '...');
+    info.push('Stream: ' + (currentAudioStream ? 'active' : 'null'));
+    info.push('---');
+    info.push('Taps: ' + tapCount);
+    info.push('Last: ' + lastTapInfo);
+    info.push('---');
+    // ボタン位置でelementFromPointを実行
+    var btn = document.getElementById('recordBtn');
+    if (btn) {
+      var rect = btn.getBoundingClientRect();
+      var centerX = rect.left + rect.width / 2;
+      var centerY = rect.top + rect.height / 2;
+      var topEl = document.elementFromPoint(centerX, centerY);
+      if (topEl) {
+        var coveredBy = topEl.tagName + '#' + (topEl.id || '') + '.' + (topEl.className ? topEl.className.split(' ')[0] : '');
+        info.push('BtnTop: ' + coveredBy);
+        if (topEl !== btn && !btn.contains(topEl)) {
+          info.push('⚠️ BLOCKED!');
+        }
+      }
+    }
     hud.textContent = info.join('\n');
   }
 
   // 500ms毎に更新
   setInterval(updateDebugInfo, 500);
   updateDebugInfo();
-  console.log('[Debug] Debug HUD enabled');
+  console.log('[Debug] Debug HUD enabled with event tracking');
 }
 
 // =====================================
@@ -297,6 +334,11 @@ document.addEventListener('DOMContentLoaded', function() {
   const recordBtn = document.getElementById('recordBtn');
   if (recordBtn) {
     recordBtn.addEventListener('click', toggleRecording);
+    // iOS Safari用にtouchstartも追加
+    recordBtn.addEventListener('touchend', function(e) {
+      e.preventDefault(); // ゴーストクリック防止
+      toggleRecording();
+    }, { passive: false });
   }
 
   const exportBtn = document.getElementById('openExportBtn');
