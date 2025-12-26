@@ -1223,6 +1223,8 @@
         left: 1rem;
         right: 1rem;
         max-width: none;
+        /* 重要: クリックを通過させる */
+        pointer-events: none;
       }
 
       /* モーダルをスマホ用に調整 */
@@ -1283,9 +1285,13 @@
       flex-direction: column;
       gap: 0.5rem;
       max-width: 400px;
+      /* クリックを通過させる（空のコンテナがボタンを覆わないように） */
+      pointer-events: none;
     }
 
     .toast {
+      /* 個別のトーストはクリック可能に */
+      pointer-events: auto;
       background: var(--card-bg);
       border-radius: 0.75rem;
       padding: 1rem 1.25rem;
