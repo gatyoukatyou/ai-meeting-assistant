@@ -12,6 +12,11 @@ let isStopping = false;
 let finalStopPromise = null;
 let finalStopResolve = null;
 
+// Phase 5: 会議中モード用
+let isMeetingMode = false;
+let recordingStartTime = null;
+let meetingModeTimerId = null;
+
 function createFinalStopPromise() {
   finalStopPromise = new Promise(resolve => { finalStopResolve = resolve; });
 }
@@ -264,6 +269,41 @@ document.addEventListener('DOMContentLoaded', function() {
       detailsToggle.classList.toggle('active');
       detailsPanel.classList.toggle('show');
     });
+  }
+
+  // Phase 2: フローティング停止ボタン（スマホ用）
+  const floatingStopBtn = document.getElementById('floatingStopBtn');
+  if (floatingStopBtn) {
+    floatingStopBtn.addEventListener('click', toggleRecording);
+  }
+
+  // Phase 3: メインパネル切り替えタブ（スマホ用）
+  document.querySelectorAll('.main-tab[data-main-tab]').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const tabName = tab.getAttribute('data-main-tab');
+      if (tabName) {
+        switchMainTab(tabName);
+      }
+    });
+  });
+
+  // Phase 5: 会議中モード
+  const meetingModeToggle = document.getElementById('meetingModeToggle');
+  if (meetingModeToggle) {
+    meetingModeToggle.addEventListener('click', enterMeetingMode);
+  }
+
+  const meetingModeStopBtn = document.getElementById('meetingModeStopBtn');
+  if (meetingModeStopBtn) {
+    meetingModeStopBtn.addEventListener('click', async () => {
+      await stopRecording();
+      exitMeetingMode();
+    });
+  }
+
+  const meetingModeExitBtn = document.getElementById('meetingModeExitBtn');
+  if (meetingModeExitBtn) {
+    meetingModeExitBtn.addEventListener('click', exitMeetingMode);
   }
 
   // LLMインジケーターの更新
@@ -1317,6 +1357,8 @@ function getDefaultModel(provider) {
 function updateUI() {
   const btn = document.getElementById('recordBtn');
   const badge = document.getElementById('statusBadge');
+  const floatingBtn = document.getElementById('floatingStopBtn');
+  const meetingModeToggle = document.getElementById('meetingModeToggle');
 
   if (isRecording) {
     btn.textContent = '⏹ 録音停止';
@@ -1325,6 +1367,18 @@ function updateUI() {
     badge.textContent = '🔴 録音中';
     badge.classList.remove('status-ready');
     badge.classList.add('status-recording');
+    // Phase 2: フローティング停止ボタンを表示（スマホ用）
+    if (floatingBtn) {
+      floatingBtn.classList.add('visible');
+    }
+    // Phase 5: 会議中モード切替ボタンを表示（スマホ用）
+    if (meetingModeToggle) {
+      meetingModeToggle.classList.add('visible');
+    }
+    // 録音開始時間を記録
+    if (!recordingStartTime) {
+      recordingStartTime = Date.now();
+    }
   } else {
     btn.textContent = '🎤 録音開始';
     btn.classList.remove('btn-danger');
@@ -1332,6 +1386,16 @@ function updateUI() {
     badge.textContent = '⏸ 待機中';
     badge.classList.remove('status-recording');
     badge.classList.add('status-ready');
+    // Phase 2: フローティング停止ボタンを非表示
+    if (floatingBtn) {
+      floatingBtn.classList.remove('visible');
+    }
+    // Phase 5: 会議中モード切替ボタンを非表示
+    if (meetingModeToggle) {
+      meetingModeToggle.classList.remove('visible');
+    }
+    // 録音開始時間をリセット
+    recordingStartTime = null;
   }
 }
 
@@ -1459,6 +1523,74 @@ function switchTab(tabName) {
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
   document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
   document.getElementById(`tab-${tabName}`).classList.add('active');
+}
+
+// Phase 3: メインパネル切り替え（スマホ用）
+function switchMainTab(tabName) {
+  // タブの切り替え
+  document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
+  document.querySelector(`.main-tab[data-main-tab="${tabName}"]`).classList.add('active');
+
+  // パネルの切り替え
+  const transcriptPanel = document.getElementById('transcriptPanel');
+  const aiPanel = document.getElementById('aiPanel');
+
+  if (tabName === 'transcript') {
+    transcriptPanel.classList.add('active');
+    aiPanel.classList.remove('active');
+  } else if (tabName === 'ai') {
+    transcriptPanel.classList.remove('active');
+    aiPanel.classList.add('active');
+  }
+}
+
+// Phase 5: 会議中モード
+function enterMeetingMode() {
+  if (!isRecording) return;
+
+  isMeetingMode = true;
+  const overlay = document.getElementById('meetingModeOverlay');
+  if (overlay) {
+    overlay.classList.add('active');
+  }
+
+  // タイマー開始
+  updateMeetingModeTime();
+  meetingModeTimerId = setInterval(updateMeetingModeTime, 1000);
+}
+
+function exitMeetingMode() {
+  isMeetingMode = false;
+  const overlay = document.getElementById('meetingModeOverlay');
+  if (overlay) {
+    overlay.classList.remove('active');
+  }
+
+  // タイマー停止
+  if (meetingModeTimerId) {
+    clearInterval(meetingModeTimerId);
+    meetingModeTimerId = null;
+  }
+}
+
+function updateMeetingModeTime() {
+  if (!recordingStartTime) return;
+
+  const elapsed = Date.now() - recordingStartTime;
+  const hours = Math.floor(elapsed / 3600000);
+  const minutes = Math.floor((elapsed % 3600000) / 60000);
+  const seconds = Math.floor((elapsed % 60000) / 1000);
+
+  const timeStr = [
+    hours.toString().padStart(2, '0'),
+    minutes.toString().padStart(2, '0'),
+    seconds.toString().padStart(2, '0')
+  ].join(':');
+
+  const timeEl = document.getElementById('meetingModeTime');
+  if (timeEl) {
+    timeEl.textContent = timeStr;
+  }
 }
 
 function clearTranscript() {

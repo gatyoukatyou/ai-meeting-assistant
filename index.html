@@ -1218,6 +1218,259 @@
         opacity: 0;
       }
     }
+
+    /* Phase 2: フローティング停止ボタン（録音中のみ表示） */
+    .floating-stop-btn {
+      display: none;
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 1500;
+      padding: 1rem 3rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      border-radius: 3rem;
+      box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+      animation: floatPulse 2s infinite;
+    }
+
+    .floating-stop-btn.visible {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    @keyframes floatPulse {
+      0%, 100% {
+        box-shadow: 0 8px 24px rgba(220, 38, 38, 0.4);
+        transform: translateX(-50%) scale(1);
+      }
+      50% {
+        box-shadow: 0 12px 32px rgba(220, 38, 38, 0.6);
+        transform: translateX(-50%) scale(1.02);
+      }
+    }
+
+    /* スマホでは常に表示、PCでは非表示（ヘッダーボタンで十分） */
+    @media (min-width: 768px) {
+      .floating-stop-btn {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 767px) {
+      .floating-stop-btn {
+        bottom: 1.5rem;
+        padding: 1.25rem 2.5rem;
+        font-size: 1.125rem;
+        min-height: 60px;
+      }
+    }
+
+    /* Phase 3: メインパネル切り替えタブ（スマホ専用） */
+    .main-tabs {
+      display: none;
+    }
+
+    @media (max-width: 1024px) {
+      .main-tabs {
+        display: flex;
+        background: var(--card-bg);
+        border-bottom: 1px solid var(--border);
+        position: sticky;
+        top: 0;
+        z-index: 100;
+      }
+
+      .main-tab {
+        flex: 1;
+        padding: 1rem;
+        border: none;
+        background: none;
+        font-size: 0.9rem;
+        font-weight: 500;
+        color: var(--text-secondary);
+        cursor: pointer;
+        border-bottom: 3px solid transparent;
+        transition: all 0.15s;
+        min-height: 48px;
+      }
+
+      .main-tab:hover {
+        color: var(--text);
+        background: var(--border-light);
+      }
+
+      .main-tab.active {
+        color: var(--primary);
+        border-bottom-color: var(--primary);
+        background: var(--accent-blue);
+      }
+
+      .main-container {
+        padding: 0;
+        gap: 0;
+      }
+
+      .main-container .panel {
+        display: none;
+        border-radius: 0;
+        border-left: none;
+        border-right: none;
+      }
+
+      .main-container .panel.active {
+        display: block;
+      }
+
+      .panel-body {
+        max-height: calc(100vh - 350px);
+      }
+    }
+
+    /* Phase 4: コスト表示の簡略化（スマホ専用） */
+    @media (max-width: 767px) {
+      /* スマホでは詳細コスト表示を非表示にし、合計のみ表示 */
+      .cost-display {
+        padding: 0.625rem 1rem;
+      }
+
+      .cost-display .cost-header {
+        font-size: 0.8rem;
+      }
+
+      /* 詳細コストセクションをデフォルトで非表示 */
+      .cost-details {
+        display: none;
+      }
+
+      /* 文字起こしパネルのコスト詳細を非表示 */
+      #transcriptCostPanel .cost-details,
+      #llmCostPanel .cost-details {
+        display: none;
+      }
+
+      /* 展開時のみ表示 */
+      #transcriptCostPanel .cost-details.show,
+      #llmCostPanel .cost-details.show {
+        display: block;
+        font-size: 0.7rem;
+      }
+
+      /* コストバッジを小さく */
+      .cost-badge {
+        padding: 0.2rem 0.5rem;
+        font-size: 0.6rem;
+      }
+
+      /* 合計コストを目立たせる */
+      .cost-row.cost-total {
+        font-size: 0.875rem;
+        padding: 0.5rem 0;
+      }
+    }
+
+    /* Phase 5: 会議中モード（最小UIモード） */
+    .meeting-mode-overlay {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      z-index: 2000;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 2rem;
+    }
+
+    .meeting-mode-overlay.active {
+      display: flex;
+    }
+
+    .meeting-mode-status {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 3rem;
+    }
+
+    .meeting-mode-icon {
+      font-size: 4rem;
+      margin-bottom: 1rem;
+      animation: recordingPulse 2s infinite;
+    }
+
+    @keyframes recordingPulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.7; transform: scale(1.1); }
+    }
+
+    .meeting-mode-text {
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
+
+    .meeting-mode-time {
+      font-size: 3rem;
+      font-weight: 300;
+      font-family: 'SF Mono', monospace;
+      letter-spacing: 0.1em;
+    }
+
+    .meeting-mode-hint {
+      font-size: 0.875rem;
+      color: rgba(255, 255, 255, 0.6);
+      margin-top: 1rem;
+    }
+
+    .meeting-mode-stop-btn {
+      padding: 1.5rem 4rem;
+      font-size: 1.25rem;
+      font-weight: 600;
+      border-radius: 3rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .meeting-mode-exit-btn {
+      padding: 0.75rem 2rem;
+      font-size: 0.875rem;
+      background: rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 2rem;
+      cursor: pointer;
+    }
+
+    .meeting-mode-exit-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* 会議中モード切替ボタン（録音中のみ表示） */
+    .meeting-mode-toggle {
+      display: none;
+    }
+
+    @media (max-width: 767px) {
+      .meeting-mode-toggle.visible {
+        display: inline-flex;
+        position: fixed;
+        bottom: 6rem;
+        left: 50%;
+        transform: translateX(-50%);
+        z-index: 1400;
+        padding: 0.625rem 1.25rem;
+        font-size: 0.8rem;
+        background: rgba(255, 255, 255, 0.9);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 2rem;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+      }
+    }
   </style>
 </head>
 <body>
@@ -1268,9 +1521,15 @@
     </div>
   </header>
 
+  <!-- Phase 3: メインパネル切り替えタブ（スマホ専用） -->
+  <div class="main-tabs">
+    <button class="main-tab active" data-main-tab="transcript">📝 文字起こし</button>
+    <button class="main-tab" data-main-tab="ai">💬 AI回答</button>
+  </div>
+
   <main class="main-container">
     <!-- 文字起こしパネル -->
-    <div class="panel">
+    <div class="panel active" id="transcriptPanel">
       <div class="panel-header">
         <span class="panel-title">📝 文字起こし</span>
         <button class="btn btn-ghost" id="clearTranscriptBtn" style="font-size: 0.75rem;">クリア</button>
@@ -1330,7 +1589,7 @@
     </div>
 
     <!-- AIパネル -->
-    <div class="panel">
+    <div class="panel" id="aiPanel">
       <div class="panel-header">
         <span class="panel-title">💬 AI回答</span>
         <span class="llm-indicator" id="llmIndicator" title="使用中のLLM">🤖 未設定</span>
@@ -1498,6 +1757,32 @@
 
   <!-- トースト通知コンテナ -->
   <div class="toast-container" id="toastContainer"></div>
+
+  <!-- Phase 2: フローティング停止ボタン（録音中のみ表示） -->
+  <button class="btn btn-danger floating-stop-btn" id="floatingStopBtn">
+    ⏹ 録音停止
+  </button>
+
+  <!-- Phase 5: 会議中モード切替ボタン（録音中のみ表示） -->
+  <button class="btn meeting-mode-toggle" id="meetingModeToggle">
+    🎯 会議中モード
+  </button>
+
+  <!-- Phase 5: 会議中モードオーバーレイ -->
+  <div class="meeting-mode-overlay" id="meetingModeOverlay">
+    <div class="meeting-mode-status">
+      <div class="meeting-mode-icon">🔴</div>
+      <div class="meeting-mode-text">録音中</div>
+      <div class="meeting-mode-time" id="meetingModeTime">00:00:00</div>
+      <div class="meeting-mode-hint">会議に集中してください</div>
+    </div>
+    <button class="btn btn-danger meeting-mode-stop-btn" id="meetingModeStopBtn">
+      ⏹ 録音停止
+    </button>
+    <button class="meeting-mode-exit-btn" id="meetingModeExitBtn">
+      ← 通常画面に戻る
+    </button>
+  </div>
 
   <script src="js/secure-storage.js" defer></script>
   <!-- STT Provider抽象化レイヤー -->
