@@ -151,11 +151,11 @@ const PRICING = {
 
 // AI回答の履歴
 let aiResponses = {
-  summary: '',
-  opinion: '',
-  idea: '',
-  minutes: '', // 議事録（録音停止後に生成）
-  custom: [] // Q&A形式で蓄積
+  summary: [],  // { timestamp: '19:05', content: '...' }
+  opinion: [],  // { timestamp: '19:06', content: '...' }
+  idea: [],     // { timestamp: '19:07', content: '...' }
+  minutes: '',  // 議事録（録音停止後に生成、単一）
+  custom: []    // Q&A形式で蓄積 { q: '...', a: '...' }
 };
 
 function safeURL(input) {
@@ -1322,16 +1322,20 @@ ${targetText}`;
     if (type === 'custom') {
       answerEl.textContent = response;
       aiResponses.custom.push({ q: customQ, a: response, requestId });
-    } else if (type === 'summary' || type === 'minutes') {
-      // 要約・議事録は上書き
+    } else if (type === 'minutes') {
+      // 議事録は上書き（単一）
       document.getElementById(`response-${type}`).textContent = response;
-      aiResponses[type] = response;
+      aiResponses.minutes = response;
     } else {
-      // 意見・アイデアは蓄積
+      // 要約・意見・アイデアは配列で蓄積
       const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
-      const newResponse = `【${timestamp}】\n${response}`;
-      aiResponses[type] = aiResponses[type] ? `${aiResponses[type]}\n\n---\n\n${newResponse}` : newResponse;
-      document.getElementById(`response-${type}`).textContent = aiResponses[type];
+      aiResponses[type].push({ timestamp, content: response });
+
+      // UIに表示（全エントリを表示）
+      const displayText = aiResponses[type].map((entry, i) => {
+        return `━━━ #${i + 1}（${entry.timestamp}）━━━\n\n${entry.content}`;
+      }).join('\n\n');
+      document.getElementById(`response-${type}`).textContent = displayText;
     }
   } catch (err) {
     clearTimeout(timeoutId);
@@ -1869,24 +1873,38 @@ function generateExportMarkdown(options = null) {
     md += `${aiResponses.minutes}\n\n`;
   }
 
-  // 2. AI回答（要約・意見・アイデア）
-  const showSummary = opts.summary && aiResponses.summary;
-  const showOpinion = opts.opinion && aiResponses.opinion;
-  const showIdea = opts.idea && aiResponses.idea;
+  // 2. AI回答（要約・意見・アイデア）- 配列形式でタイムスタンプ付き
+  const showSummary = opts.summary && aiResponses.summary.length > 0;
+  const showOpinion = opts.opinion && aiResponses.opinion.length > 0;
+  const showIdea = opts.idea && aiResponses.idea.length > 0;
   const hasAIResponses = showSummary || showOpinion || showIdea;
+
+  // 配列形式のAI回答をフォーマット
+  const formatAIResponses = (entries, label, emoji) => {
+    if (entries.length === 1) {
+      // 1件の場合はシンプルに
+      return `### ${emoji} ${label}\n\n*${entries[0].timestamp}*\n\n${entries[0].content}\n\n`;
+    }
+    // 複数件の場合は番号付き
+    return entries.map((entry, i) => {
+      const header = `#### ${emoji} ${label} #${i + 1}（${entry.timestamp}）\n\n`;
+      const content = `${entry.content}\n\n`;
+      return header + content + (i < entries.length - 1 ? '---\n\n' : '');
+    }).join('');
+  };
 
   if (hasAIResponses) {
     md += `---\n\n`;
     md += `## 🤖 AI回答\n\n`;
 
     if (showSummary) {
-      md += `### 📋 要約\n\n${aiResponses.summary}\n\n`;
+      md += formatAIResponses(aiResponses.summary, '要約', '📋');
     }
     if (showOpinion) {
-      md += `### 💭 意見\n\n${aiResponses.opinion}\n\n`;
+      md += formatAIResponses(aiResponses.opinion, '意見', '💭');
     }
     if (showIdea) {
-      md += `### 💡 アイデア\n\n${aiResponses.idea}\n\n`;
+      md += formatAIResponses(aiResponses.idea, 'アイデア', '💡');
     }
   }
 
