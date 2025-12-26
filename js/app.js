@@ -333,12 +333,25 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const recordBtn = document.getElementById('recordBtn');
   if (recordBtn) {
-    recordBtn.addEventListener('click', toggleRecording);
-    // iOS Safari用にtouchstartも追加
+    // 二重発火防止用タイムスタンプ
+    var lastTouchEndAt = 0;
+
+    // iOS Safari用にtouchendを追加（clickより先に発火）
     recordBtn.addEventListener('touchend', function(e) {
-      e.preventDefault(); // ゴーストクリック防止
+      lastTouchEndAt = Date.now();
+      if (e.cancelable) e.preventDefault(); // ゴーストクリック防止
       toggleRecording();
     }, { passive: false });
+
+    // 通常のclickイベント（デスクトップ用 + touchend後の二重発火防止）
+    recordBtn.addEventListener('click', function(e) {
+      // touchend直後のclickは無視（二重発火防止）
+      if (Date.now() - lastTouchEndAt < 600) {
+        console.log('[Record] Ignoring click after touchend (anti-double-fire)');
+        return;
+      }
+      toggleRecording();
+    });
   }
 
   const exportBtn = document.getElementById('openExportBtn');
