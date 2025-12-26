@@ -916,6 +916,46 @@
       border: 1px solid var(--border);
     }
 
+    /* エクスポート項目選択 */
+    .export-options {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 0.5rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .export-option {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.5rem 0.75rem;
+      background: var(--border-light);
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    .export-option:hover {
+      background: var(--border);
+    }
+
+    .export-option input[type="checkbox"] {
+      width: 1rem;
+      height: 1rem;
+      accent-color: var(--primary);
+    }
+
+    .export-option span {
+      font-size: 0.875rem;
+    }
+
+    .export-presets {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+
     /* 設定インポート/エクスポート */
     .settings-transfer {
       margin-top: 1.5rem;
@@ -1750,6 +1790,47 @@
         <button class="modal-close" id="closeExportModalBtn">×</button>
       </div>
       <div class="modal-body">
+        <!-- 項目選択 -->
+        <div class="setting-group">
+          <label class="setting-label">出力項目を選択</label>
+          <div class="export-options">
+            <label class="export-option">
+              <input type="checkbox" id="exportMinutes" checked>
+              <span>📝 議事録</span>
+            </label>
+            <label class="export-option">
+              <input type="checkbox" id="exportSummary" checked>
+              <span>📋 要約</span>
+            </label>
+            <label class="export-option">
+              <input type="checkbox" id="exportOpinion" checked>
+              <span>💭 意見</span>
+            </label>
+            <label class="export-option">
+              <input type="checkbox" id="exportIdea" checked>
+              <span>💡 アイデア</span>
+            </label>
+            <label class="export-option">
+              <input type="checkbox" id="exportQA" checked>
+              <span>❓ Q&A</span>
+            </label>
+            <label class="export-option">
+              <input type="checkbox" id="exportTranscript" checked>
+              <span>📜 文字起こし</span>
+            </label>
+            <label class="export-option">
+              <input type="checkbox" id="exportCost" checked>
+              <span>💰 コスト詳細</span>
+            </label>
+          </div>
+          <div class="export-presets">
+            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('all')">全選択</button>
+            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('minutes')">議事録のみ</button>
+            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('ai')">AI回答のみ</button>
+            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('none')">クリア</button>
+          </div>
+        </div>
+        <!-- プレビュー -->
         <div class="setting-group">
           <label class="setting-label">プレビュー</label>
           <div class="export-preview" id="exportPreview"></div>

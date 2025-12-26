@@ -1777,9 +1777,61 @@ function clearTranscript() {
 // エクスポート
 // =====================================
 function openExportModal() {
-  const preview = generateExportMarkdown();
-  document.getElementById('exportPreview').textContent = preview;
+  updateExportPreview();
   document.getElementById('exportModal').classList.add('active');
+
+  // チェックボックスの変更時にプレビューを更新
+  const checkboxes = document.querySelectorAll('.export-option input[type="checkbox"]');
+  checkboxes.forEach(cb => {
+    cb.removeEventListener('change', updateExportPreview);
+    cb.addEventListener('change', updateExportPreview);
+  });
+}
+
+function updateExportPreview() {
+  const preview = generateExportMarkdown(getExportOptions());
+  document.getElementById('exportPreview').textContent = preview;
+}
+
+function getExportOptions() {
+  return {
+    minutes: document.getElementById('exportMinutes')?.checked ?? true,
+    summary: document.getElementById('exportSummary')?.checked ?? true,
+    opinion: document.getElementById('exportOpinion')?.checked ?? true,
+    idea: document.getElementById('exportIdea')?.checked ?? true,
+    qa: document.getElementById('exportQA')?.checked ?? true,
+    transcript: document.getElementById('exportTranscript')?.checked ?? true,
+    cost: document.getElementById('exportCost')?.checked ?? true
+  };
+}
+
+function setExportPreset(preset) {
+  const checkboxes = {
+    minutes: document.getElementById('exportMinutes'),
+    summary: document.getElementById('exportSummary'),
+    opinion: document.getElementById('exportOpinion'),
+    idea: document.getElementById('exportIdea'),
+    qa: document.getElementById('exportQA'),
+    transcript: document.getElementById('exportTranscript'),
+    cost: document.getElementById('exportCost')
+  };
+
+  const presets = {
+    all: { minutes: true, summary: true, opinion: true, idea: true, qa: true, transcript: true, cost: true },
+    minutes: { minutes: true, summary: false, opinion: false, idea: false, qa: false, transcript: false, cost: false },
+    ai: { minutes: false, summary: true, opinion: true, idea: true, qa: true, transcript: false, cost: false },
+    none: { minutes: false, summary: false, opinion: false, idea: false, qa: false, transcript: false, cost: false }
+  };
+
+  const selected = presets[preset] || presets.all;
+
+  Object.keys(checkboxes).forEach(key => {
+    if (checkboxes[key]) {
+      checkboxes[key].checked = selected[key];
+    }
+  });
+
+  updateExportPreview();
 }
 
 function closeExportModal() {
@@ -1790,39 +1842,56 @@ function closeWelcomeModal() {
   document.getElementById('welcomeModal').classList.remove('active');
 }
 
-function generateExportMarkdown() {
+function generateExportMarkdown(options = null) {
+  // デフォルトは全て有効
+  const opts = options || {
+    minutes: true, summary: true, opinion: true, idea: true,
+    qa: true, transcript: true, cost: true
+  };
+
   const now = new Date().toLocaleString('ja-JP');
   const total = costs.transcript.total + costs.llm.total;
 
   let md = `# 会議記録\n\n`;
   md += `**日時:** ${now}\n\n`;
 
+  // 選択された項目がない場合の警告
+  const hasAnySelection = Object.values(opts).some(v => v);
+  if (!hasAnySelection) {
+    md += `⚠️ エクスポートする項目が選択されていません。\n`;
+    return md;
+  }
+
   // 1. 議事録（最重要 - 一番上に配置）
-  if (aiResponses.minutes) {
+  if (opts.minutes && aiResponses.minutes) {
     md += `---\n\n`;
     md += `## 📝 議事録\n\n`;
     md += `${aiResponses.minutes}\n\n`;
   }
 
   // 2. AI回答（要約・意見・アイデア）
-  const hasAIResponses = aiResponses.summary || aiResponses.opinion || aiResponses.idea;
+  const showSummary = opts.summary && aiResponses.summary;
+  const showOpinion = opts.opinion && aiResponses.opinion;
+  const showIdea = opts.idea && aiResponses.idea;
+  const hasAIResponses = showSummary || showOpinion || showIdea;
+
   if (hasAIResponses) {
     md += `---\n\n`;
     md += `## 🤖 AI回答\n\n`;
 
-    if (aiResponses.summary) {
+    if (showSummary) {
       md += `### 📋 要約\n\n${aiResponses.summary}\n\n`;
     }
-    if (aiResponses.opinion) {
+    if (showOpinion) {
       md += `### 💭 意見\n\n${aiResponses.opinion}\n\n`;
     }
-    if (aiResponses.idea) {
+    if (showIdea) {
       md += `### 💡 アイデア\n\n${aiResponses.idea}\n\n`;
     }
   }
 
   // 3. Q&A
-  if (aiResponses.custom.length > 0) {
+  if (opts.qa && aiResponses.custom.length > 0) {
     md += `---\n\n`;
     md += `## ❓ Q&A\n\n`;
     aiResponses.custom.forEach((qa, i) => {
@@ -1831,44 +1900,57 @@ function generateExportMarkdown() {
   }
 
   // 4. 文字起こし（参照用 - 折りたたみ）
-  md += `---\n\n`;
-  md += `## 📜 文字起こし\n\n`;
-  const transcriptText = fullTranscript || '（なし）';
-  const lineCount = transcriptText.split('\n').length;
-  md += `<details>\n`;
-  md += `<summary>クリックして展開（全${lineCount}行）</summary>\n\n`;
-  md += `${transcriptText}\n\n`;
-  md += `</details>\n\n`;
+  if (opts.transcript) {
+    md += `---\n\n`;
+    md += `## 📜 文字起こし\n\n`;
+    const transcriptText = fullTranscript || '（なし）';
+    const lineCount = transcriptText.split('\n').length;
+    md += `<details>\n`;
+    md += `<summary>クリックして展開（全${lineCount}行）</summary>\n\n`;
+    md += `${transcriptText}\n\n`;
+    md += `</details>\n\n`;
+  }
 
   // 5. コスト詳細（付録）
-  md += `---\n\n`;
-  md += `## 💰 コスト詳細\n\n`;
-  md += `### 文字起こし（STT）\n`;
-  md += `- 処理時間: ${formatDuration(costs.transcript.duration)}\n`;
-  md += `- API呼び出し: ${costs.transcript.calls}回\n`;
-  md += `- OpenAI Whisper: ${formatCost(costs.transcript.byProvider.openai)}\n`;
-  md += `- Deepgram: ${formatCost(costs.transcript.byProvider.deepgram)}\n`;
-  md += `- AssemblyAI: ${formatCost(costs.transcript.byProvider.assemblyai)}\n`;
-  md += `- 小計: ${formatCost(costs.transcript.total)}\n\n`;
-  md += `### LLM（AI回答）\n`;
-  md += `- 入力トークン: ${formatNumber(costs.llm.inputTokens)}\n`;
-  md += `- 出力トークン: ${formatNumber(costs.llm.outputTokens)}\n`;
-  md += `- API呼び出し: ${costs.llm.calls}回\n`;
-  md += `- Gemini: ${formatCost(costs.llm.byProvider.gemini)}\n`;
-  md += `- Claude: ${formatCost(costs.llm.byProvider.claude)}\n`;
-  md += `- OpenAI: ${formatCost(costs.llm.byProvider.openai)}\n`;
-  md += `- Groq: ${formatCost(costs.llm.byProvider.groq)}\n`;
-  md += `- 小計: ${formatCost(costs.llm.total)}\n\n`;
-  md += `### 合計\n`;
-  md += `**${formatCost(total)}**\n\n`;
-  md += `---\n`;
-  md += `*この金額は概算です。実際の請求額とは異なる場合があります。*\n`;
+  if (opts.cost) {
+    md += `---\n\n`;
+    md += `## 💰 コスト詳細\n\n`;
+    md += `### 文字起こし（STT）\n`;
+    md += `- 処理時間: ${formatDuration(costs.transcript.duration)}\n`;
+    md += `- API呼び出し: ${costs.transcript.calls}回\n`;
+    md += `- OpenAI Whisper: ${formatCost(costs.transcript.byProvider.openai)}\n`;
+    md += `- Deepgram: ${formatCost(costs.transcript.byProvider.deepgram)}\n`;
+    md += `- AssemblyAI: ${formatCost(costs.transcript.byProvider.assemblyai)}\n`;
+    md += `- 小計: ${formatCost(costs.transcript.total)}\n\n`;
+    md += `### LLM（AI回答）\n`;
+    md += `- 入力トークン: ${formatNumber(costs.llm.inputTokens)}\n`;
+    md += `- 出力トークン: ${formatNumber(costs.llm.outputTokens)}\n`;
+    md += `- API呼び出し: ${costs.llm.calls}回\n`;
+    md += `- Gemini: ${formatCost(costs.llm.byProvider.gemini)}\n`;
+    md += `- Claude: ${formatCost(costs.llm.byProvider.claude)}\n`;
+    md += `- OpenAI: ${formatCost(costs.llm.byProvider.openai)}\n`;
+    md += `- Groq: ${formatCost(costs.llm.byProvider.groq)}\n`;
+    md += `- 小計: ${formatCost(costs.llm.total)}\n\n`;
+    md += `### 合計\n`;
+    md += `**${formatCost(total)}**\n\n`;
+    md += `---\n`;
+    md += `*この金額は概算です。実際の請求額とは異なる場合があります。*\n`;
+  }
 
   return md;
 }
 
 function downloadExport() {
-  const md = generateExportMarkdown();
+  const options = getExportOptions();
+
+  // 何も選択されていない場合は警告
+  const hasAny = Object.values(options).some(v => v);
+  if (!hasAny) {
+    showToast('エクスポートする項目を選択してください', 'warning');
+    return;
+  }
+
+  const md = generateExportMarkdown(options);
   const blob = new Blob([md], { type: 'text/markdown' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1876,6 +1958,9 @@ function downloadExport() {
   a.download = `meeting-${new Date().toISOString().split('T')[0]}.md`;
   a.click();
   URL.revokeObjectURL(url);
+
+  closeExportModal();
+  showToast('エクスポートしました', 'success');
 }
 
 // =====================================
