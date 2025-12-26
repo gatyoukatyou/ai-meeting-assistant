@@ -929,7 +929,7 @@ function resolveQueueDrain() {
 // ユーザー辞書（固有名詞のヒント）- 設定画面から登録可能
 // ローマ字＋カタカナ併記で認識精度向上（OpenAI推奨）
 // デフォルト辞書 + ユーザー辞書を結合して使用
-const DEFAULT_DICTIONARY = 'AI Meeting Assistant, OpenAI, Anthropic, Gemini, Whisper';
+// NOTE: DEFAULT_DICTIONARY は js/stt/providers/openai_chunked.js で定義済み
 let whisperUserDictionary = '';
 
 // ユーザー辞書を読み込む
