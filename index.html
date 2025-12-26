@@ -498,15 +498,27 @@
 
         // Start recording
         async function startRecording() {
+            // iOS Safari対応: ユーザー操作直後にgetUserMediaを呼び出す
+            // Safariは「最初の非同期処理前にgetUserMediaを呼ぶ」ことを強く要求する
+            let tempAudioStream;
+            try {
+                tempAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            } catch (error) {
+                alert('マイクへのアクセスに失敗しました');
+                return;
+            }
+
             const apiKey = document.getElementById('apiKey').value.trim();
             if (!apiKey) {
+                // バリデーション失敗時はストリームを解放
+                tempAudioStream.getTracks().forEach(track => track.stop());
                 alert('OpenAI API Keyを入力してください');
                 return;
             }
 
             try {
-                // Request microphone access
-                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                // 一時取得したストリームを使用
+                const stream = tempAudioStream;
 
                 // Setup audio context for visualizer
                 audioContext = new (window.AudioContext || window.webkitAudioContext)();
@@ -575,6 +587,10 @@
                 }
 
             } catch (error) {
+                // エラー発生時はストリームを解放
+                if (tempAudioStream) {
+                    tempAudioStream.getTracks().forEach(track => track.stop());
+                }
                 alert('エラー: ' + error.message);
                 console.error(error);
             }
