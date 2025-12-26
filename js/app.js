@@ -17,6 +17,36 @@ let isMeetingMode = false;
 let recordingStartTime = null;
 let meetingModeTimerId = null;
 
+// Q&A送信ガード（Issue #2, #3対応）
+let isSubmittingQA = false;
+let lastQAQuestion = '';
+let lastQAQuestionTime = 0;
+const QA_DUPLICATE_THRESHOLD_MS = 5000; // 5秒以内の同一質問は重複とみなす
+const QA_TIMEOUT_MS = 30000; // 30秒タイムアウト
+
+// Q&Aリクエストログ（Issue #3対応）
+let qaEventLog = [];
+
+function generateQARequestId() {
+  return `qa_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+}
+
+function logQA(requestId, event, details = {}) {
+  const timestamp = new Date().toISOString();
+  console.log(`[Q&A] ${event}: ${requestId}`, details);
+  qaEventLog.push({ timestamp, requestId, event, ...details });
+}
+
+function isDuplicateQuestion(question) {
+  const now = Date.now();
+  if (question === lastQAQuestion && now - lastQAQuestionTime < QA_DUPLICATE_THRESHOLD_MS) {
+    return true;
+  }
+  lastQAQuestion = question;
+  lastQAQuestionTime = now;
+  return false;
+}
+
 function createFinalStopPromise() {
   finalStopPromise = new Promise(resolve => { finalStopResolve = resolve; });
 }
@@ -836,6 +866,21 @@ async function processQueue() {
           // handleTranscriptResultはprovider.emitTranscript経由で呼ばれる
           // ここでは重複呼び出しを避けるため、直接呼び出さない
 
+          // コスト計算（Whisperは分単位課金）
+          const estimatedSeconds = Math.max(audioBlob.size / 4000, 1);
+          const estimatedMinutes = estimatedSeconds / 60;
+          const audioCost = estimatedMinutes * PRICING.transcription.openai.perMinute;
+
+          costs.transcript.duration += estimatedSeconds;
+          costs.transcript.calls += 1;
+          costs.transcript.byProvider.openai += audioCost;
+          costs.transcript.total += audioCost;
+
+          console.log(`[STT Cost] id=${blobId}, duration=${estimatedSeconds.toFixed(1)}s, cost=¥${audioCost.toFixed(2)}, total=¥${costs.transcript.total.toFixed(2)}`);
+
+          updateCosts();
+          checkCostAlert();
+
           // 前チャンクの末尾を保存（次回のWhisper prompt用）
           if (text && text.trim()) {
             lastTranscriptTail = text.trim().slice(-200);
@@ -1128,6 +1173,18 @@ function getDefaultModel(provider) {
 // AI質問機能
 // =====================================
 async function askAI(type) {
+  const requestId = generateQARequestId();
+  const questionForLog = type === 'custom'
+    ? document.getElementById('customQuestion').value.trim()
+    : type;
+
+  // 送信ガード: 送信中は処理しない
+  if (isSubmittingQA) {
+    logQA(requestId, 'blocked', { reason: 'already_submitting', question: questionForLog });
+    showToast('送信中です。しばらくお待ちください。', 'warning');
+    return;
+  }
+
   const transcript = fullTranscript.trim();
   if (!transcript) {
     alert('文字起こしがありません');
@@ -1168,25 +1225,41 @@ async function askAI(type) {
         alert('質問を入力してください');
         return;
       }
+      // 重複チェック
+      if (isDuplicateQuestion(customQ)) {
+        logQA(requestId, 'blocked', { reason: 'duplicate_question', question: customQ });
+        showToast('同じ質問が直近で送信されました。少し待ってから再度お試しください。', 'warning');
+        return;
+      }
       prompt = `以下の会議内容について質問に答えてください。\n\n【会議内容】\n${targetText}\n\n【質問】\n${customQ}`;
       document.getElementById('customQuestion').value = '';
       break;
   }
 
+  // 送信ガードON
+  isSubmittingQA = true;
+  disableAIButtons(true);
+
+  logQA(requestId, 'started', { type, question: questionForLog, provider });
+
   // タブを切り替え
   switchTab(type);
 
-  // ローディング表示
+  // ローディング表示用の要素参照を保持
+  let answerEl = null;
+  let qaItem = null;
+
   if (type === 'custom') {
     const qaHistory = document.getElementById('qa-history');
-    const qaItem = document.createElement('div');
+    qaItem = document.createElement('div');
     qaItem.className = 'qa-item';
+    qaItem.dataset.requestId = requestId;
 
     const questionEl = document.createElement('div');
     questionEl.className = 'qa-question';
     questionEl.textContent = `Q: ${customQ}`;
 
-    const answerEl = document.createElement('div');
+    answerEl = document.createElement('div');
     answerEl.className = 'qa-answer';
     const loading = document.createElement('span');
     loading.className = 'loading';
@@ -1205,15 +1278,27 @@ async function askAI(type) {
     responseEl.appendChild(document.createTextNode(' 回答を生成中...'));
   }
 
+  // タイムアウト付きLLM呼び出し
+  const startTime = Date.now();
+  let timeoutId = null;
+
   try {
-    const response = await callLLM(provider, prompt);
+    const llmPromise = callLLM(provider, prompt);
+    const timeoutPromise = new Promise((_, reject) => {
+      timeoutId = setTimeout(() => {
+        reject(new Error('リクエストがタイムアウトしました（30秒）'));
+      }, QA_TIMEOUT_MS);
+    });
+
+    const response = await Promise.race([llmPromise, timeoutPromise]);
+    clearTimeout(timeoutId);
+
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    logQA(requestId, 'completed', { type, duration: `${duration}s` });
 
     if (type === 'custom') {
-      // Q&A履歴を更新
-      const qaItems = document.querySelectorAll('#qa-history .qa-item');
-      const lastItem = qaItems[qaItems.length - 1];
-      lastItem.querySelector('.qa-answer').textContent = response;
-      aiResponses.custom.push({ q: customQ, a: response });
+      answerEl.textContent = response;
+      aiResponses.custom.push({ q: customQ, a: response, requestId });
     } else if (type === 'summary') {
       // 要約は上書き
       document.getElementById(`response-${type}`).textContent = response;
@@ -1226,16 +1311,69 @@ async function askAI(type) {
       document.getElementById(`response-${type}`).textContent = aiResponses[type];
     }
   } catch (err) {
+    clearTimeout(timeoutId);
+    const duration = ((Date.now() - startTime) / 1000).toFixed(1);
+    const isTimeout = err.message.includes('タイムアウト');
+
+    logQA(requestId, isTimeout ? 'timeout' : 'failed', {
+      type,
+      duration: `${duration}s`,
+      error: err.message
+    });
+
     console.error('AI呼び出しエラー:', err);
-    const errorMsg = `エラーが発生しました: ${err.message}`;
+    const errorMsg = isTimeout
+      ? `⏱️ タイムアウト（30秒）。再度お試しください。`
+      : `エラーが発生しました: ${err.message}`;
+
     if (type === 'custom') {
-      const qaItems = document.querySelectorAll('#qa-history .qa-item');
-      const lastItem = qaItems[qaItems.length - 1];
-      lastItem.querySelector('.qa-answer').textContent = errorMsg;
+      // answerElを直接使用（既に参照を保持している）
+      if (answerEl) {
+        answerEl.innerHTML = `<span class="error-text">${errorMsg}</span>`;
+        // 再試行ボタンを追加
+        const retryBtn = document.createElement('button');
+        retryBtn.className = 'btn btn-ghost btn-sm';
+        retryBtn.textContent = '🔄 再試行';
+        retryBtn.onclick = () => {
+          // 失敗したアイテムを削除して再送信
+          if (qaItem && qaItem.parentNode) {
+            qaItem.parentNode.removeChild(qaItem);
+          }
+          document.getElementById('customQuestion').value = customQ;
+          // 重複チェックをリセット
+          lastQAQuestion = '';
+          lastQAQuestionTime = 0;
+          askAI('custom');
+        };
+        answerEl.appendChild(document.createElement('br'));
+        answerEl.appendChild(retryBtn);
+      }
     } else {
-      document.getElementById(`response-${type}`).textContent = errorMsg;
+      document.getElementById(`response-${type}`).innerHTML =
+        `<span class="error-text">${errorMsg}</span>`;
     }
+  } finally {
+    // 送信ガードOFF
+    isSubmittingQA = false;
+    disableAIButtons(false);
   }
+}
+
+// AIボタンのdisable制御
+function disableAIButtons(disabled) {
+  const buttons = [
+    ...document.querySelectorAll('.ask-ai-btn'),
+    document.getElementById('askCustomBtn')
+  ].filter(Boolean);
+
+  buttons.forEach(btn => {
+    btn.disabled = disabled;
+    if (disabled) {
+      btn.classList.add('btn-disabled');
+    } else {
+      btn.classList.remove('btn-disabled');
+    }
+  });
 }
 
 async function callLLM(provider, prompt) {
