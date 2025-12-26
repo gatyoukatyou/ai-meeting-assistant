@@ -299,6 +299,10 @@ function checkBrowserCompatibility() {
 // 初期化
 // =====================================
 document.addEventListener('DOMContentLoaded', function() {
+  try {
+  // JS読み込み確認（デバッグ用）
+  console.log('[Init] DOMContentLoaded fired, JS loaded successfully');
+
   // セキュリティオプション：ブラウザを閉じたらクリア
   if (SecureStorage.getOption('clearOnClose', false)) {
     // sessionStorageにフラグがなければ、新しいセッション
@@ -500,15 +504,28 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // LLMインジケーターの更新
   updateLLMIndicator();
+
+  console.log('[Init] All event listeners attached successfully');
+  } catch (e) {
+    // 初期化エラーを視覚的に表示
+    console.error('[Init] Error during initialization:', e);
+    alert('初期化エラー: ' + e.message);
+  }
 });
 
 // 録音機能
 // =====================================
 async function toggleRecording() {
-  if (isRecording) {
-    await stopRecording();
-  } else {
-    await startRecording();
+  console.log('[Record] toggleRecording called, isRecording:', isRecording);
+  try {
+    if (isRecording) {
+      await stopRecording();
+    } else {
+      await startRecording();
+    }
+  } catch (e) {
+    console.error('[Record] Error in toggleRecording:', e);
+    alert('録音エラー: ' + e.message);
   }
 }
 

@@ -1616,7 +1616,7 @@
     <!-- メイン操作エリア（スマホで目立つ） -->
     <div class="header-main">
       <span class="status-badge status-ready" id="statusBadge">⏸ 待機中</span>
-      <button class="btn btn-primary record-btn-main" id="recordBtn">🎤 録音開始</button>
+      <button class="btn btn-primary record-btn-main" id="recordBtn" ontouchend="event.preventDefault();if(typeof toggleRecording==='function'){toggleRecording();}else{alert('JS未読込');}" onclick="if(typeof toggleRecording==='function'){toggleRecording();}else{alert('JS未読込');}">🎤 録音開始</button>
     </div>
 
     <!-- 詳細設定（スマホでは折りたたみ） -->
