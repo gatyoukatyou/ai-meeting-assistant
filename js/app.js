@@ -154,6 +154,7 @@ let aiResponses = {
   summary: '',
   opinion: '',
   idea: '',
+  minutes: '', // 議事録（録音停止後に生成）
   custom: [] // Q&A形式で蓄積
 };
 
@@ -1219,6 +1220,28 @@ async function askAI(type) {
     case 'idea':
       prompt = `以下の会議内容を踏まえて、新しいアイデアや提案を3つ挙げてください。\n\n${targetText}`;
       break;
+    case 'minutes':
+      // 議事録は録音停止後のみ
+      if (isRecording) {
+        showToast('議事録は録音停止後に作成できます', 'warning');
+        return;
+      }
+      prompt = `以下の会議の文字起こしから、構造化された議事録を作成してください。
+
+含めるべき項目:
+1. **議題**: 話し合われた主要トピックをリストアップ
+2. **決定事項**: 結論が出たことを明記
+3. **タスク・アクション**: 誰が何をするか（可能な範囲で）
+4. **次回予定**: 次のアクションや予定があれば記載
+
+フォーマット:
+- 見出しは ## を使用
+- 箇条書きを活用
+- 重要な内容は **太字** で強調
+
+【会議の文字起こし】
+${targetText}`;
+      break;
     case 'custom':
       customQ = document.getElementById('customQuestion').value.trim();
       if (!customQ) {
@@ -1299,8 +1322,8 @@ async function askAI(type) {
     if (type === 'custom') {
       answerEl.textContent = response;
       aiResponses.custom.push({ q: customQ, a: response, requestId });
-    } else if (type === 'summary') {
-      // 要約は上書き
+    } else if (type === 'summary' || type === 'minutes') {
+      // 要約・議事録は上書き
       document.getElementById(`response-${type}`).textContent = response;
       aiResponses[type] = response;
     } else {
@@ -1497,6 +1520,7 @@ function updateUI() {
   const badge = document.getElementById('statusBadge');
   const floatingBtn = document.getElementById('floatingStopBtn');
   const meetingModeToggle = document.getElementById('meetingModeToggle');
+  const minutesBtn = document.getElementById('minutesBtn');
 
   if (isRecording) {
     btn.textContent = '⏹ 録音停止';
@@ -1512,6 +1536,11 @@ function updateUI() {
     // Phase 5: 会議中モード切替ボタンを表示（スマホ用）
     if (meetingModeToggle) {
       meetingModeToggle.classList.add('visible');
+    }
+    // 議事録ボタンは録音中は無効
+    if (minutesBtn) {
+      minutesBtn.disabled = true;
+      minutesBtn.title = '録音停止後に利用可能';
     }
     // 録音開始時間を記録
     if (!recordingStartTime) {
@@ -1531,6 +1560,12 @@ function updateUI() {
     // Phase 5: 会議中モード切替ボタンを非表示
     if (meetingModeToggle) {
       meetingModeToggle.classList.remove('visible');
+    }
+    // 議事録ボタンは録音停止後かつ文字起こしがある場合に有効
+    if (minutesBtn) {
+      const hasTranscript = fullTranscript && fullTranscript.trim().length > 0;
+      minutesBtn.disabled = !hasTranscript;
+      minutesBtn.title = hasTranscript ? '会議の議事録を作成' : '文字起こしがありません';
     }
     // 録音開始時間をリセット
     recordingStartTime = null;
@@ -1761,27 +1796,51 @@ function generateExportMarkdown() {
 
   let md = `# 会議記録\n\n`;
   md += `**日時:** ${now}\n\n`;
-  md += `---\n\n`;
-  md += `## 📝 文字起こし\n\n`;
-  md += fullTranscript || '（なし）';
-  md += `\n\n---\n\n`;
 
-  if (aiResponses.summary) {
-    md += `## 📋 要約\n\n${aiResponses.summary}\n\n`;
+  // 1. 議事録（最重要 - 一番上に配置）
+  if (aiResponses.minutes) {
+    md += `---\n\n`;
+    md += `## 📝 議事録\n\n`;
+    md += `${aiResponses.minutes}\n\n`;
   }
-  if (aiResponses.opinion) {
-    md += `## 💭 意見\n\n${aiResponses.opinion}\n\n`;
+
+  // 2. AI回答（要約・意見・アイデア）
+  const hasAIResponses = aiResponses.summary || aiResponses.opinion || aiResponses.idea;
+  if (hasAIResponses) {
+    md += `---\n\n`;
+    md += `## 🤖 AI回答\n\n`;
+
+    if (aiResponses.summary) {
+      md += `### 📋 要約\n\n${aiResponses.summary}\n\n`;
+    }
+    if (aiResponses.opinion) {
+      md += `### 💭 意見\n\n${aiResponses.opinion}\n\n`;
+    }
+    if (aiResponses.idea) {
+      md += `### 💡 アイデア\n\n${aiResponses.idea}\n\n`;
+    }
   }
-  if (aiResponses.idea) {
-    md += `## 💡 アイデア\n\n${aiResponses.idea}\n\n`;
-  }
+
+  // 3. Q&A
   if (aiResponses.custom.length > 0) {
+    md += `---\n\n`;
     md += `## ❓ Q&A\n\n`;
     aiResponses.custom.forEach((qa, i) => {
       md += `### Q${i+1}: ${qa.q}\n\n${qa.a}\n\n`;
     });
   }
 
+  // 4. 文字起こし（参照用 - 折りたたみ）
+  md += `---\n\n`;
+  md += `## 📜 文字起こし\n\n`;
+  const transcriptText = fullTranscript || '（なし）';
+  const lineCount = transcriptText.split('\n').length;
+  md += `<details>\n`;
+  md += `<summary>クリックして展開（全${lineCount}行）</summary>\n\n`;
+  md += `${transcriptText}\n\n`;
+  md += `</details>\n\n`;
+
+  // 5. コスト詳細（付録）
   md += `---\n\n`;
   md += `## 💰 コスト詳細\n\n`;
   md += `### 文字起こし（STT）\n`;

@@ -1600,6 +1600,7 @@
           <button class="btn btn-primary ask-ai-btn" data-ai-type="summary">📋 要約</button>
           <button class="btn btn-secondary ask-ai-btn" data-ai-type="opinion">💭 意見を聞く</button>
           <button class="btn btn-secondary ask-ai-btn" data-ai-type="idea">💡 アイデア</button>
+          <button class="btn btn-secondary ask-ai-btn" data-ai-type="minutes" id="minutesBtn" disabled title="録音停止後に利用可能">📝 議事録</button>
         </div>
         <div class="custom-question">
           <input type="text" id="customQuestion" placeholder="自由に質問...">
@@ -1611,6 +1612,7 @@
         <button class="tab active" data-tab="summary">要約</button>
         <button class="tab" data-tab="opinion">意見</button>
         <button class="tab" data-tab="idea">アイデア</button>
+        <button class="tab" data-tab="minutes">議事録</button>
         <button class="tab" data-tab="custom">Q&A</button>
       </div>
 
@@ -1622,6 +1624,11 @@
       </div>
       <div class="tab-content" id="tab-idea">
         <div class="ai-response" id="response-idea"></div>
+      </div>
+      <div class="tab-content" id="tab-minutes">
+        <div class="ai-response" id="response-minutes">
+          <p class="placeholder-text">録音停止後に「📝 議事録」ボタンを押すと、構造化された議事録が生成されます。</p>
+        </div>
       </div>
       <div class="tab-content" id="tab-custom">
         <div id="qa-history"></div>
