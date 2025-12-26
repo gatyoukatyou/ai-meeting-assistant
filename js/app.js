@@ -281,6 +281,16 @@ async function toggleRecording() {
 }
 
 async function startRecording() {
+  // iOS Safari対応: ユーザー操作直後にgetUserMediaを呼び出す
+  // Safariは「最初の非同期処理前にgetUserMediaを呼ぶ」ことを強く要求する
+  let tempAudioStream;
+  try {
+    tempAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  } catch (error) {
+    alert('マイクへのアクセスに失敗しました');
+    return;
+  }
+
   let provider = document.getElementById('transcriptProvider').value;
   console.log('=== startRecording ===');
   console.log('Selected STT provider:', provider);
@@ -295,12 +305,17 @@ async function startRecording() {
   // プロバイダータイプに応じた検証
   const validationResult = await validateSTTProviderForRecording(provider);
   if (!validationResult.valid) {
+    // バリデーション失敗時はストリームを解放
+    tempAudioStream.getTracks().forEach(track => track.stop());
     showToast(validationResult.message, 'error');
     if (validationResult.redirectToConfig) {
       navigateTo('config.html');
     }
     return;
   }
+
+  // 一時取得したストリームをcurrentAudioStreamに引き継ぐ
+  currentAudioStream = tempAudioStream;
 
   try {
     // プロバイダータイプに応じて録音を開始
@@ -317,6 +332,10 @@ async function startRecording() {
     showToast(`録音を開始しました（${providerName}）`, 'success');
 
   } catch (err) {
+    // エラー発生時はストリームを解放
+    if (tempAudioStream) {
+      tempAudioStream.getTracks().forEach(track => track.stop());
+    }
     console.error('録音開始エラー:', err);
     showToast(`録音の開始に失敗しました: ${err.message}`, 'error');
     await cleanupRecording();
@@ -376,7 +395,11 @@ function getProviderDisplayName(provider) {
 async function startChunkedRecording(provider) {
   console.log('[Chunked] Starting recording for provider:', provider);
 
-  currentAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  // iOS Safari対応: startRecording()で既に取得済みのストリームを再利用
+  // 二重取得を防止し、Safari/Chrome両対応を維持
+  if (!currentAudioStream) {
+    currentAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+  }
 
   // 最適なMIMEタイプを選択
   const preferredTypes = [
