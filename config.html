@@ -473,8 +473,8 @@
               </select>
             </div>
             <div class="api-actions">
-              <button type="button" class="api-action-btn btn-validate" onclick="validateApiKeyManual('openai')">🔍 認証チェック</button>
-              <button type="button" class="api-action-btn btn-clear" onclick="clearApiKey('openai')">🗑️ クリア</button>
+              <button type="button" class="api-action-btn btn-validate" data-validate="openai">🔍 認証チェック</button>
+              <button type="button" class="api-action-btn btn-clear" data-clear="openai">🗑️ クリア</button>
             </div>
             <div class="setting-hint">
               <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得
@@ -498,8 +498,8 @@
               </select>
             </div>
             <div class="api-actions">
-              <button type="button" class="api-action-btn btn-validate" onclick="validateApiKeyManual('deepgram')">🔍 認証チェック</button>
-              <button type="button" class="api-action-btn btn-clear" onclick="clearApiKey('deepgram')">🗑️ クリア</button>
+              <button type="button" class="api-action-btn btn-validate" data-validate="deepgram">🔍 認証チェック</button>
+              <button type="button" class="api-action-btn btn-clear" data-clear="deepgram">🗑️ クリア</button>
             </div>
             <div class="setting-hint">
               <a href="https://console.deepgram.com/" target="_blank" rel="noopener">Deepgram Console</a> から取得 - WebSocketでリアルタイム送信
@@ -518,8 +518,8 @@
               <input type="password" class="setting-input" id="assemblyaiApiKey" placeholder="...">
             </div>
             <div class="api-actions">
-              <button type="button" class="api-action-btn btn-validate" onclick="validateApiKeyManual('assemblyai')">🔍 認証チェック</button>
-              <button type="button" class="api-action-btn btn-clear" onclick="clearApiKey('assemblyai')">🗑️ クリア</button>
+              <button type="button" class="api-action-btn btn-validate" data-validate="assemblyai">🔍 認証チェック</button>
+              <button type="button" class="api-action-btn btn-clear" data-clear="assemblyai">🗑️ クリア</button>
             </div>
             <div class="setting-hint">
               <a href="https://www.assemblyai.com/app" target="_blank" rel="noopener">AssemblyAI Dashboard</a> から取得 - WebSocketでリアルタイム送信
@@ -570,8 +570,8 @@
             </select>
           </div>
           <div class="api-actions">
-            <button type="button" class="api-action-btn btn-validate" onclick="validateApiKeyManual('gemini')">🔍 認証チェック</button>
-            <button type="button" class="api-action-btn btn-clear" onclick="clearApiKey('gemini')">🗑️ クリア</button>
+            <button type="button" class="api-action-btn btn-validate" data-validate="gemini">🔍 認証チェック</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="gemini">🗑️ クリア</button>
           </div>
           <div class="setting-hint">
             <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> から取得（要約・AI回答に使用）
@@ -591,8 +591,8 @@
             </select>
           </div>
           <div class="api-actions">
-            <button type="button" class="api-action-btn btn-validate" onclick="validateApiKeyManual('claude')">🔍 認証チェック</button>
-            <button type="button" class="api-action-btn btn-clear" onclick="clearApiKey('claude')">🗑️ クリア</button>
+            <button type="button" class="api-action-btn btn-validate" data-validate="claude">🔍 認証チェック</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="claude">🗑️ クリア</button>
           </div>
           <div class="setting-hint">
             <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Anthropic Console</a> から取得
@@ -613,8 +613,8 @@
             </select>
           </div>
           <div class="api-actions">
-            <button type="button" class="api-action-btn btn-validate" onclick="validateApiKeyManual('openai_llm')">🔍 認証チェック</button>
-            <button type="button" class="api-action-btn btn-clear" onclick="clearApiKey('openai_llm')">🗑️ クリア</button>
+            <button type="button" class="api-action-btn btn-validate" data-validate="openai_llm">🔍 認証チェック</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="openai_llm">🗑️ クリア</button>
           </div>
           <div class="setting-hint">
             <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得（STTと別のキーを推奨）
@@ -634,8 +634,8 @@
             </select>
           </div>
           <div class="api-actions">
-            <button type="button" class="api-action-btn btn-validate" onclick="validateApiKeyManual('groq')">🔍 認証チェック</button>
-            <button type="button" class="api-action-btn btn-clear" onclick="clearApiKey('groq')">🗑️ クリア</button>
+            <button type="button" class="api-action-btn btn-validate" data-validate="groq">🔍 認証チェック</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="groq">🗑️ クリア</button>
           </div>
           <div class="setting-hint">
             <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a> から取得（高速・低コスト）

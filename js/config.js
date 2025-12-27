@@ -34,6 +34,7 @@ const ALLOWED_STT_PROVIDERS = new Set([
 document.addEventListener('DOMContentLoaded', function() {
   loadSavedSettings();
   setupSTTProviderSelector();
+  setupApiKeyButtons(); // 認証チェック・クリアボタンのイベント設定
 
   const exportBtn = document.getElementById('exportSettingsBtn');
   if (exportBtn) {
@@ -59,6 +60,28 @@ document.addEventListener('DOMContentLoaded', function() {
     saveBtn.addEventListener('click', saveSettings);
   }
 });
+
+// =====================================
+// 認証チェック・クリアボタンのイベント設定
+// =====================================
+function setupApiKeyButtons() {
+  // 各プロバイダーのボタンにイベントリスナーを追加
+  const providers = ['openai', 'deepgram', 'assemblyai', 'gemini', 'claude', 'openai_llm', 'groq'];
+  
+  providers.forEach(provider => {
+    // 認証チェックボタン
+    const validateBtns = document.querySelectorAll(`[data-validate="${provider}"]`);
+    validateBtns.forEach(btn => {
+      btn.addEventListener('click', () => validateApiKeyManual(provider));
+    });
+    
+    // クリアボタン
+    const clearBtns = document.querySelectorAll(`[data-clear="${provider}"]`);
+    clearBtns.forEach(btn => {
+      btn.addEventListener('click', () => clearApiKey(provider));
+    });
+  });
+}
 
 // =====================================
 // STTプロバイダー選択UI
