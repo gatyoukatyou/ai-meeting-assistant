@@ -102,7 +102,8 @@ const SecureStorage = {
         costLimit: this.getOption('costLimit', 100),
         llmPriority: this.getOption('llmPriority', 'auto'),
         sttProvider: this.getOption('sttProvider', 'openai_stt'),
-        sttUserDictionary: this.getOption('sttUserDictionary', '')
+        sttUserDictionary: this.getOption('sttUserDictionary', ''),
+        sttLanguage: this.getOption('sttLanguage', 'ja')
       },
       exportedAt: new Date().toISOString()
     };
@@ -163,6 +164,7 @@ const SecureStorage = {
         this.setOption('llmPriority', llmPriority);
         if (data.options.sttProvider) this.setOption('sttProvider', data.options.sttProvider);
         if (data.options.sttUserDictionary) this.setOption('sttUserDictionary', data.options.sttUserDictionary);
+        if (data.options.sttLanguage) this.setOption('sttLanguage', data.options.sttLanguage);
       }
 
       return true;
@@ -185,6 +187,7 @@ const SecureStorage = {
     localStorage.removeItem('_opt_llmPriority');
     localStorage.removeItem('_opt_sttProvider');
     localStorage.removeItem('_opt_sttUserDictionary');
+    localStorage.removeItem('_opt_sttLanguage');
   },
 
   // APIキーのみ削除（デバイスキーは残す）

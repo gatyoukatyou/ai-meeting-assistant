@@ -1449,12 +1449,17 @@ async function transcribeWithWhisper(audioBlob) {
 
   // promptパラメータを追加（空でない場合のみ）
   // auto/en モードでは日本語の前チャンクを含めない（言語混入防止）
-  var effectivePrompt = prompt;
-  if (sttLanguage !== 'ja' && lastTranscriptTail) {
+  var effectivePrompt = prompt || '';
+
+  // 安全策: 変数未定義時のReferenceError防止
+  var lastTail = (typeof lastTranscriptTail !== 'undefined' && lastTranscriptTail) ? lastTranscriptTail : '';
+  var userDict = (typeof whisperUserDictionary !== 'undefined' && whisperUserDictionary) ? whisperUserDictionary : '';
+
+  if (sttLanguage !== 'ja' && lastTail) {
     // 日本語文字が含まれている場合は前チャンクを除外
-    var hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(lastTranscriptTail);
+    var hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(lastTail);
     if (hasJapanese) {
-      effectivePrompt = whisperUserDictionary || '';
+      effectivePrompt = userDict;
       console.log('Skipping lastTranscriptTail (contains Japanese) for non-Japanese mode');
     }
   }
