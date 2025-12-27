@@ -9,7 +9,7 @@ class DeepgramWSProvider {
   constructor(config) {
     this.config = config;
     this.apiKey = config.apiKey || SecureStorage.getApiKey('deepgram');
-    this.model = config.model || SecureStorage.getModel('deepgram') || 'nova-2';
+    this.model = config.model || SecureStorage.getModel('deepgram') || 'nova-3-general';
     this.language = config.language || 'ja';
 
     this.ws = null;

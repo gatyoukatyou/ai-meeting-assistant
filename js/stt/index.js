@@ -27,11 +27,6 @@ const STT_PROVIDERS = {
     type: STT_PROVIDER_TYPES.STREAMING,
     name: 'AssemblyAI Realtime',
     module: './providers/assemblyai_ws.js'
-  },
-  'gcp_stt_proxy': {
-    type: STT_PROVIDER_TYPES.STREAMING,
-    name: 'Google Cloud STT (Proxy)',
-    module: './providers/gcp_proxy_ws.js'
   }
 };
 

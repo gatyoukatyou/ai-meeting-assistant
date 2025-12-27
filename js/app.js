@@ -64,8 +64,7 @@ function createFinalStopPromise() {
 const ALLOWED_STT_PROVIDERS = new Set([
   'openai_stt',       // chunked (HTTP)
   'deepgram_realtime', // streaming (WebSocket)
-  'assemblyai_realtime', // streaming (WebSocket)
-  'gcp_stt_proxy'     // streaming (WebSocket via backend proxy)
+  'assemblyai_realtime' // streaming (WebSocket)
 ]);
 
 // chunked系プロバイダー
@@ -74,8 +73,7 @@ const CHUNKED_PROVIDERS = new Set(['openai_stt']);
 // streaming系プロバイダー
 const STREAMING_PROVIDERS = new Set([
   'deepgram_realtime',
-  'assemblyai_realtime',
-  'gcp_stt_proxy'
+  'assemblyai_realtime'
 ]);
 
 // OpenAI STT用モデル
@@ -124,7 +122,7 @@ const PRICING = {
       perMinute: 0.006 * 150  // ¥0.9/分
     },
     deepgram: {
-      // Deepgram Nova-2 - $0.0043/minute (pay-as-you-go)
+      // Deepgram Nova-3 - $0.0043/minute (pay-as-you-go)
       perMinute: 0.0043 * 150  // ~¥0.65/分
     },
     assemblyai: {
@@ -685,13 +683,6 @@ async function validateSTTProviderForRecording(provider) {
       }
       return { valid: true };
     }
-    case 'gcp_stt_proxy': {
-      const url = SecureStorage.getOption('gcpProxyUrl', '');
-      if (!url) {
-        return { valid: false, message: 'GCP STTにはバックエンドURLが必要です', redirectToConfig: true };
-      }
-      return { valid: true };
-    }
     default:
       return { valid: false, message: `不明なプロバイダー: ${provider}`, redirectToConfig: true };
   }
@@ -702,8 +693,7 @@ function getProviderDisplayName(provider) {
   const names = {
     'openai_stt': 'OpenAI Whisper',
     'deepgram_realtime': 'Deepgram Realtime',
-    'assemblyai_realtime': 'AssemblyAI Realtime',
-    'gcp_stt_proxy': 'GCP STT'
+    'assemblyai_realtime': 'AssemblyAI Realtime'
   };
   return names[provider] || provider;
 }
@@ -763,7 +753,7 @@ async function startChunkedRecording(provider) {
 }
 
 // =====================================
-// Streaming系録音（Deepgram/AssemblyAI/GCP）
+// Streaming系録音（Deepgram/AssemblyAI）
 // =====================================
 async function startStreamingRecording(provider) {
   console.log('[Streaming] Starting recording for provider:', provider);
@@ -773,18 +763,12 @@ async function startStreamingRecording(provider) {
     case 'deepgram_realtime':
       currentSTTProvider = new DeepgramWSProvider({
         apiKey: SecureStorage.getApiKey('deepgram'),
-        model: SecureStorage.getModel('deepgram') || 'nova-2'
+        model: SecureStorage.getModel('deepgram') || 'nova-3-general'
       });
       break;
     case 'assemblyai_realtime':
       currentSTTProvider = new AssemblyAIWSProvider({
         apiKey: SecureStorage.getApiKey('assemblyai')
-      });
-      break;
-    case 'gcp_stt_proxy':
-      currentSTTProvider = new GCPProxyWSProvider({
-        proxyUrl: SecureStorage.getOption('gcpProxyUrl'),
-        authToken: SecureStorage.getOption('gcpProxyToken')
       });
       break;
     default:

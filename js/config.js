@@ -25,8 +25,7 @@ function navigateTo(target) {
 const ALLOWED_STT_PROVIDERS = new Set([
   'openai_stt',
   'deepgram_realtime',
-  'assemblyai_realtime',
-  'gcp_stt_proxy'
+  'assemblyai_realtime'
 ]);
 
 // =====================================
@@ -87,18 +86,6 @@ function updateSTTProviderUI(provider) {
   const selectedSettings = document.getElementById(`${provider}_settings`);
   if (selectedSettings) {
     selectedSettings.style.display = 'block';
-  }
-
-  // GCPプロキシの場合、バックエンドURLが必要な旨を強調
-  const gcpOption = document.getElementById('gcp_stt_option');
-  const gcpProxyUrl = document.getElementById('gcpProxyUrl');
-  if (gcpOption && gcpProxyUrl) {
-    const hasBackendUrl = gcpProxyUrl.value.trim() !== '';
-    if (!hasBackendUrl && provider !== 'gcp_stt_proxy') {
-      gcpOption.textContent = '☁️ Google Cloud STT（バックエンドURL未設定）';
-    } else {
-      gcpOption.textContent = '☁️ Google Cloud STT（バックエンド経由）';
-    }
   }
 }
 
@@ -175,14 +162,6 @@ function loadSavedSettings() {
   const assemblyaiKeyEl = document.getElementById('assemblyaiApiKey');
   if (assemblyaiKeyEl && assemblyaiKey) assemblyaiKeyEl.value = assemblyaiKey;
 
-  // GCP Proxy
-  const gcpProxyUrl = SecureStorage.getOption('gcpProxyUrl', '');
-  const gcpProxyToken = SecureStorage.getOption('gcpProxyToken', '');
-  const gcpUrlEl = document.getElementById('gcpProxyUrl');
-  const gcpTokenEl = document.getElementById('gcpProxyToken');
-  if (gcpUrlEl) gcpUrlEl.value = gcpProxyUrl;
-  if (gcpTokenEl) gcpTokenEl.value = gcpProxyToken;
-
   // ユーザー辞書（STT用固有名詞ヒント）
   const userDictionary = SecureStorage.getOption('sttUserDictionary', '');
   const userDictEl = document.getElementById('sttUserDictionary');
@@ -243,12 +222,6 @@ async function saveSettings() {
   const assemblyaiKeyEl = document.getElementById('assemblyaiApiKey');
   if (assemblyaiKeyEl) SecureStorage.setApiKey('assemblyai', assemblyaiKeyEl.value.trim());
 
-  // GCP Proxy
-  const gcpUrlEl = document.getElementById('gcpProxyUrl');
-  const gcpTokenEl = document.getElementById('gcpProxyToken');
-  if (gcpUrlEl) SecureStorage.setOption('gcpProxyUrl', gcpUrlEl.value.trim());
-  if (gcpTokenEl) SecureStorage.setOption('gcpProxyToken', gcpTokenEl.value.trim());
-
   // ユーザー辞書（STT用固有名詞ヒント）を保存
   const userDictEl = document.getElementById('sttUserDictionary');
   if (userDictEl) SecureStorage.setOption('sttUserDictionary', userDictEl.value.trim());
@@ -269,11 +242,12 @@ async function saveSettings() {
   // LLM用APIキーの検証（設定されている場合のみ）
   const geminiKey = SecureStorage.getApiKey('gemini');
   if (geminiKey) {
-    const isGeminiValid = await validateApiKey('gemini', geminiKey);
-    if (!isGeminiValid) {
+    const geminiResult = await validateApiKey('gemini', geminiKey);
+    if (geminiResult === 'invalid') {
       showError('Gemini APIキーが無効です。正しいキーを入力してください。');
       return;
     }
+    // 'valid' または 'unknown' の場合は続行
   }
 
   showSuccess('設定を保存しました。メイン画面に戻って利用を開始できます。');
@@ -294,10 +268,11 @@ async function validateSTTProvider(provider) {
       if (!key) {
         return { valid: false, message: 'OpenAI APIキーが必要です。' };
       }
-      const isValid = await validateApiKey('openai', key);
-      if (!isValid) {
+      const result = await validateApiKey('openai', key);
+      if (result === 'invalid') {
         return { valid: false, message: 'OpenAI APIキーが無効です。' };
       }
+      // 'valid' または 'unknown' の場合は続行（実使用時に判定）
       return { valid: true };
     }
 
@@ -306,11 +281,11 @@ async function validateSTTProvider(provider) {
       if (!key) {
         return { valid: false, message: 'Deepgram APIキーが必要です。' };
       }
-      // Deepgramのキー検証（APIレスポンスで判断）
-      const isValid = await validateApiKey('deepgram', key);
-      if (!isValid) {
+      const result = await validateApiKey('deepgram', key);
+      if (result === 'invalid') {
         return { valid: false, message: '認証に失敗しました。APIキーを確認してください。' };
       }
+      // 'valid' または 'unknown' の場合は続行
       return { valid: true };
     }
 
@@ -319,28 +294,11 @@ async function validateSTTProvider(provider) {
       if (!key) {
         return { valid: false, message: 'AssemblyAI APIキーが必要です。' };
       }
-      // AssemblyAIのキー検証（簡易）
-      const isValid = await validateApiKey('assemblyai', key);
-      if (!isValid) {
+      const result = await validateApiKey('assemblyai', key);
+      if (result === 'invalid') {
         return { valid: false, message: 'AssemblyAI APIキーが無効です。' };
       }
-      return { valid: true };
-    }
-
-    case 'gcp_stt_proxy': {
-      const url = SecureStorage.getOption('gcpProxyUrl', '');
-      if (!url) {
-        return { valid: false, message: 'GCP STTにはバックエンドURLが必要です。' };
-      }
-      // URLの形式チェック
-      try {
-        const parsed = new URL(url);
-        if (!parsed.protocol.startsWith('ws')) {
-          return { valid: false, message: 'バックエンドURLはwss://またはws://で始まる必要があります。' };
-        }
-      } catch (e) {
-        return { valid: false, message: 'バックエンドURLの形式が正しくありません。' };
-      }
+      // 'valid' または 'unknown' の場合は続行
       return { valid: true };
     }
 
@@ -351,73 +309,109 @@ async function validateSTTProvider(provider) {
 
 // =====================================
 // APIキーの検証
+// 戻り値: 'valid' | 'invalid' | 'unknown' の3値
+// - valid: 認証成功
+// - invalid: 認証失敗（401/403など）
+// - unknown: CORS等でブラウザから検証不可
 // =====================================
 async function validateApiKey(provider, key) {
-  const statusEl = document.getElementById(`${provider}-status`);
+  const statusIdMap = {
+    'openai': 'openai-status',
+    'deepgram': 'deepgram-status',
+    'assemblyai': 'assemblyai-status',
+    'gemini': 'gemini-status',
+    'claude': 'claude-status',
+    'openai_llm': 'openai-llm-status',
+    'groq': 'groq-status'
+  };
+
+  const statusEl = document.getElementById(statusIdMap[provider]);
   if (statusEl) {
     statusEl.style.display = 'inline-flex';
     statusEl.className = 'validation-status validation-pending';
     statusEl.textContent = '検証中...';
   }
 
+  // Claude / Anthropic APIはブラウザからCORS制限で検証不可
+  if (provider === 'claude') {
+    if (statusEl) {
+      statusEl.className = 'validation-status validation-pending';
+      statusEl.textContent = '⚠ 未検証（使用時に判定）';
+    }
+    return 'unknown';
+  }
+
   try {
-    let isValid = false;
+    let response = null;
 
     switch (provider) {
       case 'gemini':
-        const geminiRes = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
-        isValid = geminiRes.ok;
+        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
         break;
 
       case 'openai':
       case 'openai_llm':
-        const openaiRes = await fetch('https://api.openai.com/v1/models', {
+        response = await fetch('https://api.openai.com/v1/models', {
           headers: { 'Authorization': `Bearer ${key}` }
         });
-        isValid = openaiRes.ok;
         break;
 
       case 'groq':
-        const groqRes = await fetch('https://api.groq.com/openai/v1/models', {
+        response = await fetch('https://api.groq.com/openai/v1/models', {
           headers: { 'Authorization': `Bearer ${key}` }
         });
-        isValid = groqRes.ok;
         break;
 
       case 'deepgram':
-        // Deepgram APIキー検証（プロジェクト取得）
-        const deepgramRes = await fetch('https://api.deepgram.com/v1/projects', {
+        response = await fetch('https://api.deepgram.com/v1/projects', {
           headers: { 'Authorization': `Token ${key}` }
         });
-        isValid = deepgramRes.ok;
         break;
 
       case 'assemblyai':
-        // AssemblyAI APIキー検証（アカウント情報取得）
-        const assemblyaiRes = await fetch('https://api.assemblyai.com/v2/transcript', {
+        response = await fetch('https://api.assemblyai.com/v2/transcript', {
           method: 'GET',
           headers: { 'Authorization': key }
         });
-        // 認証成功なら200系、認証失敗なら401
-        isValid = assemblyaiRes.status !== 401;
         break;
 
       default:
-        isValid = true;
+        if (statusEl) {
+          statusEl.className = 'validation-status validation-pending';
+          statusEl.textContent = '⚠ 未検証';
+        }
+        return 'unknown';
     }
 
-    if (statusEl) {
-      statusEl.className = isValid ? 'validation-status validation-success' : 'validation-status validation-error';
-      statusEl.textContent = isValid ? '✓ 有効' : '✗ 無効';
+    // HTTPステータスで判定
+    if (response.ok) {
+      if (statusEl) {
+        statusEl.className = 'validation-status validation-success';
+        statusEl.textContent = '✓ 認証OK';
+      }
+      return 'valid';
+    } else if (response.status === 401 || response.status === 403) {
+      if (statusEl) {
+        statusEl.className = 'validation-status validation-error';
+        statusEl.textContent = '✗ 認証NG（キー確認）';
+      }
+      return 'invalid';
+    } else {
+      // その他のエラー（500等）は未検証扱い
+      if (statusEl) {
+        statusEl.className = 'validation-status validation-pending';
+        statusEl.textContent = `⚠ 未検証（HTTP ${response.status}）`;
+      }
+      return 'unknown';
     }
-    return isValid;
   } catch (e) {
-    console.error(`API key validation error for ${provider}:`, e);
+    // CORS例外やネットワークエラー
+    console.warn(`API key validation error for ${provider}:`, e.message);
     if (statusEl) {
-      statusEl.className = 'validation-status validation-error';
-      statusEl.textContent = '✗ エラー';
+      statusEl.className = 'validation-status validation-pending';
+      statusEl.textContent = '⚠ 未検証（ブラウザ制限）';
     }
-    return false;
+    return 'unknown';
   }
 }
 
@@ -503,4 +497,110 @@ function showError(message) {
   document.getElementById('successMessage').style.display = 'none';
 
   window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// =====================================
+// 個別API認証チェック（手動）
+// =====================================
+async function validateApiKeyManual(provider) {
+  // 入力欄のIDマッピング
+  const inputIdMap = {
+    'openai': 'openaiApiKey',
+    'deepgram': 'deepgramApiKey',
+    'assemblyai': 'assemblyaiApiKey',
+    'gemini': 'geminiApiKey',
+    'claude': 'claudeApiKey',
+    'openai_llm': 'openaiLlmApiKey',
+    'groq': 'groqApiKey'
+  };
+
+  const inputEl = document.getElementById(inputIdMap[provider]);
+  if (!inputEl) {
+    showError(`入力欄が見つかりません: ${provider}`);
+    return;
+  }
+
+  const key = inputEl.value.trim();
+  if (!key) {
+    showError('APIキーが入力されていません');
+    return;
+  }
+
+  // 注意: 検証前にキーを保存しない（保存は「保存」ボタンで行う）
+  // validateApiKey() 内でステータス窓も更新される
+  const result = await validateApiKey(provider, key);
+  const providerName = getProviderName(provider);
+
+  switch (result) {
+    case 'valid':
+      showSuccess(`${providerName} の認証に成功しました ✓`);
+      break;
+    case 'invalid':
+      showError(`${providerName} の認証に失敗しました。APIキーを確認してください`);
+      break;
+    case 'unknown':
+      // CORS等で検証不可の場合は警告レベル（エラーではない）
+      showSuccess(`${providerName}: ブラウザからの認証チェックは制限されています。実際の使用時に判定されます`);
+      break;
+  }
+}
+
+// =====================================
+// 個別APIキークリア
+// =====================================
+function clearApiKey(provider) {
+  const inputIdMap = {
+    'openai': 'openaiApiKey',
+    'deepgram': 'deepgramApiKey',
+    'assemblyai': 'assemblyaiApiKey',
+    'gemini': 'geminiApiKey',
+    'claude': 'claudeApiKey',
+    'openai_llm': 'openaiLlmApiKey',
+    'groq': 'groqApiKey'
+  };
+
+  const statusIdMap = {
+    'openai': 'openai-status',
+    'deepgram': 'deepgram-status',
+    'assemblyai': 'assemblyai-status',
+    'gemini': 'gemini-status',
+    'claude': 'claude-status',
+    'openai_llm': 'openai-llm-status',
+    'groq': 'groq-status'
+  };
+
+  const inputEl = document.getElementById(inputIdMap[provider]);
+  const statusEl = document.getElementById(statusIdMap[provider]);
+
+  if (inputEl) {
+    inputEl.value = '';
+  }
+
+  // ストレージからも削除
+  SecureStorage.setApiKey(provider, '');
+
+  // ステータス表示をリセット
+  if (statusEl) {
+    statusEl.style.display = 'none';
+    statusEl.className = 'validation-status';
+    statusEl.textContent = '';
+  }
+
+  showSuccess(`${getProviderName(provider)} のAPIキーをクリアしました`);
+}
+
+// =====================================
+// プロバイダー表示名取得
+// =====================================
+function getProviderName(provider) {
+  const names = {
+    'openai': 'OpenAI (STT)',
+    'deepgram': 'Deepgram',
+    'assemblyai': 'AssemblyAI',
+    'gemini': 'Gemini',
+    'claude': 'Claude',
+    'openai_llm': 'OpenAI (LLM)',
+    'groq': 'Groq'
+  };
+  return names[provider] || provider;
 }
