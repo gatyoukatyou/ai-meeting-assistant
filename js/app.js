@@ -336,6 +336,22 @@ document.addEventListener('DOMContentLoaded', function() {
   // ユーザー辞書を読み込み
   loadUserDictionary();
 
+  // STT言語設定の初期化（保存値を復元＋変更時に保存）
+  var sttLanguageSelect = document.getElementById('sttLanguage');
+  if (sttLanguageSelect) {
+    // 保存された値を復元
+    var savedLanguage = SecureStorage.getOption('sttLanguage', 'ja');
+    sttLanguageSelect.value = savedLanguage;
+    console.log('[Init] STT language restored:', savedLanguage);
+
+    // 変更時に保存
+    sttLanguageSelect.addEventListener('change', function() {
+      var newLang = sttLanguageSelect.value;
+      SecureStorage.setOption('sttLanguage', newLang);
+      console.log('[Settings] STT language changed to:', newLang);
+    });
+  }
+
   // ブラウザ互換性チェック（iOS Safari対応）
   checkBrowserCompatibility();
 
@@ -396,6 +412,27 @@ document.addEventListener('DOMContentLoaded', function() {
     clearTranscriptBtn.addEventListener('click', clearTranscript);
   }
 
+  // CSP対応: 文字起こしチャンクのボタン操作をイベントデリゲーションで処理
+  var transcriptContainer = document.getElementById('transcriptText');
+  if (transcriptContainer) {
+    transcriptContainer.addEventListener('click', function(e) {
+      var btn = e.target.closest('button.btn-icon[data-action]');
+      if (!btn) return;
+
+      var action = btn.getAttribute('data-action');
+      var id = btn.getAttribute('data-id');
+
+      if (action === 'copy') {
+        copyChunkText(id);
+      } else if (action === 'marker') {
+        // id が空文字列の場合は null として扱う（マーカー解除）
+        setMeetingStartMarker(id || null);
+      } else if (action === 'exclude') {
+        toggleChunkExcluded(id);
+      }
+    });
+  }
+
   document.querySelectorAll('.cost-header[data-cost-target]').forEach(header => {
     header.addEventListener('click', () => {
       const target = header.getAttribute('data-cost-target');
@@ -429,7 +466,23 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const customQuestionInput = document.getElementById('customQuestion');
   if (customQuestionInput) {
+    // IME変換中フラグ（日本語入力時の誤送信防止）
+    var isComposingCustomQuestion = false;
+
+    customQuestionInput.addEventListener('compositionstart', function() {
+      isComposingCustomQuestion = true;
+    });
+
+    customQuestionInput.addEventListener('compositionend', function() {
+      isComposingCustomQuestion = false;
+    });
+
     customQuestionInput.addEventListener('keydown', function(event) {
+      // IME変換中は絶対に送信しない
+      if (isComposingCustomQuestion || event.isComposing) {
+        return;
+      }
+
       // Ctrl+Enter または Cmd+Enter で送信（textareaなので単独Enterは改行）
       if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
@@ -970,13 +1023,14 @@ function renderTranscriptChunks() {
     html += `<span class="chunk-text">${escapeHtml(chunk.text)}</span>`;
     html += `<span class="chunk-actions">`;
     // コピーボタン（誤タップ防止のため左端に配置）
-    html += `<button class="btn-icon" onclick="copyChunkText('${chunk.id}')" title="この文節をコピー" aria-label="この文節をコピー">📋</button>`;
+    // CSP対応: onclick属性ではなくdata属性＋イベントデリゲーションを使用
+    html += `<button class="btn-icon" data-action="copy" data-id="${chunk.id}" title="この文節をコピー" aria-label="この文節をコピー">📋</button>`;
     if (!isMarker) {
-      html += `<button class="btn-icon" onclick="setMeetingStartMarker('${chunk.id}')" title="ここから会議開始（これより前は除外）" aria-label="ここから会議開始">📍</button>`;
+      html += `<button class="btn-icon" data-action="marker" data-id="${chunk.id}" title="ここから会議開始（これより前は除外）" aria-label="ここから会議開始">📍</button>`;
     } else {
-      html += `<button class="btn-icon active" onclick="setMeetingStartMarker(null)" title="マーカーを解除" aria-label="マーカーを解除">📍</button>`;
+      html += `<button class="btn-icon active" data-action="marker" data-id="" title="マーカーを解除" aria-label="マーカーを解除">📍</button>`;
     }
-    html += `<button class="btn-icon ${isExcluded ? 'active' : ''}" onclick="toggleChunkExcluded('${chunk.id}')" title="${isExcluded ? 'この文節を復元' : 'この文節を除外'}" aria-label="${isExcluded ? '復元' : '除外'}">`;
+    html += `<button class="btn-icon ${isExcluded ? 'active' : ''}" data-action="exclude" data-id="${chunk.id}" title="${isExcluded ? 'この文節を復元' : 'この文節を除外'}" aria-label="${isExcluded ? '復元' : '除外'}">`;
     html += isExcluded ? '♻️' : '🗑️';
     html += `</button>`;
     html += `</span>`;
@@ -1382,12 +1436,31 @@ async function transcribeWithWhisper(audioBlob) {
   const formData = new FormData();
   formData.append('file', audioBlob, 'audio.webm');
   formData.append('model', sttModel);
-  formData.append('language', 'ja');
+
+  // 言語設定を取得（auto/ja/en）
+  // auto の場合は language パラメータを送信しない（Whisperに自動判定させる）
+  const sttLanguage = SecureStorage.getOption('sttLanguage', 'ja');
+  if (sttLanguage && sttLanguage !== 'auto') {
+    formData.append('language', sttLanguage);
+    console.log('STT language:', sttLanguage);
+  } else {
+    console.log('STT language: auto (no language parameter sent)');
+  }
 
   // promptパラメータを追加（空でない場合のみ）
-  if (prompt) {
-    formData.append('prompt', prompt);
-    console.log('Using Whisper prompt:', prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''));
+  // auto/en モードでは日本語の前チャンクを含めない（言語混入防止）
+  var effectivePrompt = prompt;
+  if (sttLanguage !== 'ja' && lastTranscriptTail) {
+    // 日本語文字が含まれている場合は前チャンクを除外
+    var hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FAF]/.test(lastTranscriptTail);
+    if (hasJapanese) {
+      effectivePrompt = whisperUserDictionary || '';
+      console.log('Skipping lastTranscriptTail (contains Japanese) for non-Japanese mode');
+    }
+  }
+  if (effectivePrompt) {
+    formData.append('prompt', effectivePrompt);
+    console.log('Using Whisper prompt:', effectivePrompt.substring(0, 100) + (effectivePrompt.length > 100 ? '...' : ''));
   }
 
   const response = await fetchWithRetry('https://api.openai.com/v1/audio/transcriptions', {
