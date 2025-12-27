@@ -174,6 +174,8 @@ function safeURL(input) {
 }
 
 function navigateTo(target) {
+  console.log("[Debug] navigateTo called with:", target);
+  console.trace("[Debug] navigateTo stack trace:");
   const safe = safeURL(target);
   if (safe) {
     window.location.href = safe;
@@ -391,6 +393,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 通常のclickイベント（デスクトップ用 + touchend後の二重発火防止）
     recordBtn.addEventListener('click', function(e) {
+      console.log("[Debug] recordBtn clicked!");
       e.preventDefault();
       // touchend直後のclickは無視（二重発火防止）
       if (getNow() - lastTouchEndAt < 600) {
