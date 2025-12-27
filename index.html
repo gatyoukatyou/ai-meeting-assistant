@@ -263,32 +263,6 @@
       .record-btn-main {
         flex: 0 0 auto;
       }
-
-      /* PCでは設定リンクを目立つボタンに */
-      .header-settings-link {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.625rem 1.25rem;
-        background: var(--primary);
-        color: white;
-        border-radius: 0.5rem;
-        font-size: 0.875rem;
-        font-weight: 500;
-        text-decoration: none;
-        transition: background 0.15s, transform 0.1s;
-        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
-      }
-
-      .header-settings-link:hover {
-        background: var(--primary-hover);
-        transform: translateY(-1px);
-      }
-    }
-
-    /* スマホではPC用設定リンクを非表示 */
-    .header-settings-link {
-      display: none;
     }
 
     /* PC版設定ボタン（録音ボタンの右に配置） */
@@ -317,11 +291,6 @@
         background: var(--primary-hover);
         transform: translateY(-1px);
         box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
-      }
-
-      /* 旧設定リンクを非表示 */
-      .header-settings-link {
-        display: none !important;
       }
     }
 
@@ -1802,7 +1771,6 @@
           <button class="btn btn-secondary details-export-btn" id="openExportBtn" title="エクスポート">📥 出力</button>
         </div>
       </div>
-      <a href="config.html" class="header-settings-link">⚙️ 設定</a>
     </div>
   </header>
 
