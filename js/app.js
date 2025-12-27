@@ -174,8 +174,6 @@ function safeURL(input) {
 }
 
 function navigateTo(target) {
-  console.log("[Debug] navigateTo called with:", target);
-  console.trace("[Debug] navigateTo stack trace:");
   const safe = safeURL(target);
   if (safe) {
     window.location.href = safe;
@@ -341,6 +339,17 @@ document.addEventListener('DOMContentLoaded', function() {
   if (sttLanguageSelect) {
     // 保存された値を復元
     var savedLanguage = SecureStorage.getOption('sttLanguage', 'ja');
+
+  // STTプロバイダー設定の初期化（保存値を復元）
+  var transcriptProviderSelect = document.getElementById('transcriptProvider');
+  if (transcriptProviderSelect) {
+    var savedProvider = SecureStorage.getOption('sttProvider', 'openai_stt');
+    // 許可リストにあるか確認
+    if (ALLOWED_STT_PROVIDERS.has(savedProvider)) {
+      transcriptProviderSelect.value = savedProvider;
+      console.log('[Init] STT provider restored:', savedProvider);
+    }
+  }
     sttLanguageSelect.value = savedLanguage;
     console.log('[Init] STT language restored:', savedLanguage);
 
@@ -393,7 +402,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 通常のclickイベント（デスクトップ用 + touchend後の二重発火防止）
     recordBtn.addEventListener('click', function(e) {
-      console.log("[Debug] recordBtn clicked!");
       e.preventDefault();
       // touchend直後のclickは無視（二重発火防止）
       if (getNow() - lastTouchEndAt < 600) {
@@ -665,10 +673,6 @@ async function startRecording() {
 
 // STTプロバイダーの検証（録音開始時）
 async function validateSTTProviderForRecording(provider) {
-  console.log("[Debug] validateSTTProviderForRecording called with provider:", provider);
-  console.log("[Debug] sttProvider option:", SecureStorage.getOption("sttProvider"));
-  console.log("[Debug] deepgram key exists:", !!SecureStorage.getApiKey("deepgram"));
-  console.log("[Debug] openai key exists:", !!SecureStorage.getApiKey("openai"));
   switch (provider) {
     case 'openai_stt': {
       const key = SecureStorage.getApiKey('openai');
