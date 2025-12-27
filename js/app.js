@@ -312,6 +312,13 @@ document.addEventListener('DOMContentLoaded', function() {
   }
   sessionStorage.setItem('_session_active', 'true');
 
+  // 旧設定マイグレーション: llmPriority openai → openai_llm
+  var currentLlmPriority = SecureStorage.getOption('llmPriority', 'auto');
+  if (currentLlmPriority === 'openai') {
+    console.warn('[Migration] llmPriority: openai → openai_llm');
+    SecureStorage.setOption('llmPriority', 'openai_llm');
+  }
+
   // 初回訪問チェック
   const hasVisited = localStorage.getItem('_visited');
   if (!hasVisited) {
@@ -400,12 +407,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
   document.querySelectorAll('.ask-ai-btn').forEach(btn => {
     btn.addEventListener('click', () => {
+      // LLM未設定チェック
+      if (!getAvailableLlm()) {
+        showToast('LLM APIキーが未設定です。設定画面でAPIキーを登録してください。', 'warning');
+        return;
+      }
       const type = btn.getAttribute('data-ai-type');
       if (type) {
         askAI(type);
       }
     });
   });
+
+  // LLM未設定時のボタン無効化
+  updateLLMButtonsState();
 
   const askCustomBtn = document.getElementById('askCustomBtn');
   if (askCustomBtn) {
@@ -414,8 +429,9 @@ document.addEventListener('DOMContentLoaded', function() {
 
   const customQuestionInput = document.getElementById('customQuestion');
   if (customQuestionInput) {
-    customQuestionInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') {
+    customQuestionInput.addEventListener('keydown', function(event) {
+      // Ctrl+Enter または Cmd+Enter で送信（textareaなので単独Enterは改行）
+      if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
         event.preventDefault();
         askAI('custom');
       }
@@ -504,6 +520,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
   // LLMインジケーターの更新
   updateLLMIndicator();
+  updateLLMButtonsState();
 
   console.log('[Init] All event listeners attached successfully');
   } catch (e) {
@@ -851,11 +868,62 @@ function getFilteredTranscriptText() {
 
 // チャンクを削除（トグル）
 function toggleChunkExcluded(chunkId) {
-  const chunk = transcriptChunks.find(c => c.id === chunkId);
+  var chunk = transcriptChunks.find(function(c) { return c.id === chunkId; });
   if (chunk) {
     chunk.excluded = !chunk.excluded;
     renderTranscriptChunks();
   }
+}
+
+// チャンクのテキストをクリップボードにコピー
+function copyChunkText(chunkId) {
+  var chunk = transcriptChunks.find(function(c) { return c.id === chunkId; });
+  if (!chunk) {
+    showToast('コピー対象が見つかりません', 'error');
+    return;
+  }
+
+  var text = chunk.text;
+
+  // Clipboard API を試行
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast('コピーしました', 'success');
+    }).catch(function(err) {
+      console.error('Clipboard API failed:', err);
+      // フォールバック
+      copyTextFallback(text);
+    });
+  } else {
+    // Clipboard API 未対応ブラウザ用フォールバック
+    copyTextFallback(text);
+  }
+}
+
+// クリップボードコピーのフォールバック（textarea方式）
+function copyTextFallback(text) {
+  var textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  textarea.style.top = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  try {
+    var successful = document.execCommand('copy');
+    if (successful) {
+      showToast('コピーしました', 'success');
+    } else {
+      showToast('コピーに失敗しました', 'error');
+    }
+  } catch (err) {
+    console.error('execCommand copy failed:', err);
+    showToast('コピーに失敗しました', 'error');
+  }
+
+  document.body.removeChild(textarea);
 }
 
 // 会議開始マーカーを設定
@@ -901,12 +969,14 @@ function renderTranscriptChunks() {
     html += `<span class="chunk-time">[${chunk.timestamp}]</span> `;
     html += `<span class="chunk-text">${escapeHtml(chunk.text)}</span>`;
     html += `<span class="chunk-actions">`;
+    // コピーボタン（誤タップ防止のため左端に配置）
+    html += `<button class="btn-icon" onclick="copyChunkText('${chunk.id}')" title="この文節をコピー" aria-label="この文節をコピー">📋</button>`;
     if (!isMarker) {
-      html += `<button class="btn-icon" onclick="setMeetingStartMarker('${chunk.id}')" title="ここから会議開始">📍</button>`;
+      html += `<button class="btn-icon" onclick="setMeetingStartMarker('${chunk.id}')" title="ここから会議開始（これより前は除外）" aria-label="ここから会議開始">📍</button>`;
     } else {
-      html += `<button class="btn-icon active" onclick="setMeetingStartMarker(null)" title="マーカーを解除">📍</button>`;
+      html += `<button class="btn-icon active" onclick="setMeetingStartMarker(null)" title="マーカーを解除" aria-label="マーカーを解除">📍</button>`;
     }
-    html += `<button class="btn-icon ${isExcluded ? 'active' : ''}" onclick="toggleChunkExcluded('${chunk.id}')" title="${isExcluded ? '復元' : '除外'}">`;
+    html += `<button class="btn-icon ${isExcluded ? 'active' : ''}" onclick="toggleChunkExcluded('${chunk.id}')" title="${isExcluded ? 'この文節を復元' : 'この文節を除外'}" aria-label="${isExcluded ? '復元' : '除外'}">`;
     html += isExcluded ? '♻️' : '🗑️';
     html += `</button>`;
     html += `</span>`;
@@ -1695,17 +1765,41 @@ function disableAIButtons(disabled) {
   });
 }
 
+// LLM呼び出し（フォールバック付き）
 async function callLLM(provider, prompt) {
-  const apiKey = SecureStorage.getApiKey(provider);
-  const model = SecureStorage.getModel(provider) || getDefaultModel(provider);
+  var model = SecureStorage.getModel(provider) || getDefaultModel(provider);
 
-  let response, data, text;
-  let inputTokens = 0, outputTokens = 0;
+  try {
+    return await callLLMOnce(provider, model, prompt);
+  } catch (e) {
+    var fb = getFallbackModel(provider, model);
+    if (!fb) {
+      // フォールバック不可（同じモデル or 未定義）→ そのまま投げる
+      throw e;
+    }
+
+    // フォールバック通知
+    showToast(
+      '選択モデルでエラー。今回は ' + fb + ' に切替して再試行します（設定は変更しません）',
+      'warning'
+    );
+    console.warn('[LLM] fallback', { provider: provider, from: model, to: fb, error: e.message });
+
+    // 1回だけ再試行（これが失敗したらそのまま上に投げる）
+    return await callLLMOnce(provider, fb, prompt);
+  }
+}
+
+// LLM呼び出し（1回のみ、フォールバックなし）
+async function callLLMOnce(provider, model, prompt) {
+  var apiKey = SecureStorage.getApiKey(provider);
+  var response, data, text;
+  var inputTokens = 0, outputTokens = 0;
 
   switch(provider) {
     case 'gemini':
       response = await fetchWithRetry(
-        `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
+        'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -1759,7 +1853,7 @@ async function callLLM(provider, prompt) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': 'Bearer ' + apiKey
         },
         body: JSON.stringify({
           model: model,
@@ -1782,7 +1876,7 @@ async function callLLM(provider, prompt) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Authorization': 'Bearer ' + apiKey
         },
         body: JSON.stringify({
           model: model,
@@ -1804,7 +1898,7 @@ async function callLLM(provider, prompt) {
   // コスト計算（詳細版）
   var pricingProvider = PRICING[provider];
   var pricing = (pricingProvider && pricingProvider[model]) ? pricingProvider[model] : { input: 1, output: 3 };
-  const cost = ((inputTokens * pricing.input + outputTokens * pricing.output) / 1000000) * PRICING.yenPerDollar;
+  var cost = ((inputTokens * pricing.input + outputTokens * pricing.output) / 1000000) * PRICING.yenPerDollar;
 
   costs.llm.inputTokens += inputTokens;
   costs.llm.outputTokens += outputTokens;
@@ -1819,7 +1913,7 @@ async function callLLM(provider, prompt) {
 }
 
 function getDefaultModel(provider) {
-  const defaults = {
+  var defaults = {
     gemini: 'gemini-2.0-flash-exp',
     claude: 'claude-sonnet-4-20250514',
     openai: 'gpt-4o',
@@ -1827,6 +1921,21 @@ function getDefaultModel(provider) {
     groq: 'llama-3.1-70b-versatile'
   };
   return defaults[provider];
+}
+
+// フォールバック用モデルを取得（リクエストモデルと同じなら null を返す）
+function getFallbackModel(provider, requestedModel) {
+  var fallbacks = {
+    gemini: 'gemini-2.0-flash-exp',
+    claude: 'claude-sonnet-4-20250514',
+    openai: 'gpt-4o',
+    openai_llm: 'gpt-4o',
+    groq: 'llama-3.1-70b-versatile'
+  };
+  var fb = fallbacks[provider];
+  // フォールバックが同じモデルなら再試行しない
+  if (!fb || fb === requestedModel) return null;
+  return fb;
 }
 
 // =====================================
@@ -2333,5 +2442,29 @@ function updateLLMIndicator() {
     indicator.textContent = '⚠️ API未設定';
     indicator.classList.add('no-api');
     indicator.title = 'APIキーを設定してください';
+  }
+  // ボタン状態も同期
+  updateLLMButtonsState();
+}
+
+// LLM未設定時にAIボタンを無効化
+function updateLLMButtonsState() {
+  var llm = getAvailableLlm();
+  var buttons = document.querySelectorAll('.ask-ai-btn');
+
+  for (var i = 0; i < buttons.length; i++) {
+    var btn = buttons[i];
+    // 議事録ボタンは別ロジックで制御されるためスキップ
+    if (btn.id === 'minutesBtn') continue;
+
+    if (!llm) {
+      btn.disabled = true;
+      btn.classList.add('disabled');
+      btn.title = 'LLM APIキーが未設定です';
+    } else {
+      btn.disabled = false;
+      btn.classList.remove('disabled');
+      btn.title = '';
+    }
   }
 }
