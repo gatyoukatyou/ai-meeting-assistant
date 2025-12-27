@@ -662,6 +662,10 @@ async function startRecording() {
 
 // STTプロバイダーの検証（録音開始時）
 async function validateSTTProviderForRecording(provider) {
+  console.log("[Debug] validateSTTProviderForRecording called with provider:", provider);
+  console.log("[Debug] sttProvider option:", SecureStorage.getOption("sttProvider"));
+  console.log("[Debug] deepgram key exists:", !!SecureStorage.getApiKey("deepgram"));
+  console.log("[Debug] openai key exists:", !!SecureStorage.getApiKey("openai"));
   switch (provider) {
     case 'openai_stt': {
       const key = SecureStorage.getApiKey('openai');
