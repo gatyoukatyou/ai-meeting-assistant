@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com wss://api.assemblyai.com https://api.assemblyai.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com wss://api.assemblyai.com https://api.assemblyai.com wss://streaming.assemblyai.com https://streaming.assemblyai.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
   <title>設定 - AI参加会議</title>
   <style>
     :root {
@@ -629,8 +629,9 @@
           <div class="setting-row">
             <input type="password" class="setting-input" id="groqApiKey" placeholder="gsk_...">
             <select class="model-select" id="groqModel">
+              <option value="llama-3.3-70b-versatile">llama-3.3-70b（推奨）</option>
               <option value="llama-3.1-70b-versatile">llama-3.1-70b</option>
-              <option value="llama-3.1-8b-instant">llama-3.1-8b</option>
+              <option value="llama-3.1-8b-instant">llama-3.1-8b（低コスト）</option>
             </select>
           </div>
           <div class="api-actions">

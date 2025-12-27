@@ -71,10 +71,10 @@ class AssemblyAIWSProvider {
     }
 
     return new Promise((resolve, reject) => {
-      // AssemblyAI WebSocket URL
-      const wsUrl = `wss://api.assemblyai.com/v2/realtime/ws?sample_rate=16000&token=${this.sessionToken}`;
+      // AssemblyAI WebSocket URL (v3 streaming endpoint)
+      const wsUrl = `wss://streaming.assemblyai.com/v3/ws?token=${this.sessionToken}&sample_rate=16000`;
 
-      console.log('[AssemblyAI] Connecting to WebSocket...');
+      console.log('[AssemblyAI] Connecting to AssemblyAI Streaming API...');
 
       this.ws = new WebSocket(wsUrl);
 

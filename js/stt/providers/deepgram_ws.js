@@ -37,8 +37,9 @@ class DeepgramWSProvider {
     return new Promise((resolve, reject) => {
       this.updateStatus('connecting');
 
-      // Deepgram WebSocket URL
+      // Deepgram WebSocket URL with token authentication
       const wsUrl = new URL('wss://api.deepgram.com/v1/listen');
+      wsUrl.searchParams.set('token', this.apiKey);  // Browser requires token in URL query
       wsUrl.searchParams.set('model', this.model);
       wsUrl.searchParams.set('language', this.language);
       wsUrl.searchParams.set('encoding', 'linear16');
@@ -47,9 +48,9 @@ class DeepgramWSProvider {
       wsUrl.searchParams.set('punctuate', 'true');
       wsUrl.searchParams.set('interim_results', 'true');
 
-      console.log('[Deepgram] Connecting to:', wsUrl.toString());
+      console.log('[Deepgram] Connecting to Deepgram API...');  // Don't log URL with token
 
-      this.ws = new WebSocket(wsUrl.toString(), ['token', this.apiKey]);
+      this.ws = new WebSocket(wsUrl.toString());
 
       this.ws.onopen = () => {
         console.log('[Deepgram] WebSocket connected');
