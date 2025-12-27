@@ -391,6 +391,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // 通常のclickイベント（デスクトップ用 + touchend後の二重発火防止）
     recordBtn.addEventListener('click', function(e) {
+      e.preventDefault();
       // touchend直後のclickは無視（二重発火防止）
       if (getNow() - lastTouchEndAt < 600) {
         console.log('[Record] Ignoring click after touchend (anti-double-fire)');
