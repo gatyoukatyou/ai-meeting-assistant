@@ -87,15 +87,22 @@ const SecureStorage = {
   // 全設定をエクスポート（別のデバイス用に再暗号化）
   exportAll: function(exportPassword) {
     const data = {
+      // LLM用APIキー
       gemini: { key: this.getApiKey('gemini'), model: this.getModel('gemini') },
       claude: { key: this.getApiKey('claude'), model: this.getModel('claude') },
-      openai: { key: this.getApiKey('openai'), model: this.getModel('openai') },
+      openai_llm: { key: this.getApiKey('openai_llm'), model: this.getModel('openai_llm') },
       groq: { key: this.getApiKey('groq'), model: this.getModel('groq') },
+      // STT用APIキー
+      openai: { key: this.getApiKey('openai'), model: this.getModel('openai') },
+      deepgram: { key: this.getApiKey('deepgram'), model: this.getModel('deepgram') },
+      assemblyai: { key: this.getApiKey('assemblyai') },
       options: {
         clearOnClose: this.getOption('clearOnClose', false),
         costAlertEnabled: this.getOption('costAlertEnabled', true),
         costLimit: this.getOption('costLimit', 100),
-        llmPriority: this.getOption('llmPriority', 'auto')
+        llmPriority: this.getOption('llmPriority', 'auto'),
+        sttProvider: this.getOption('sttProvider', 'openai_stt'),
+        sttUserDictionary: this.getOption('sttUserDictionary', '')
       },
       exportedAt: new Date().toISOString()
     };
@@ -123,19 +130,28 @@ const SecureStorage = {
       }
       const data = JSON.parse(json);
 
+      // LLM用APIキー
       if (data.gemini && data.gemini.key) this.setApiKey('gemini', data.gemini.key);
       if (data.gemini && data.gemini.model) this.setModel('gemini', data.gemini.model);
       if (data.claude && data.claude.key) this.setApiKey('claude', data.claude.key);
       if (data.claude && data.claude.model) this.setModel('claude', data.claude.model);
-      if (data.openai && data.openai.key) this.setApiKey('openai', data.openai.key);
-      if (data.openai && data.openai.model) this.setModel('openai', data.openai.model);
+      if (data.openai_llm && data.openai_llm.key) this.setApiKey('openai_llm', data.openai_llm.key);
+      if (data.openai_llm && data.openai_llm.model) this.setModel('openai_llm', data.openai_llm.model);
       if (data.groq && data.groq.key) this.setApiKey('groq', data.groq.key);
       if (data.groq && data.groq.model) this.setModel('groq', data.groq.model);
+      // STT用APIキー
+      if (data.openai && data.openai.key) this.setApiKey('openai', data.openai.key);
+      if (data.openai && data.openai.model) this.setModel('openai', data.openai.model);
+      if (data.deepgram && data.deepgram.key) this.setApiKey('deepgram', data.deepgram.key);
+      if (data.deepgram && data.deepgram.model) this.setModel('deepgram', data.deepgram.model);
+      if (data.assemblyai && data.assemblyai.key) this.setApiKey('assemblyai', data.assemblyai.key);
       if (data.options) {
         this.setOption('clearOnClose', data.options.clearOnClose || false);
         this.setOption('costAlertEnabled', data.options.costAlertEnabled !== undefined ? data.options.costAlertEnabled : true);
         this.setOption('costLimit', data.options.costLimit || 100);
         this.setOption('llmPriority', data.options.llmPriority || 'auto');
+        if (data.options.sttProvider) this.setOption('sttProvider', data.options.sttProvider);
+        if (data.options.sttUserDictionary) this.setOption('sttUserDictionary', data.options.sttUserDictionary);
       }
 
       return true;
@@ -147,7 +163,8 @@ const SecureStorage = {
 
   // 全削除
   clearAll: function() {
-    ['gemini', 'claude', 'openai', 'groq'].forEach(p => {
+    // LLM用 + STT用の全プロバイダー
+    ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram', 'assemblyai'].forEach(p => {
       localStorage.removeItem(`_ak_${p}`);
       localStorage.removeItem(`_m_${p}`);
     });
@@ -155,11 +172,14 @@ const SecureStorage = {
     localStorage.removeItem('_opt_costAlertEnabled');
     localStorage.removeItem('_opt_costLimit');
     localStorage.removeItem('_opt_llmPriority');
+    localStorage.removeItem('_opt_sttProvider');
+    localStorage.removeItem('_opt_sttUserDictionary');
   },
 
   // APIキーのみ削除（デバイスキーは残す）
   clearApiKeys: function() {
-    ['gemini', 'claude', 'openai', 'groq'].forEach(p => {
+    // LLM用 + STT用の全プロバイダー
+    ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram', 'assemblyai'].forEach(p => {
       localStorage.removeItem(`_ak_${p}`);
     });
   }

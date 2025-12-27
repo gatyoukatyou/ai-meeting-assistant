@@ -140,6 +140,14 @@ function loadSavedSettings() {
     if (modelEl && model) modelEl.value = model;
   });
 
+  // OpenAI LLM用（STTとは別）
+  const openaiLlmKey = SecureStorage.getApiKey('openai_llm');
+  const openaiLlmModel = SecureStorage.getModel('openai_llm');
+  const openaiLlmKeyEl = document.getElementById('openaiLlmApiKey');
+  const openaiLlmModelEl = document.getElementById('openaiLlmModel');
+  if (openaiLlmKeyEl && openaiLlmKey) openaiLlmKeyEl.value = openaiLlmKey;
+  if (openaiLlmModelEl && openaiLlmModel) openaiLlmModelEl.value = openaiLlmModel;
+
   // STT用APIキー
   // OpenAI
   const openaiKey = SecureStorage.getApiKey('openai');
@@ -204,6 +212,12 @@ async function saveSettings() {
     if (keyEl) SecureStorage.setApiKey(p, keyEl.value.trim());
     if (modelEl) SecureStorage.setModel(p, modelEl.value);
   });
+
+  // OpenAI LLM用（STTとは別）
+  const openaiLlmKeyEl = document.getElementById('openaiLlmApiKey');
+  const openaiLlmModelEl = document.getElementById('openaiLlmModel');
+  if (openaiLlmKeyEl) SecureStorage.setApiKey('openai_llm', openaiLlmKeyEl.value.trim());
+  if (openaiLlmModelEl) SecureStorage.setModel('openai_llm', openaiLlmModelEl.value);
 
   // STT用APIキーを保存
   // OpenAI
@@ -349,6 +363,7 @@ async function validateApiKey(provider, key) {
         break;
 
       case 'openai':
+      case 'openai_llm':
         const openaiRes = await fetch('https://api.openai.com/v1/models', {
           headers: { 'Authorization': `Bearer ${key}` }
         });

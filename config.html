@@ -568,6 +568,24 @@
           </div>
         </div>
 
+        <div class="setting-group" style="margin-bottom: 0.75rem;">
+          <label class="setting-label">
+            OpenAI API（ChatGPT）
+            <span class="validation-status" id="openai-llm-status" style="display:none;"></span>
+          </label>
+          <div class="setting-row">
+            <input type="password" class="setting-input" id="openaiLlmApiKey" placeholder="sk-...">
+            <select class="model-select" id="openaiLlmModel">
+              <option value="gpt-4o">gpt-4o（推奨）</option>
+              <option value="gpt-4o-mini">gpt-4o-mini（低コスト）</option>
+              <option value="gpt-4-turbo">gpt-4-turbo</option>
+            </select>
+          </div>
+          <div class="setting-hint">
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得（STTと別のキーを推奨）
+          </div>
+        </div>
+
         <div class="setting-group" style="margin-bottom: 0;">
           <label class="setting-label">
             Groq API
@@ -585,10 +603,10 @@
           </div>
         </div>
 
-        <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-blue); border-radius: 0.5rem; border: 1px solid var(--accent-border-blue);">
-          <div style="font-size: 0.85rem; color: var(--text);">
-            💡 <strong>LLMを設定しない場合</strong><br>
-            文字起こしのOpenAI APIを使ってAI回答も行います（gpt-4o-miniを使用）。
+        <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 0.5rem; border: 1px solid #fef08a;">
+          <div style="font-size: 0.85rem; color: #92400e;">
+            ⚠️ <strong>LLM APIキーが未設定の場合</strong><br>
+            要約・意見・議事録などのAI機能は使用できません。上記のいずれかを設定してください。
           </div>
         </div>
       </div>
@@ -600,7 +618,7 @@
           <option value="auto">自動選択（設定されたAPIを順に使用）</option>
           <option value="gemini">Gemini を優先</option>
           <option value="claude">Claude を優先</option>
-          <option value="openai">OpenAI を優先</option>
+          <option value="openai_llm">OpenAI (ChatGPT) を優先</option>
           <option value="groq">Groq を優先</option>
         </select>
         <div class="setting-hint">

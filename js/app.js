@@ -1429,7 +1429,9 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 // 使用可能なLLMを取得
 function getAvailableLlm() {
   const priority = SecureStorage.getOption('llmPriority', 'auto');
-  const providers = ['claude', 'openai', 'gemini', 'groq']; // 優先順位
+  // 優先順位: claude → openai_llm → gemini → groq
+  // ※ openai_llm はLLM専用のOpenAI APIキー（STTとは別）
+  const providers = ['claude', 'openai_llm', 'gemini', 'groq'];
 
   if (priority !== 'auto') {
     // 指定されたプロバイダーを優先
@@ -1453,6 +1455,7 @@ function getDefaultModel(provider) {
     gemini: 'gemini-2.0-flash-exp',
     claude: 'claude-sonnet-4-20250514',
     openai: 'gpt-4o',
+    openai_llm: 'gpt-4o',
     groq: 'llama-3.1-70b-versatile'
   };
   return defaults[provider];
@@ -1751,6 +1754,7 @@ async function callLLM(provider, prompt) {
       break;
 
     case 'openai':
+    case 'openai_llm':
       response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
         headers: {
@@ -1819,6 +1823,7 @@ function getDefaultModel(provider) {
     gemini: 'gemini-2.0-flash-exp',
     claude: 'claude-sonnet-4-20250514',
     openai: 'gpt-4o',
+    openai_llm: 'gpt-4o',
     groq: 'llama-3.1-70b-versatile'
   };
   return defaults[provider];
@@ -2311,12 +2316,14 @@ function updateLLMIndicator() {
       gemini: 'Gemini',
       claude: 'Claude',
       openai: 'OpenAI',
+      openai_llm: 'ChatGPT',
       groq: 'Groq'
     };
     const providerEmoji = {
       gemini: '✨',
       claude: '🧠',
       openai: '🚀',
+      openai_llm: '🚀',
       groq: '⚡'
     };
     indicator.textContent = `${providerEmoji[llm.provider] || '🤖'} ${providerNames[llm.provider] || llm.provider}`;
