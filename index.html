@@ -153,21 +153,6 @@
     @media (min-width: 768px) {
       .header {
         padding: 1rem 1.5rem;
-      }
-
-      .header-top {
-        margin-bottom: 0;
-      }
-
-      .header-main {
-        position: absolute;
-        right: 1.5rem;
-        top: 50%;
-        transform: translateY(-50%);
-        margin-bottom: 0;
-      }
-
-      .header {
         position: relative;
         display: flex;
         flex-wrap: wrap;
@@ -176,7 +161,16 @@
       }
 
       .header-top {
+        margin-bottom: 0;
         flex: 0 0 auto;
+      }
+
+      /* PC版ロボットアイコン */
+      .header-icon {
+        width: 36px;
+        height: 36px;
+        border-radius: 8px;
+        object-fit: contain;
       }
 
       .header-settings-btn {
@@ -217,32 +211,76 @@
 
       .details-export-btn {
         width: auto;
+        padding: 0.5rem 1rem;
       }
 
       .header-main {
         position: static;
         transform: none;
+        margin-bottom: 0;
+      }
+
+      /* カフ風デザイン：録音ボタン＋ステータス */
+      .cuff-container {
+        display: flex;
+        align-items: center;
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        border: 2px solid var(--border);
+        border-radius: 2rem;
+        padding: 0.25rem;
+        box-shadow: inset 0 2px 4px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.08);
+      }
+
+      .cuff-container .status-badge {
+        border: none;
+        background: transparent;
+        padding: 0.5rem 1rem;
+        font-size: 0.8rem;
+        min-width: 90px;
+        text-align: center;
+      }
+
+      .cuff-container .status-badge.status-ready {
+        color: var(--text-secondary);
+      }
+
+      .cuff-container .status-badge.status-recording {
+        color: var(--danger);
+        background: transparent;
+        animation: none;
+      }
+
+      .cuff-container .record-btn-main {
+        flex: 0 0 auto;
+        border-radius: 1.5rem;
+        padding: 0.625rem 1.25rem;
+        font-size: 0.9rem;
+        min-width: 120px;
       }
 
       .record-btn-main {
         flex: 0 0 auto;
       }
 
-      /* PCでは設定リンクを表示 */
+      /* PCでは設定リンクを目立つボタンに */
       .header-settings-link {
         display: inline-flex;
         align-items: center;
-        padding: 0.5rem 1rem;
-        background: transparent;
-        color: var(--text-secondary);
+        gap: 0.375rem;
+        padding: 0.625rem 1.25rem;
+        background: var(--primary);
+        color: white;
         border-radius: 0.5rem;
         font-size: 0.875rem;
+        font-weight: 500;
         text-decoration: none;
-        transition: background 0.15s;
+        transition: background 0.15s, transform 0.1s;
+        box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
       }
 
       .header-settings-link:hover {
-        background: var(--border);
+        background: var(--primary-hover);
+        transform: translateY(-1px);
       }
     }
 
@@ -426,19 +464,31 @@
       display: flex;
       gap: 0.5rem;
       margin-bottom: 1rem;
+      align-items: flex-end;
     }
 
-    .custom-question input {
+    .custom-question textarea {
       flex: 1;
-      padding: 0.5rem 0.75rem;
+      padding: 0.625rem 0.875rem;
       border: 1px solid var(--border);
       border-radius: 0.5rem;
       font-size: 0.875rem;
+      font-family: inherit;
+      resize: vertical;
+      min-height: 60px;
+      max-height: 200px;
+      line-height: 1.5;
     }
 
-    .custom-question input:focus {
+    .custom-question textarea:focus {
       outline: none;
       border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+    }
+
+    .custom-question .btn {
+      align-self: flex-end;
+      height: 38px;
     }
 
     /* タブ */
@@ -1001,10 +1051,19 @@
       flex-shrink: 0;
       opacity: 0.3;
       transition: opacity 0.2s;
+      padding-left: 0.5rem;
     }
 
     .transcript-chunk:hover .chunk-actions {
       opacity: 1;
+    }
+
+    /* スマホではタッチターゲット44pxを確保 */
+    @media (max-width: 767px) {
+      .chunk-actions {
+        opacity: 1;
+        gap: 0.125rem;
+      }
     }
 
     .btn-icon {
@@ -1013,8 +1072,23 @@
       padding: 0.25rem;
       cursor: pointer;
       font-size: 0.9rem;
-      border-radius: 4px;
+      border-radius: 0.5rem;
       transition: background 0.2s;
+      /* iOS Safari タッチ対応 */
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: rgba(0,0,0,0.1);
+    }
+
+    /* スマホではタッチターゲット44pxを確保 */
+    @media (max-width: 767px) {
+      .btn-icon {
+        min-width: 44px;
+        min-height: 44px;
+        font-size: 1.1rem;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
     }
 
     .btn-icon:hover {
@@ -1075,6 +1149,16 @@
         font-size: 1.125rem;
       }
 
+      /* スマホ版アイコン */
+      .header-icon {
+        width: 28px;
+        height: 28px;
+        border-radius: 6px;
+        object-fit: contain;
+        vertical-align: middle;
+        margin-right: 0.25rem;
+      }
+
       .header-settings-btn {
         min-width: 44px;
         min-height: 44px;
@@ -1086,6 +1170,18 @@
       .header-main {
         flex-direction: column;
         gap: 0.75rem;
+      }
+
+      /* スマホではカフコンテナを解除（display:contentsは避ける） */
+      .cuff-container {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+        background: none;
+        border: none;
+        padding: 0;
+        box-shadow: none;
+        width: 100%;
       }
 
       .status-badge {
@@ -1194,13 +1290,14 @@
       }
 
       /* カスタム質問入力を大きく */
-      .custom-question input {
+      .custom-question textarea {
         font-size: 1rem; /* iOSズーム防止 */
-        min-height: 48px;
+        min-height: 60px;
       }
 
       .custom-question .btn {
         min-height: 48px;
+        align-self: flex-end;
       }
 
       /* タブを大きく */
@@ -1615,14 +1712,17 @@
 <body>
   <header class="header">
     <div class="header-top">
-      <h1>🤖 AI参加会議</h1>
+      <h1><img src="icon-192.png" alt="" class="header-icon"> AI参加会議</h1>
       <a href="config.html" class="btn btn-ghost header-settings-btn" title="設定">⚙️</a>
     </div>
-    
-    <!-- メイン操作エリア（スマホで目立つ） -->
+
+    <!-- メイン操作エリア（スマホで目立つ、PCではカフ風） -->
     <div class="header-main">
-      <span class="status-badge status-ready" id="statusBadge">⏸ 待機中</span>
-      <button class="btn btn-primary record-btn-main" id="recordBtn" ontouchend="event.preventDefault();if(typeof toggleRecording==='function'){toggleRecording();}else{alert('JS未読込');}" onclick="if(typeof toggleRecording==='function'){toggleRecording();}else{alert('JS未読込');}">🎤 録音開始</button>
+      <!-- PC版：カフ風コンテナ -->
+      <div class="cuff-container">
+        <span class="status-badge status-ready" id="statusBadge">⏸ 待機中</span>
+        <button class="btn btn-primary record-btn-main" id="recordBtn">🎤 録音開始</button>
+      </div>
     </div>
 
     <!-- 詳細設定（スマホでは折りたたみ） -->
@@ -1653,7 +1753,7 @@
           </select>
         </div>
         <div class="details-row">
-          <button class="btn btn-secondary details-export-btn" id="openExportBtn">📥 エクスポート</button>
+          <button class="btn btn-secondary details-export-btn" id="openExportBtn" title="エクスポート">📥 出力</button>
         </div>
       </div>
       <a href="config.html" class="header-settings-link">⚙️ 設定</a>
@@ -1742,7 +1842,7 @@
           <button class="btn btn-secondary ask-ai-btn" data-ai-type="minutes" id="minutesBtn" disabled title="録音停止後に利用可能">📝 議事録</button>
         </div>
         <div class="custom-question">
-          <input type="text" id="customQuestion" placeholder="自由に質問...">
+          <textarea id="customQuestion" placeholder="自由に質問...（文字起こしをコピペして該当箇所を聞くことも可能）" rows="2"></textarea>
           <button class="btn btn-primary" id="askCustomBtn">送信</button>
         </div>
       </div>

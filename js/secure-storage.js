@@ -130,6 +130,14 @@ const SecureStorage = {
       }
       const data = JSON.parse(json);
 
+      // 旧形式救済: openai_llmがなく、openaiがあり、sttProviderがない場合は旧形式
+      // → openaiをopenai_llmにコピー（LLM用として使用されていた可能性が高い）
+      var isOldFormat = !data.openai_llm && data.openai && data.openai.key && !data.options.sttProvider;
+      if (isOldFormat) {
+        console.warn('[Import] Old format detected: copying openai to openai_llm');
+        data.openai_llm = { key: data.openai.key, model: 'gpt-4o' };
+      }
+
       // LLM用APIキー
       if (data.gemini && data.gemini.key) this.setApiKey('gemini', data.gemini.key);
       if (data.gemini && data.gemini.model) this.setModel('gemini', data.gemini.model);
@@ -149,7 +157,10 @@ const SecureStorage = {
         this.setOption('clearOnClose', data.options.clearOnClose || false);
         this.setOption('costAlertEnabled', data.options.costAlertEnabled !== undefined ? data.options.costAlertEnabled : true);
         this.setOption('costLimit', data.options.costLimit || 100);
-        this.setOption('llmPriority', data.options.llmPriority || 'auto');
+        // llmPriority旧値マイグレーション: openai → openai_llm
+        var llmPriority = data.options.llmPriority || 'auto';
+        if (llmPriority === 'openai') llmPriority = 'openai_llm';
+        this.setOption('llmPriority', llmPriority);
         if (data.options.sttProvider) this.setOption('sttProvider', data.options.sttProvider);
         if (data.options.sttUserDictionary) this.setOption('sttUserDictionary', data.options.sttUserDictionary);
       }

@@ -129,6 +129,13 @@ function loadSavedSettings() {
     updateSTTProviderUI(sttProvider);
   }
 
+  // llmPriorityの旧値マイグレーション: openai → openai_llm
+  let llmPriority = SecureStorage.getOption('llmPriority', 'auto');
+  if (llmPriority === 'openai') {
+    console.warn('Migrating llmPriority from "openai" to "openai_llm"');
+    SecureStorage.setOption('llmPriority', 'openai_llm');
+  }
+
   // LLM用APIキーを入力欄に復元
   const llmProviders = ['gemini', 'claude', 'groq'];
   llmProviders.forEach(p => {
