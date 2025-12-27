@@ -306,10 +306,10 @@ async function validateSTTProvider(provider) {
       if (!key) {
         return { valid: false, message: 'Deepgram APIキーが必要です。' };
       }
-      // Deepgramのキー検証（簡易）
+      // Deepgramのキー検証（APIレスポンスで判断）
       const isValid = await validateApiKey('deepgram', key);
       if (!isValid) {
-        return { valid: false, message: 'Deepgram APIキーが無効です。' };
+        return { valid: false, message: '認証に失敗しました。APIキーを確認してください。' };
       }
       return { valid: true };
     }

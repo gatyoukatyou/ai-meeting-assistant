@@ -211,7 +211,9 @@
 
       .details-export-btn {
         width: auto;
+        height: auto;
         padding: 0.5rem 1rem;
+        align-self: center;
       }
 
       .header-main {
@@ -287,6 +289,40 @@
     /* スマホではPC用設定リンクを非表示 */
     .header-settings-link {
       display: none;
+    }
+
+    /* PC版設定ボタン（録音ボタンの右に配置） */
+    .header-settings-link-pc {
+      display: none;
+    }
+
+    @media (min-width: 768px) {
+      .header-settings-link-pc {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.375rem;
+        padding: 0.75rem 1.5rem;
+        background: var(--primary);
+        color: white;
+        border-radius: 0.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+        text-decoration: none;
+        transition: background 0.15s, transform 0.1s;
+        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+        margin-left: 1rem;
+      }
+
+      .header-settings-link-pc:hover {
+        background: var(--primary-hover);
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+      }
+
+      /* 旧設定リンクを非表示 */
+      .header-settings-link {
+        display: none !important;
+      }
     }
 
     .header-controls {
@@ -1723,6 +1759,8 @@
         <span class="status-badge status-ready" id="statusBadge">⏸ 待機中</span>
         <button class="btn btn-primary record-btn-main" id="recordBtn">🎤 録音開始</button>
       </div>
+      <!-- PC版：設定ボタン（録音ボタンの右に配置） -->
+      <a href="config.html" class="header-settings-link-pc">⚙️ 設定</a>
     </div>
 
     <!-- 詳細設定（スマホでは折りたたみ） -->
