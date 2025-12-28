@@ -272,6 +272,9 @@
       "generic": "An error occurred: {message}",
       "timeout": "Request timed out (30 seconds)",
       "notConfigured": "LLM API key not configured.\nPlease enter an API key in settings."
+    },
+    "prompt": {
+      "tooLong": "Input too long ({current} chars). Please limit to {max} chars."
     }
   },
   "ai": {

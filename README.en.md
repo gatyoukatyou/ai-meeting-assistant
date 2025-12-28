@@ -26,6 +26,14 @@ This app protects your API keys:
 
 See [Security Details](docs/SECURITY.md) for more information.
 
+### Important Security Notes
+
+- **Never enter your API key on unofficial URLs**
+  - Official: https://gatyoukatyou.github.io/ai-meeting-assistant/
+  - Fake sites or modified copies may steal your keys
+- **On shared PCs, enable "Delete on browser close"**
+  - Settings > Security Settings
+
 ## Requirements
 
 - A computer with a modern browser (Chrome or Edge recommended)
