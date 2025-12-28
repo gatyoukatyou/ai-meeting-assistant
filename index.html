@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-i18n-title="app.pageTitle">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1718,30 +1718,36 @@
 <body>
   <header class="header">
     <div class="header-top">
-      <h1><img src="icon-192.png" alt="" class="header-icon"> AI参加会議</h1>
-      <a href="config.html" class="btn btn-ghost header-settings-btn" title="設定">⚙️</a>
+      <h1><img src="icon-192.png" alt="" class="header-icon"> <span data-i18n="app.title">AI参加会議</span></h1>
+      <div style="display: flex; align-items: center; gap: 0.5rem;">
+        <select id="languageSwitcher" class="model-select" style="min-width: 90px; padding: 0.375rem 0.5rem; font-size: 0.8rem;">
+          <option value="ja">🇯🇵 日本語</option>
+          <option value="en">🇺🇸 English</option>
+        </select>
+        <a href="config.html" class="btn btn-ghost header-settings-btn" data-i18n-title="common.settings">⚙️</a>
+      </div>
     </div>
 
     <!-- メイン操作エリア（スマホで目立つ、PCではカフ風） -->
     <div class="header-main">
       <!-- PC版：カフ風コンテナ -->
       <div class="cuff-container">
-        <span class="status-badge status-ready" id="statusBadge">⏸ 待機中</span>
-        <button type="button" class="btn btn-primary record-btn-main" id="recordBtn">🎤 録音開始</button>
+        <span class="status-badge status-ready" id="statusBadge"><span data-i18n="app.recording.statusReady">⏸ 待機中</span></span>
+        <button type="button" class="btn btn-primary record-btn-main" id="recordBtn"><span data-i18n="app.recording.start">🎤 録音開始</span></button>
       </div>
       <!-- PC版：設定ボタン（録音ボタンの右に配置） -->
-      <a href="config.html" class="header-settings-link-pc">⚙️ 設定</a>
+      <a href="config.html" class="header-settings-link-pc">⚙️ <span data-i18n="common.settings">設定</span></a>
     </div>
 
     <!-- 詳細設定（スマホでは折りたたみ） -->
     <div class="header-details">
       <button class="btn btn-ghost details-toggle" id="detailsToggle">
-        <span class="details-toggle-text">詳細設定</span>
+        <span class="details-toggle-text" data-i18n="app.header.detailSettings">詳細設定</span>
         <span class="details-toggle-icon">▼</span>
       </button>
       <div class="details-panel" id="detailsPanel">
         <div class="details-row">
-          <label class="details-label">文字起こしAPI</label>
+          <label class="details-label" data-i18n="app.details.transcriptApi">文字起こしAPI</label>
           <select id="transcriptProvider" class="model-select" title="文字起こしAPI（STT専用）">
             <option value="openai_stt" selected>🎤 OpenAI Whisper</option>
             <option value="deepgram_realtime">⚡ Deepgram</option>
@@ -1749,7 +1755,7 @@
           </select>
         </div>
         <div class="details-row">
-          <label class="details-label">音声言語</label>
+          <label class="details-label" data-i18n="app.details.audioLanguage">音声言語</label>
           <select id="sttLanguage" class="model-select" title="音声の言語（Whisper用）">
             <option value="ja" selected>🇯🇵 日本語</option>
             <option value="en">🇺🇸 English</option>
@@ -1757,7 +1763,7 @@
           </select>
         </div>
         <div class="details-row">
-          <label class="details-label">送信間隔</label>
+          <label class="details-label" data-i18n="app.details.sendInterval">送信間隔</label>
           <select id="transcriptInterval" class="model-select">
             <option value="5">5秒</option>
             <option value="10">10秒</option>
@@ -1768,7 +1774,7 @@
           </select>
         </div>
         <div class="details-row">
-          <button class="btn btn-secondary details-export-btn" id="openExportBtn" title="エクスポート">📥 出力</button>
+          <button class="btn btn-secondary details-export-btn" id="openExportBtn" data-i18n-title="common.export"><span data-i18n="common.export">📥 出力</span></button>
         </div>
       </div>
     </div>
@@ -1776,16 +1782,16 @@
 
   <!-- Phase 3: メインパネル切り替えタブ（スマホ専用） -->
   <div class="main-tabs">
-    <button class="main-tab active" data-main-tab="transcript">📝 文字起こし</button>
-    <button class="main-tab" data-main-tab="ai">💬 AI回答</button>
+    <button class="main-tab active" data-main-tab="transcript">📝 <span data-i18n="app.panel.transcript">文字起こし</span></button>
+    <button class="main-tab" data-main-tab="ai">💬 <span data-i18n="app.panel.aiResponse">AI回答</span></button>
   </div>
 
   <main class="main-container">
     <!-- 文字起こしパネル -->
     <div class="panel active" id="transcriptPanel">
       <div class="panel-header">
-        <span class="panel-title">📝 文字起こし</span>
-        <button class="btn btn-ghost" id="clearTranscriptBtn" style="font-size: 0.75rem;">クリア</button>
+        <span class="panel-title">📝 <span data-i18n="app.panel.transcript">文字起こし</span></span>
+        <button class="btn btn-ghost" id="clearTranscriptBtn" style="font-size: 0.75rem;" data-i18n="common.clear">クリア</button>
       </div>
       <div class="panel-body" id="transcriptBody">
         <div class="transcript-text" id="transcriptText"></div>
@@ -1844,29 +1850,29 @@
     <!-- AIパネル -->
     <div class="panel" id="aiPanel">
       <div class="panel-header">
-        <span class="panel-title">💬 AI回答</span>
+        <span class="panel-title">💬 <span data-i18n="app.panel.aiResponse">AI回答</span></span>
         <span class="llm-indicator" id="llmIndicator" title="使用中のLLM">🤖 未設定</span>
       </div>
       
       <div class="ai-section" style="padding: 1rem; padding-bottom: 0;">
         <div class="ai-buttons">
-          <button class="btn btn-primary ask-ai-btn" data-ai-type="summary">📋 要約</button>
-          <button class="btn btn-secondary ask-ai-btn" data-ai-type="opinion">💭 意見を聞く</button>
-          <button class="btn btn-secondary ask-ai-btn" data-ai-type="idea">💡 アイデア</button>
-          <button class="btn btn-secondary ask-ai-btn" data-ai-type="minutes" id="minutesBtn" disabled title="録音停止後に利用可能">📝 議事録</button>
+          <button class="btn btn-primary ask-ai-btn" data-ai-type="summary">📋 <span data-i18n="app.ai.summary">要約</span></button>
+          <button class="btn btn-secondary ask-ai-btn" data-ai-type="opinion">💭 <span data-i18n="app.ai.opinion">意見を聞く</span></button>
+          <button class="btn btn-secondary ask-ai-btn" data-ai-type="idea">💡 <span data-i18n="app.ai.idea">アイデア</span></button>
+          <button class="btn btn-secondary ask-ai-btn" data-ai-type="minutes" id="minutesBtn" disabled data-i18n-title="toast.qa.minutesAfterStop">📝 <span data-i18n="app.ai.minutes">議事録</span></button>
         </div>
         <div class="custom-question">
-          <textarea id="customQuestion" placeholder="自由に質問...（文字起こしをコピペして該当箇所を聞くことも可能）" rows="2"></textarea>
-          <button type="button" class="btn btn-primary" id="askCustomBtn">送信</button>
+          <textarea id="customQuestion" data-i18n-placeholder="app.ai.customPlaceholder" placeholder="自由に質問...（文字起こしをコピペして該当箇所を聞くことも可能）" rows="2"></textarea>
+          <button type="button" class="btn btn-primary" id="askCustomBtn" data-i18n="common.send">送信</button>
         </div>
       </div>
 
       <div class="tabs">
-        <button class="tab active" data-tab="summary">要約</button>
-        <button class="tab" data-tab="opinion">意見</button>
-        <button class="tab" data-tab="idea">アイデア</button>
-        <button class="tab" data-tab="minutes">議事録</button>
-        <button class="tab" data-tab="custom">Q&A</button>
+        <button class="tab active" data-tab="summary" data-i18n="app.ai.summary">要約</button>
+        <button class="tab" data-tab="opinion" data-i18n="app.ai.opinion">意見</button>
+        <button class="tab" data-tab="idea" data-i18n="app.ai.idea">アイデア</button>
+        <button class="tab" data-tab="minutes" data-i18n="app.ai.minutes">議事録</button>
+        <button class="tab" data-tab="custom" data-i18n="app.ai.qa">Q&A</button>
       </div>
 
       <div class="tab-content active" id="tab-summary">
@@ -1880,7 +1886,7 @@
       </div>
       <div class="tab-content" id="tab-minutes">
         <div class="ai-response" id="response-minutes">
-          <p class="placeholder-text">録音停止後に「📝 議事録」ボタンを押すと、構造化された議事録が生成されます。</p>
+          <p class="placeholder-text" data-i18n="app.aiResponse.minutesPlaceholder">録音停止後に「📝 議事録」ボタンを押すと、構造化された議事録が生成されます。</p>
         </div>
       </div>
       <div class="tab-content" id="tab-custom">
@@ -1942,12 +1948,12 @@
   <!-- フッター -->
   <footer style="text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--text-secondary); border-top: 1px solid var(--border); background: var(--card-bg);">
     <div style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
-      <a href="docs/TERMS.md" target="_blank" style="color: var(--text-secondary); text-decoration: none;">利用規約</a>
-      <a href="docs/PRIVACY.md" target="_blank" style="color: var(--text-secondary); text-decoration: none;">プライバシーポリシー</a>
-      <a href="docs/SECURITY.md" target="_blank" style="color: var(--text-secondary); text-decoration: none;">セキュリティ</a>
+      <a href="docs/TERMS.md" target="_blank" style="color: var(--text-secondary); text-decoration: none;" data-i18n="footer.terms">利用規約</a>
+      <a href="docs/PRIVACY.md" target="_blank" style="color: var(--text-secondary); text-decoration: none;" data-i18n="footer.privacy">プライバシーポリシー</a>
+      <a href="docs/SECURITY.md" target="_blank" style="color: var(--text-secondary); text-decoration: none;" data-i18n="footer.security">セキュリティ</a>
       <a href="https://github.com/gatyoukatyou/ai-meeting-assistant" target="_blank" rel="noopener" style="color: var(--text-secondary); text-decoration: none;">GitHub</a>
     </div>
-    <div style="margin-top: 0.5rem;">
+    <div style="margin-top: 0.5rem;" data-i18n="footer.copyright">
       © 2024 AI参加会議 | MITライセンス
     </div>
   </footer>
@@ -1956,29 +1962,29 @@
   <div class="modal-overlay" id="welcomeModal">
     <div class="modal">
       <div class="modal-header">
-        <h2>🤖 AI参加会議へようこそ</h2>
+        <h2>🤖 <span data-i18n="modal.welcome.title">AI参加会議へようこそ</span></h2>
         <button class="modal-close" id="closeWelcomeModalBtn">×</button>
       </div>
       <div class="modal-body">
         <div class="welcome-content">
-          <p class="welcome-desc">会議中にAIがリアルタイムで参加し、<br>文字起こし・要約・意見・アイデア提案を行います</p>
+          <p class="welcome-desc" data-i18n="modal.welcome.description">会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行います</p>
 
           <div class="welcome-features">
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🎤</span>
-              <span class="welcome-feature-text">高精度な音声文字起こし（OpenAI Whisper）</span>
+              <span class="welcome-feature-text" data-i18n="modal.welcome.feature1">高精度な音声文字起こし（OpenAI Whisper）</span>
             </div>
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🧠</span>
-              <span class="welcome-feature-text">複数のAIモデルに対応</span>
+              <span class="welcome-feature-text" data-i18n="modal.welcome.feature2">複数のAIモデルに対応</span>
             </div>
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🔒</span>
-              <span class="welcome-feature-text">APIキーは暗号化してローカル保存</span>
+              <span class="welcome-feature-text" data-i18n="modal.welcome.feature3">APIキーは暗号化してローカル保存</span>
             </div>
             <div class="welcome-feature">
               <span class="welcome-feature-icon">💰</span>
-              <span class="welcome-feature-text">利用料金の概算をリアルタイム表示</span>
+              <span class="welcome-feature-text" data-i18n="modal.welcome.feature4">利用料金の概算をリアルタイム表示</span>
             </div>
           </div>
 
@@ -1988,8 +1994,8 @@
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" id="skipWelcomeBtn">後で設定する</button>
-        <a href="config.html" class="btn btn-primary">⚙️ 設定を開始する</a>
+        <button class="btn btn-secondary" id="skipWelcomeBtn" data-i18n="modal.welcome.skipButton">後で設定する</button>
+        <a href="config.html" class="btn btn-primary">⚙️ <span data-i18n="modal.welcome.startButton">設定を開始する</span></a>
       </div>
     </div>
   </div>
@@ -1999,13 +2005,13 @@
   <div class="modal-overlay" id="exportModal">
     <div class="modal" style="max-width: 700px;">
       <div class="modal-header">
-        <h2>📥 エクスポート</h2>
+        <h2>📥 <span data-i18n="export.title">エクスポート</span></h2>
         <button class="modal-close" id="closeExportModalBtn">×</button>
       </div>
       <div class="modal-body">
         <!-- 項目選択 -->
         <div class="setting-group">
-          <label class="setting-label">出力項目を選択</label>
+          <label class="setting-label" data-i18n="export.selectItems">出力項目を選択</label>
           <div class="export-options">
             <label class="export-option">
               <input type="checkbox" id="exportMinutes" checked>
@@ -2037,21 +2043,21 @@
             </label>
           </div>
           <div class="export-presets">
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('all')">全選択</button>
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('minutes')">議事録のみ</button>
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('ai')">AI回答のみ</button>
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('none')">クリア</button>
+            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('all')" data-i18n="export.presets.all">全選択</button>
+            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('minutes')" data-i18n="export.presets.minutesOnly">議事録のみ</button>
+            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('ai')" data-i18n="export.presets.aiOnly">AI回答のみ</button>
+            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('none')" data-i18n="export.presets.clear">クリア</button>
           </div>
         </div>
         <!-- プレビュー -->
         <div class="setting-group">
-          <label class="setting-label">プレビュー</label>
+          <label class="setting-label" data-i18n="export.preview">プレビュー</label>
           <div class="export-preview" id="exportPreview"></div>
         </div>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" id="closeExportModalFooterBtn">閉じる</button>
-        <button class="btn btn-primary" id="downloadExportBtn">📥 ダウンロード</button>
+        <button class="btn btn-secondary" id="closeExportModalFooterBtn" data-i18n="common.close">閉じる</button>
+        <button class="btn btn-primary" id="downloadExportBtn">📥 <span data-i18n="common.download">ダウンロード</span></button>
       </div>
     </div>
   </div>
@@ -2061,30 +2067,31 @@
 
   <!-- Phase 2: フローティング停止ボタン（録音中のみ表示） -->
   <button class="btn btn-danger floating-stop-btn" id="floatingStopBtn">
-    ⏹ 録音停止
+    ⏹ <span data-i18n="app.recording.stop">録音停止</span>
   </button>
 
   <!-- Phase 5: 会議中モード切替ボタン（録音中のみ表示） -->
   <button class="btn meeting-mode-toggle" id="meetingModeToggle">
-    🎯 会議中モード
+    🎯 <span data-i18n="app.meeting.modeButton">会議中モード</span>
   </button>
 
   <!-- Phase 5: 会議中モードオーバーレイ -->
   <div class="meeting-mode-overlay" id="meetingModeOverlay">
     <div class="meeting-mode-status">
       <div class="meeting-mode-icon">🔴</div>
-      <div class="meeting-mode-text">録音中</div>
+      <div class="meeting-mode-text" data-i18n="app.meeting.recording">録音中</div>
       <div class="meeting-mode-time" id="meetingModeTime">00:00:00</div>
-      <div class="meeting-mode-hint">会議に集中してください</div>
+      <div class="meeting-mode-hint" data-i18n="app.meeting.focusHint">会議に集中してください</div>
     </div>
     <button class="btn btn-danger meeting-mode-stop-btn" id="meetingModeStopBtn">
-      ⏹ 録音停止
+      ⏹ <span data-i18n="app.recording.stop">録音停止</span>
     </button>
     <button class="meeting-mode-exit-btn" id="meetingModeExitBtn">
-      ← 通常画面に戻る
+      ← <span data-i18n="app.meeting.returnButton">通常画面に戻る</span>
     </button>
   </div>
 
+  <script src="js/i18n.js"></script>
   <script src="js/secure-storage.js" defer></script>
   <!-- STT Provider抽象化レイヤー -->
   <script src="js/audio/pcm_stream.js" defer></script>

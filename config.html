@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-i18n-title="config.pageTitle">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -413,8 +413,14 @@
 <body>
   <header class="header">
     <div class="header-content">
-      <h1>⚙️ 設定</h1>
-      <a href="index.html" class="btn btn-secondary">← メイン画面に戻る</a>
+      <h1>⚙️ <span data-i18n="config.title">設定</span></h1>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <select id="languageSwitcher" class="model-select" style="min-width: 90px; padding: 0.375rem 0.5rem; font-size: 0.8rem;">
+          <option value="ja">🇯🇵 日本語</option>
+          <option value="en">🇺🇸 English</option>
+        </select>
+        <a href="index.html" class="btn btn-secondary">← <span data-i18n="config.backToMain">メイン画面に戻る</span></a>
+      </div>
     </div>
   </header>
 
@@ -426,27 +432,26 @@
       <div class="security-notice">
         <div class="security-notice-title">
           <span>🔒</span>
-          <span>APIキーのセキュリティ</span>
+          <span data-i18n="config.security.title">APIキーのセキュリティ</span>
         </div>
-        <div class="security-notice-text">
-          APIキーはこのアプリ内で暗号化され、ブラウザのローカルストレージに保存されます。
-          外部サーバーには一切送信されません。
+        <div class="security-notice-text" data-i18n="config.security.description">
+          APIキーはこのアプリ内で暗号化され、ブラウザのローカルストレージに保存されます。外部サーバーには一切送信されません。
         </div>
         <div class="security-features">
-          <div class="security-feature">暗号化してローカル保存（平文では保存しない）</div>
-          <div class="security-feature">API呼び出し時のみHTTPS経由で送信</div>
-          <div class="security-feature">他のWebサイトからはアクセス不可</div>
-          <div class="security-feature">設定のエクスポート/インポート対応</div>
+          <div class="security-feature" data-i18n="config.security.encrypted">暗号化してローカル保存（平文では保存しない）</div>
+          <div class="security-feature" data-i18n="config.security.httpsOnly">API呼び出し時のみHTTPS経由で送信</div>
+          <div class="security-feature" data-i18n="config.security.isolated">他のWebサイトからはアクセス不可</div>
+          <div class="security-feature" data-i18n="config.security.exportable">設定のエクスポート/インポート対応</div>
         </div>
       </div>
 
       <!-- 文字起こし専用API（STT） -->
       <div class="api-section transcription">
-        <div class="api-section-title">🎤 文字起こし（STT）- プロバイダー選択</div>
+        <div class="api-section-title">🎤 <span data-i18n="config.stt.title">文字起こし（STT）- プロバイダー選択</span></div>
 
         <!-- STTプロバイダー選択 -->
         <div class="setting-group" style="margin-bottom: 1rem;">
-          <label class="setting-label">STTプロバイダー</label>
+          <label class="setting-label" data-i18n="config.stt.provider">STTプロバイダー</label>
           <select class="model-select" id="sttProvider" style="width: 100%;">
             <option value="openai_stt" selected>🎤 OpenAI Whisper（チャンク送信・安定）</option>
             <option value="deepgram_realtime">⚡ Deepgram Realtime（WebSocket・高速）</option>
@@ -554,7 +559,7 @@
 
       <!-- LLM用API（要約・AI回答） -->
       <div class="api-section llm">
-        <div class="api-section-title">💬 AI回答・要約（任意）- LLMを選択</div>
+        <div class="api-section-title">💬 <span data-i18n="config.llm.title">AI回答・要約（任意）- LLMを選択</span></div>
 
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label">
@@ -653,7 +658,7 @@
 
       <!-- LLM優先順位 -->
       <div class="setting-group">
-        <label class="setting-label">💬 LLM優先順位</label>
+        <label class="setting-label">💬 <span data-i18n="config.llm.priority">LLM優先順位</span></label>
         <select class="model-select" id="llmPriority" style="width: 100%;">
           <option value="auto">自動選択（設定されたAPIを順に使用）</option>
           <option value="gemini">Gemini を優先</option>
@@ -667,44 +672,45 @@
       </div>
 
       <div class="security-options">
-        <div class="security-options-title">🛡️ セキュリティオプション</div>
+        <div class="security-options-title">🛡️ <span data-i18n="config.options.securityTitle">セキュリティオプション</span></div>
         <div class="checkbox-group">
           <input type="checkbox" id="clearOnClose">
-          <label for="clearOnClose">ブラウザを閉じたらAPIキーを自動削除（共有PC向け）</label>
+          <label for="clearOnClose" data-i18n="config.options.clearOnClose">ブラウザを閉じたらAPIキーを自動削除（共有PC向け）</label>
         </div>
       </div>
 
       <div class="security-options" style="background: #eff6ff; border-color: #bfdbfe;">
-        <div class="security-options-title" style="color: #1e40af;">💰 コストアラート</div>
+        <div class="security-options-title" style="color: #1e40af;">💰 <span data-i18n="config.options.costAlertTitle">コストアラート</span></div>
         <div class="setting-group" style="margin-bottom: 0.5rem;">
-          <label class="setting-label" style="font-size: 0.8rem;">1セッションの上限金額（円）</label>
+          <label class="setting-label" style="font-size: 0.8rem;" data-i18n="config.options.costLimit">1セッションの上限金額（円）</label>
           <input type="number" class="setting-input" id="costLimit" placeholder="例: 100" value="100" min="0" step="10" style="max-width: 150px;">
         </div>
         <div class="checkbox-group">
           <input type="checkbox" id="costAlertEnabled" checked>
-          <label for="costAlertEnabled" style="color: #1e40af;">上限の80%で警告を表示</label>
+          <label for="costAlertEnabled" style="color: #1e40af;" data-i18n="config.options.costAlertEnabled">上限の80%で警告を表示</label>
         </div>
       </div>
 
       <div class="settings-transfer">
-        <div class="settings-transfer-title">📦 設定のバックアップ</div>
+        <div class="settings-transfer-title">📦 <span data-i18n="config.backup.title">設定のバックアップ</span></div>
         <div class="settings-transfer-buttons">
-          <button class="btn btn-secondary" id="exportSettingsBtn">📤 エクスポート</button>
-          <button class="btn btn-secondary" id="importSettingsTrigger">📥 インポート</button>
+          <button class="btn btn-secondary" id="exportSettingsBtn">📤 <span data-i18n="config.backup.export">エクスポート</span></button>
+          <button class="btn btn-secondary" id="importSettingsTrigger">📥 <span data-i18n="config.backup.import">インポート</span></button>
           <input type="file" id="importFile" accept=".json" style="display:none;">
-          <button class="btn btn-danger" id="clearAllSettingsBtn">🗑️ 全削除</button>
+          <button class="btn btn-danger" id="clearAllSettingsBtn">🗑️ <span data-i18n="config.backup.clearAll">全削除</span></button>
         </div>
-        <div class="settings-transfer-hint">
+        <div class="settings-transfer-hint" data-i18n="config.backup.hint">
           エクスポートファイルは暗号化されています。他のデバイスへの移行に使用できます。
         </div>
       </div>
 
       <div class="action-buttons">
-        <a href="index.html" class="btn btn-secondary">キャンセル</a>
-        <button class="btn btn-primary" id="saveSettingsBtn">💾 保存</button>
+        <a href="index.html" class="btn btn-secondary" data-i18n="common.cancel">キャンセル</a>
+        <button class="btn btn-primary" id="saveSettingsBtn">💾 <span data-i18n="common.save">保存</span></button>
       </div>
     </div>
   </main>
+  <script src="js/i18n.js"></script>
   <script src="js/secure-storage.js" defer></script>
   <script src="js/config.js" defer></script>
 </body>

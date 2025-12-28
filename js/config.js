@@ -59,6 +59,16 @@ document.addEventListener('DOMContentLoaded', function() {
   if (saveBtn) {
     saveBtn.addEventListener('click', saveSettings);
   }
+
+  // 言語変更時の再レンダリング
+  window.addEventListener('languagechange', function() {
+    // API検証ステータスの再翻訳
+    const statusElements = document.querySelectorAll('.validation-status');
+    statusElements.forEach(el => {
+      // ステータスが表示されている場合、再翻訳が必要
+      // ただし現在の状態を保持するため、リロードはしない
+    });
+  });
 });
 
 // =====================================
@@ -200,7 +210,7 @@ function loadSavedSettings() {
 function showMigrationNotice() {
   // 旧設定からの移行通知
   setTimeout(() => {
-    showSuccess('旧設定を移行しました。STTプロバイダーがOpenAI Whisperに設定されています。');
+    showSuccess(t('config.messages.migrated'));
   }, 500);
 }
 
@@ -267,13 +277,13 @@ async function saveSettings() {
   if (geminiKey) {
     const geminiResult = await validateApiKey('gemini', geminiKey);
     if (geminiResult === 'invalid') {
-      showError('Gemini APIキーが無効です。正しいキーを入力してください。');
+      showError(t('config.messages.invalidApiKey'));
       return;
     }
     // 'valid' または 'unknown' の場合は続行
   }
 
-  showSuccess('設定を保存しました。メイン画面に戻って利用を開始できます。');
+  showSuccess(t('config.messages.saved'));
 
   // 3秒後にメイン画面に自動遷移
   setTimeout(() => {
@@ -352,14 +362,14 @@ async function validateApiKey(provider, key) {
   if (statusEl) {
     statusEl.style.display = 'inline-flex';
     statusEl.className = 'validation-status validation-pending';
-    statusEl.textContent = '検証中...';
+    statusEl.textContent = t('config.validation.checking');
   }
 
   // Claude / Anthropic APIはブラウザからCORS制限で検証不可
   if (provider === 'claude') {
     if (statusEl) {
       statusEl.className = 'validation-status validation-pending';
-      statusEl.textContent = '⚠ 未検証（使用時に判定）';
+      statusEl.textContent = '⚠ ' + t('config.validation.unknown');
     }
     return 'unknown';
   }
@@ -401,7 +411,7 @@ async function validateApiKey(provider, key) {
       default:
         if (statusEl) {
           statusEl.className = 'validation-status validation-pending';
-          statusEl.textContent = '⚠ 未検証';
+          statusEl.textContent = '⚠ ' + t('config.validation.unknown');
         }
         return 'unknown';
     }
@@ -410,20 +420,20 @@ async function validateApiKey(provider, key) {
     if (response.ok) {
       if (statusEl) {
         statusEl.className = 'validation-status validation-success';
-        statusEl.textContent = '✓ 認証OK';
+        statusEl.textContent = '✓ ' + t('config.validation.valid');
       }
       return 'valid';
     } else if (response.status === 401 || response.status === 403) {
       if (statusEl) {
         statusEl.className = 'validation-status validation-error';
-        statusEl.textContent = '✗ 認証NG（キー確認）';
+        statusEl.textContent = '✗ ' + t('config.validation.invalid');
       }
       return 'invalid';
     } else {
       // その他のエラー（500等）は未検証扱い
       if (statusEl) {
         statusEl.className = 'validation-status validation-pending';
-        statusEl.textContent = `⚠ 未検証（HTTP ${response.status}）`;
+        statusEl.textContent = `⚠ ${t('config.validation.unknown')} (HTTP ${response.status})`;
       }
       return 'unknown';
     }
@@ -432,7 +442,7 @@ async function validateApiKey(provider, key) {
     console.warn(`API key validation error for ${provider}:`, e.message);
     if (statusEl) {
       statusEl.className = 'validation-status validation-pending';
-      statusEl.textContent = '⚠ 未検証（ブラウザ制限）';
+      statusEl.textContent = '⚠ ' + t('config.validation.browserLimit');
     }
     return 'unknown';
   }
@@ -442,7 +452,7 @@ async function validateApiKey(provider, key) {
 // 設定エクスポート
 // =====================================
 function exportSettings() {
-  const password = prompt('エクスポート用パスワードを設定してください（インポート時に必要）:');
+  const password = prompt(t('config.prompts.exportPassword'));
   if (!password) return;
 
   const encrypted = SecureStorage.exportAll(password);
@@ -454,7 +464,7 @@ function exportSettings() {
   a.click();
   URL.revokeObjectURL(url);
 
-  showSuccess('設定をエクスポートしました。パスワードは安全に保管してください。');
+  showSuccess(t('config.messages.exported'));
 }
 
 // =====================================
@@ -468,18 +478,18 @@ function importSettings(event) {
   reader.onload = function(e) {
     try {
       const json = JSON.parse(e.target.result);
-      const password = prompt('インポート用パスワードを入力してください:');
+      const password = prompt(t('config.prompts.importPassword'));
       if (!password) return;
 
       const success = SecureStorage.importAll(json.data, password);
       if (success) {
-        showSuccess('設定をインポートしました');
+        showSuccess(t('config.messages.imported'));
         loadSavedSettings();
       } else {
-        showError('インポートに失敗しました。パスワードが正しいか確認してください。');
+        showError(t('config.messages.importFailed'));
       }
     } catch (err) {
-      showError('ファイルの読み込みに失敗しました');
+      showError(t('config.messages.fileFailed'));
     }
   };
   reader.readAsText(file);
@@ -490,10 +500,10 @@ function importSettings(event) {
 // 全設定削除
 // =====================================
 function clearAllSettings() {
-  if (confirm('すべての設定（APIキー含む）を削除しますか？この操作は取り消せません。')) {
+  if (confirm(t('config.prompts.clearConfirm'))) {
     SecureStorage.clearAll();
     loadSavedSettings();
-    showSuccess('設定を削除しました');
+    showSuccess(t('config.messages.cleared'));
   }
 }
 
@@ -545,7 +555,7 @@ async function validateApiKeyManual(provider) {
 
   const key = inputEl.value.trim();
   if (!key) {
-    showError('APIキーが入力されていません');
+    showError(t('config.messages.noApiKey'));
     return;
   }
 
@@ -556,14 +566,14 @@ async function validateApiKeyManual(provider) {
 
   switch (result) {
     case 'valid':
-      showSuccess(`${providerName} の認証に成功しました ✓`);
+      showSuccess(`${providerName}: ${t('config.validation.valid')}`);
       break;
     case 'invalid':
-      showError(`${providerName} の認証に失敗しました。APIキーを確認してください`);
+      showError(`${providerName}: ${t('config.validation.invalid')}`);
       break;
     case 'unknown':
       // CORS等で検証不可の場合は警告レベル（エラーではない）
-      showSuccess(`${providerName}: ブラウザからの認証チェックは制限されています。実際の使用時に判定されます`);
+      showSuccess(`${providerName}: ${t('config.validation.browserLimit')}`);
       break;
   }
 }

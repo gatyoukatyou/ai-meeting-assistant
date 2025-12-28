@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-i18n-title="notFound.pageTitle">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -49,9 +49,18 @@
 <body>
   <div class="container">
     <div class="emoji">🤔</div>
-    <h1>ページが見つかりません</h1>
-    <p>お探しのページは存在しないか、移動した可能性があります。</p>
-    <a href="index.html">トップページに戻る</a>
+    <h1 data-i18n="notFound.title">ページが見つかりません</h1>
+    <p data-i18n="notFound.description">お探しのページは存在しないか、移動した可能性があります。</p>
+    <a href="index.html" data-i18n="notFound.backHome">トップページに戻る</a>
   </div>
+
+  <!-- i18n -->
+  <script src="js/i18n.js"></script>
+  <script>
+    // Initialize i18n
+    document.addEventListener('DOMContentLoaded', async function() {
+      await I18n.init();
+    });
+  </script>
 </body>
 </html>

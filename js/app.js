@@ -456,7 +456,7 @@ document.addEventListener('DOMContentLoaded', function() {
     btn.addEventListener('click', () => {
       // LLM未設定チェック
       if (!getAvailableLlm()) {
-        showToast('LLM APIキーが未設定です。設定画面でAPIキーを登録してください。', 'warning');
+        showToast(t('toast.llm.notConfigured'), 'warning');
         return;
       }
       const type = btn.getAttribute('data-ai-type');
@@ -585,11 +585,21 @@ document.addEventListener('DOMContentLoaded', function() {
   updateLLMIndicator();
   updateLLMButtonsState();
 
+  // 言語変更時の再レンダリング
+  window.addEventListener('languagechange', function() {
+    // 動的コンテンツの再レンダリング
+    updateLLMIndicator();
+    updateLLMButtonsState();
+    updateCosts();
+    renderTranscriptChunks();
+    updateUI();
+  });
+
   console.log('[Init] All event listeners attached successfully');
   } catch (e) {
     // 初期化エラーを視覚的に表示
     console.error('[Init] Error during initialization:', e);
-    alert('初期化エラー: ' + e.message);
+    alert(t('error.init', { message: e.message }));
   }
 });
 
@@ -605,7 +615,7 @@ async function toggleRecording() {
     }
   } catch (e) {
     console.error('[Record] Error in toggleRecording:', e);
-    alert('録音エラー: ' + e.message);
+    alert(t('error.recording', { message: e.message }));
   }
 }
 
@@ -616,7 +626,7 @@ async function startRecording() {
   try {
     tempAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
   } catch (error) {
-    alert('マイクへのアクセスに失敗しました');
+    alert(t('error.mic.accessDenied'));
     return;
   }
 
@@ -658,7 +668,7 @@ async function startRecording() {
     updateUI();
 
     const providerName = getProviderDisplayName(provider);
-    showToast(`録音を開始しました（${providerName}）`, 'success');
+    showToast(t('toast.recording.started', { provider: providerName }), 'success');
 
   } catch (err) {
     // エラー発生時はストリームを解放
@@ -666,7 +676,7 @@ async function startRecording() {
       tempAudioStream.getTracks().forEach(track => track.stop());
     }
     console.error('録音開始エラー:', err);
-    showToast(`録音の開始に失敗しました: ${err.message}`, 'error');
+    showToast(t('error.recording', { message: err.message }), 'error');
     await cleanupRecording();
   }
 }
@@ -751,7 +761,7 @@ async function startChunkedRecording(provider) {
 
   currentSTTProvider.setOnError((error) => {
     console.error('[Chunked] STT error:', error);
-    showToast(`文字起こしエラー: ${error.message}`, 'error');
+    showToast(t('error.transcript.failed', { message: error.message }), 'error');
   });
 
   await currentSTTProvider.start();
@@ -794,17 +804,17 @@ async function startStreamingRecording(provider) {
 
   currentSTTProvider.setOnError((error) => {
     console.error('[Streaming] STT error:', error);
-    showToast(`文字起こしエラー: ${error.message}`, 'error');
+    showToast(t('error.transcript.failed', { message: error.message }), 'error');
   });
 
   currentSTTProvider.setOnStatusChange((status) => {
     console.log('[Streaming] Status:', status);
     if (status === 'connected') {
-      updateStatusBadge('🎙️ 接続中', 'recording');
+      updateStatusBadge('🎙️ ' + t('app.recording.statusConnecting'), 'recording');
     } else if (status === 'reconnecting') {
-      updateStatusBadge('🔄 再接続中', 'ready');
+      updateStatusBadge('🔄 ' + t('app.recording.statusReconnecting'), 'ready');
     } else if (status === 'disconnected') {
-      updateStatusBadge('⚠️ 切断', 'ready');
+      updateStatusBadge('⚠️ ' + t('app.recording.statusDisconnected'), 'ready');
     }
   });
 
@@ -825,7 +835,7 @@ async function startStreamingRecording(provider) {
 
   pcmStreamProcessor.setOnError((error) => {
     console.error('[Streaming] Audio error:', error);
-    showToast(`音声処理エラー: ${error.message}`, 'error');
+    showToast(t('error.recording', { message: error.message }), 'error');
   });
 
   // PCMストリーミングを開始
@@ -928,7 +938,7 @@ function toggleChunkExcluded(chunkId) {
 function copyChunkText(chunkId) {
   var chunk = transcriptChunks.find(function(c) { return c.id === chunkId; });
   if (!chunk) {
-    showToast('コピー対象が見つかりません', 'error');
+    showToast(t('toast.copy.noTarget'), 'error');
     return;
   }
 
@@ -937,7 +947,7 @@ function copyChunkText(chunkId) {
   // Clipboard API を試行
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(function() {
-      showToast('コピーしました', 'success');
+      showToast(t('toast.copy.success'), 'success');
     }).catch(function(err) {
       console.error('Clipboard API failed:', err);
       // フォールバック
@@ -963,13 +973,13 @@ function copyTextFallback(text) {
   try {
     var successful = document.execCommand('copy');
     if (successful) {
-      showToast('コピーしました', 'success');
+      showToast(t('toast.copy.success'), 'success');
     } else {
-      showToast('コピーに失敗しました', 'error');
+      showToast(t('toast.copy.failed'), 'error');
     }
   } catch (err) {
     console.error('execCommand copy failed:', err);
-    showToast('コピーに失敗しました', 'error');
+    showToast(t('toast.copy.failed'), 'error');
   }
 
   document.body.removeChild(textarea);
@@ -1186,7 +1196,7 @@ async function stopRecording() {
   await cleanupRecording();
 
   updateUI();
-  showToast('録音を停止しました', 'info');
+  showToast(t('toast.recording.stopped'), 'info');
 }
 
 // キュー方式で直列化
@@ -1305,7 +1315,7 @@ async function processQueue() {
         }
       } catch (err) {
         console.error(`[Transcription Error] id=${blobId}:`, err);
-        showToast(`文字起こしエラー: ${err.message}`, 'error');
+        showToast(t('error.transcript.failed', { message: err.message }), 'error');
         // エラーでもキュー処理は継続
       }
 
@@ -1617,14 +1627,14 @@ async function askAI(type) {
   // 送信ガード: 送信中は処理しない
   if (isSubmittingQA) {
     logQA(requestId, 'blocked', { reason: 'already_submitting', question: questionForLog });
-    showToast('送信中です。しばらくお待ちください。', 'warning');
+    showToast(t('toast.qa.submitting'), 'warning');
     return;
   }
 
   // フィルタリングされたテキストを使用（除外チャンク・マーカー前を除く）
   const transcript = getFilteredTranscriptText().trim();
   if (!transcript) {
-    alert('文字起こしがありません（除外された部分のみの可能性があります）');
+    alert(t('error.transcript.noText'));
     return;
   }
 
@@ -1636,7 +1646,7 @@ async function askAI(type) {
   const llm = getAvailableLlm();
 
   if (!llm) {
-    alert('LLM用のAPIキーが設定されていません。\n設定画面でAPIキーを入力してください。');
+    alert(t('error.api.notConfigured'));
     navigateTo('config.html');
     return;
   }
@@ -1648,49 +1658,35 @@ async function askAI(type) {
 
   switch(type) {
     case 'summary':
-      prompt = `以下の会議内容を簡潔に要約してください。重要なポイントを箇条書きでまとめてください。\n\n${targetText}`;
+      prompt = `${t('ai.prompt.summary')}\n\n${targetText}`;
       break;
     case 'opinion':
-      prompt = `以下の会議内容について、AIとしての意見や分析を述べてください。改善点や注意点があれば指摘してください。\n\n${targetText}`;
+      prompt = `${t('ai.prompt.opinion')}\n\n${targetText}`;
       break;
     case 'idea':
-      prompt = `以下の会議内容を踏まえて、新しいアイデアや提案を3つ挙げてください。\n\n${targetText}`;
+      prompt = `${t('ai.prompt.idea')}\n\n${targetText}`;
       break;
     case 'minutes':
       // 議事録は録音停止後のみ
       if (isRecording) {
-        showToast('議事録は録音停止後に作成できます', 'warning');
+        showToast(t('toast.qa.minutesAfterStop'), 'warning');
         return;
       }
-      prompt = `以下の会議の文字起こしから、構造化された議事録を作成してください。
-
-含めるべき項目:
-1. **議題**: 話し合われた主要トピックをリストアップ
-2. **決定事項**: 結論が出たことを明記
-3. **タスク・アクション**: 誰が何をするか（可能な範囲で）
-4. **次回予定**: 次のアクションや予定があれば記載
-
-フォーマット:
-- 見出しは ## を使用
-- 箇条書きを活用
-- 重要な内容は **太字** で強調
-
-【会議の文字起こし】
-${targetText}`;
+      prompt = `${t('ai.prompt.minutes')}\n\n${targetText}`;
       break;
     case 'custom':
       customQ = document.getElementById('customQuestion').value.trim();
       if (!customQ) {
-        alert('質問を入力してください');
+        alert(t('toast.qa.enterQuestion'));
         return;
       }
       // 重複チェック
       if (isDuplicateQuestion(customQ)) {
         logQA(requestId, 'blocked', { reason: 'duplicate_question', question: customQ });
-        showToast('同じ質問が直近で送信されました。少し待ってから再度お試しください。', 'warning');
+        showToast(t('toast.qa.duplicate'), 'warning');
         return;
       }
-      prompt = `以下の会議内容について質問に答えてください。\n\n【会議内容】\n${targetText}\n\n【質問】\n${customQ}`;
+      prompt = `${t('ai.prompt.custom')}\n\n【会議内容】\n${targetText}\n\n【質問】\n${customQ}`;
       document.getElementById('customQuestion').value = '';
       break;
   }
@@ -1723,7 +1719,7 @@ ${targetText}`;
     const loading = document.createElement('span');
     loading.className = 'loading';
     answerEl.appendChild(loading);
-    answerEl.appendChild(document.createTextNode(' 回答を生成中...'));
+    answerEl.appendChild(document.createTextNode(' ' + t('common.generating')));
 
     qaItem.appendChild(questionEl);
     qaItem.appendChild(answerEl);
@@ -1734,7 +1730,7 @@ ${targetText}`;
     const loading = document.createElement('span');
     loading.className = 'loading';
     responseEl.appendChild(loading);
-    responseEl.appendChild(document.createTextNode(' 回答を生成中...'));
+    responseEl.appendChild(document.createTextNode(' ' + t('common.generating')));
   }
 
   // タイムアウト付きLLM呼び出し
@@ -1745,7 +1741,7 @@ ${targetText}`;
     const llmPromise = callLLM(provider, prompt);
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
-        reject(new Error('リクエストがタイムアウトしました（30秒）'));
+        reject(new Error(t('error.api.timeout')));
       }, QA_TIMEOUT_MS);
     });
 
@@ -1776,7 +1772,7 @@ ${targetText}`;
   } catch (err) {
     clearTimeout(timeoutId);
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    const isTimeout = err.message.includes('タイムアウト');
+    const isTimeout = err.message.includes(t('error.api.timeout'));
 
     logQA(requestId, isTimeout ? 'timeout' : 'failed', {
       type,
@@ -1786,8 +1782,8 @@ ${targetText}`;
 
     console.error('AI呼び出しエラー:', err);
     const errorMsg = isTimeout
-      ? `⏱️ タイムアウト（30秒）。再度お試しください。`
-      : `エラーが発生しました: ${err.message}`;
+      ? `⏱️ ${t('toast.qa.timeout')}`
+      : t('error.api.generic', { message: err.message });
 
     if (type === 'custom') {
       // answerElを直接使用（既に参照を保持している）
@@ -2267,7 +2263,7 @@ function updateMeetingModeTime() {
 }
 
 function clearTranscript() {
-  if (confirm('文字起こしをクリアしますか？')) {
+  if (confirm(t('app.transcript.clearConfirm'))) {
     fullTranscript = '';
     transcriptChunks = [];
     chunkIdCounter = 0;
@@ -2356,11 +2352,11 @@ function generateExportMarkdown(options = null) {
     qa: true, transcript: true, cost: true
   };
 
-  const now = new Date().toLocaleString('ja-JP');
+  const now = new Date().toLocaleString(I18n.getLanguage() === 'ja' ? 'ja-JP' : 'en-US');
   const total = costs.transcript.total + costs.llm.total;
 
-  let md = `# 会議記録\n\n`;
-  md += `**日時:** ${now}\n\n`;
+  let md = `# ${t('export.document.title')}\n\n`;
+  md += `**${t('export.document.datetime')}** ${now}\n\n`;
 
   // 選択された項目がない場合の警告
   const hasAnySelection = Object.values(opts).some(v => v);
@@ -2372,7 +2368,7 @@ function generateExportMarkdown(options = null) {
   // 1. 議事録（最重要 - 一番上に配置）
   if (opts.minutes && aiResponses.minutes) {
     md += `---\n\n`;
-    md += `## 📝 議事録\n\n`;
+    md += `## 📝 ${t('export.document.sectionMinutes')}\n\n`;
     md += `${aiResponses.minutes}\n\n`;
   }
 
@@ -2398,23 +2394,23 @@ function generateExportMarkdown(options = null) {
 
   if (hasAIResponses) {
     md += `---\n\n`;
-    md += `## 🤖 AI回答\n\n`;
+    md += `## 🤖 ${t('export.document.sectionAI')}\n\n`;
 
     if (showSummary) {
-      md += formatAIResponses(aiResponses.summary, '要約', '📋');
+      md += formatAIResponses(aiResponses.summary, t('export.items.summary'), '📋');
     }
     if (showOpinion) {
-      md += formatAIResponses(aiResponses.opinion, '意見', '💭');
+      md += formatAIResponses(aiResponses.opinion, t('export.items.opinion'), '💭');
     }
     if (showIdea) {
-      md += formatAIResponses(aiResponses.idea, 'アイデア', '💡');
+      md += formatAIResponses(aiResponses.idea, t('export.items.idea'), '💡');
     }
   }
 
   // 3. Q&A
   if (opts.qa && aiResponses.custom.length > 0) {
     md += `---\n\n`;
-    md += `## ❓ Q&A\n\n`;
+    md += `## ❓ ${t('export.items.qa')}\n\n`;
     aiResponses.custom.forEach((qa, i) => {
       md += `### Q${i+1}: ${qa.q}\n\n${qa.a}\n\n`;
     });
@@ -2423,12 +2419,12 @@ function generateExportMarkdown(options = null) {
   // 4. 文字起こし（参照用 - 折りたたみ）
   if (opts.transcript) {
     md += `---\n\n`;
-    md += `## 📜 文字起こし\n\n`;
+    md += `## 📜 ${t('export.document.sectionTranscript')}\n\n`;
     // フィルタリングされたテキストを使用
-    const transcriptText = getFilteredTranscriptText() || '（なし）';
+    const transcriptText = getFilteredTranscriptText() || '(none)';
     const lineCount = transcriptText.split('\n').filter(l => l.trim()).length;
     md += `<details>\n`;
-    md += `<summary>クリックして展開（全${lineCount}行）</summary>\n\n`;
+    md += `<summary>${lineCount} lines</summary>\n\n`;
     md += `${transcriptText}\n\n`;
     md += `</details>\n\n`;
   }
@@ -2436,7 +2432,7 @@ function generateExportMarkdown(options = null) {
   // 5. コスト詳細（付録）
   if (opts.cost) {
     md += `---\n\n`;
-    md += `## 💰 コスト詳細\n\n`;
+    md += `## 💰 ${t('export.document.sectionCost')}\n\n`;
     md += `### 文字起こし（STT）\n`;
     md += `- 処理時間: ${formatDuration(costs.transcript.duration)}\n`;
     md += `- API呼び出し: ${costs.transcript.calls}回\n`;
@@ -2468,7 +2464,7 @@ function downloadExport() {
   // 何も選択されていない場合は警告
   const hasAny = Object.values(options).some(v => v);
   if (!hasAny) {
-    showToast('エクスポートする項目を選択してください', 'warning');
+    showToast(t('toast.export.selectItems'), 'warning');
     return;
   }
 
@@ -2482,7 +2478,7 @@ function downloadExport() {
   URL.revokeObjectURL(url);
 
   closeExportModal();
-  showToast('エクスポートしました', 'success');
+  showToast(t('toast.export.success'), 'success');
 }
 
 // =====================================

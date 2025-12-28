@@ -1,0 +1,293 @@
+{
+  "common": {
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "clear": "Clear",
+    "copy": "Copy",
+    "download": "Download",
+    "export": "Export",
+    "import": "Import",
+    "delete": "Delete",
+    "retry": "Retry",
+    "send": "Send",
+    "back": "Back",
+    "settings": "Settings",
+    "loading": "Loading...",
+    "generating": "Generating response...",
+    "verifying": "Verifying..."
+  },
+  "app": {
+    "title": "AI Meeting Assistant",
+    "pageTitle": "AI Meeting Assistant - Real-time Transcription & AI Summary",
+    "header": {
+      "title": "AI Meeting Assistant",
+      "settings": "Settings",
+      "detailSettings": "Details"
+    },
+    "recording": {
+      "start": "Start Recording",
+      "stop": "Stop Recording",
+      "statusReady": "Ready",
+      "statusRecording": "Recording",
+      "statusConnecting": "Connecting",
+      "statusReconnecting": "Reconnecting",
+      "statusDisconnected": "Disconnected"
+    },
+    "panel": {
+      "transcript": "Transcript",
+      "aiResponse": "AI Response",
+      "clear": "Clear"
+    },
+    "ai": {
+      "summary": "Summary",
+      "opinion": "Opinion",
+      "idea": "Ideas",
+      "minutes": "Minutes",
+      "qa": "Q&A",
+      "customPlaceholder": "Ask a question... (You can also paste transcript excerpts)",
+      "send": "Send"
+    },
+    "details": {
+      "toggle": "Details",
+      "transcriptApi": "Transcription API",
+      "audioLanguage": "Audio Language",
+      "sendInterval": "Send Interval",
+      "langJa": "Japanese",
+      "langEn": "English",
+      "langAuto": "Auto (detect)"
+    },
+    "intervals": {
+      "5sec": "5 sec",
+      "10sec": "10 sec",
+      "15sec": "15 sec",
+      "30sec": "30 sec",
+      "60sec": "60 sec",
+      "2min": "2 min"
+    },
+    "cost": {
+      "transcriptCost": "Transcription Cost",
+      "llmCost": "LLM Cost",
+      "total": "Total Estimate",
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High",
+      "usage": "Usage",
+      "processingTime": "Processing Time",
+      "apiCalls": "API Calls",
+      "byProvider": "By Provider",
+      "rate": "Rate",
+      "seconds": "{n} sec",
+      "minutes": "{n} min",
+      "minSec": "{min}m {sec}s",
+      "calls": "{n} calls",
+      "warningNear": "Approaching limit (${limit}) at {percent}%",
+      "warningExceeded": "Exceeded limit (${limit})!"
+    },
+    "meeting": {
+      "modeButton": "Meeting Mode",
+      "recording": "Recording",
+      "focusHint": "Focus on your meeting",
+      "returnButton": "Return to normal view"
+    },
+    "transcript": {
+      "placeholder": "Transcription will appear here when recording starts...",
+      "markerSet": "Meeting starts here (exclude content before)",
+      "markerClear": "Clear marker",
+      "exclude": "Exclude this segment",
+      "restore": "Restore this segment",
+      "copySegment": "Copy this segment",
+      "clearConfirm": "Clear all transcription?"
+    },
+    "aiResponse": {
+      "placeholder": "AI responses will appear here when you ask a question...",
+      "minutesPlaceholder": "After stopping the recording, click 'Minutes' to generate structured meeting minutes."
+    },
+    "browser": {
+      "incompatibleTitle": "Unsupported Browser",
+      "incompatibleMessage": "Some features are not supported in your browser. Please use the latest version of Chrome, Edge, or Safari."
+    }
+  },
+  "config": {
+    "title": "Settings",
+    "pageTitle": "Settings - AI Meeting Assistant",
+    "backToMain": "Back to main screen",
+    "security": {
+      "title": "API Key Security",
+      "description": "API keys are encrypted within this app and stored in browser local storage. They are never sent to external servers.",
+      "encrypted": "Encrypted local storage (never stored as plain text)",
+      "httpsOnly": "Only sent via HTTPS during API calls",
+      "isolated": "Inaccessible from other websites",
+      "exportable": "Import/export settings supported"
+    },
+    "stt": {
+      "title": "Transcription (STT) - Provider Selection",
+      "provider": "STT Provider",
+      "providerHint": "Select an STT provider. WebSocket-based providers offer better real-time performance.",
+      "openaiWhisper": "OpenAI Whisper (Chunked upload, stable)",
+      "deepgramRealtime": "Deepgram Realtime (WebSocket, fast)",
+      "assemblyaiRealtime": "AssemblyAI Realtime (WebSocket, accurate)",
+      "model": "Model",
+      "apiKey": "API Key",
+      "getApiKey": "Get API Key",
+      "validate": "Validate",
+      "userDictionary": "User Dictionary (Proper noun hints)",
+      "userDictPlaceholder": "e.g., OpenAI, ChatGPT, Anthropic, Tesla",
+      "userDictHint": "Enter proper nouns to improve recognition, separated by commas."
+    },
+    "llm": {
+      "title": "AI Response & Summary (Optional) - Select LLM",
+      "priority": "LLM Priority",
+      "priorityAuto": "Auto-select (use configured APIs in order)",
+      "priorityHint": "Auto-select order: Claude → OpenAI → Gemini → Groq (uses first available)",
+      "notConfiguredWarning": "If no LLM API key is set, AI features like summary, opinion, and minutes will not be available. Please configure at least one above."
+    },
+    "options": {
+      "title": "Options",
+      "securityTitle": "Security Options",
+      "clearOnClose": "Auto-delete API keys when browser closes (for shared PCs)",
+      "costAlertTitle": "Cost Alert",
+      "costLimit": "Session cost limit (JPY)",
+      "costAlertEnabled": "Show warning at 80% of limit"
+    },
+    "backup": {
+      "title": "Settings Backup",
+      "export": "Export",
+      "import": "Import",
+      "clearAll": "Delete All",
+      "hint": "Export files are encrypted. Can be used for migrating to other devices."
+    },
+    "validation": {
+      "valid": "Valid",
+      "invalid": "Invalid (check key)",
+      "unknown": "Not verified (checked on use)",
+      "browserLimit": "Not verified (browser limitation)",
+      "checking": "Checking..."
+    },
+    "messages": {
+      "saved": "Settings saved. Return to the main screen to start using the app.",
+      "migrated": "Old settings migrated. STT provider set to OpenAI Whisper.",
+      "exported": "Settings exported. Keep your password safe.",
+      "imported": "Settings imported successfully.",
+      "cleared": "Settings deleted.",
+      "importFailed": "Import failed. Please check your password.",
+      "fileFailed": "Failed to read file.",
+      "noApiKey": "API key is not entered.",
+      "invalidApiKey": "API key is invalid. Please enter a correct key."
+    },
+    "prompts": {
+      "exportPassword": "Set a password for export (required for import):",
+      "importPassword": "Enter the import password:",
+      "clearConfirm": "Delete all settings including API keys? This cannot be undone."
+    }
+  },
+  "toast": {
+    "recording": {
+      "started": "Recording started ({provider})",
+      "stopped": "Recording stopped"
+    },
+    "copy": {
+      "success": "Copied",
+      "failed": "Copy failed",
+      "noTarget": "Nothing to copy"
+    },
+    "export": {
+      "success": "Exported successfully",
+      "selectItems": "Please select items to export"
+    },
+    "llm": {
+      "notConfigured": "LLM API key not set. Please register an API key in settings."
+    },
+    "qa": {
+      "submitting": "Submitting. Please wait.",
+      "duplicate": "Same question was recently sent. Please wait before trying again.",
+      "timeout": "Timeout (30 sec). Please try again.",
+      "enterQuestion": "Please enter a question",
+      "minutesAfterStop": "Minutes can only be generated after stopping the recording"
+    }
+  },
+  "error": {
+    "init": "Initialization error: {message}",
+    "recording": "Recording error: {message}",
+    "mic": {
+      "accessDenied": "Failed to access microphone"
+    },
+    "transcript": {
+      "failed": "Transcription error: {message}",
+      "noText": "No transcription available (may only contain excluded segments)"
+    },
+    "api": {
+      "callFailed": "API call failed ({attempt}/{maxAttempts})",
+      "generic": "An error occurred: {message}",
+      "timeout": "Request timed out (30 seconds)",
+      "notConfigured": "LLM API key not configured.\nPlease enter an API key in settings."
+    }
+  },
+  "ai": {
+    "prompt": {
+      "summary": "Please summarize the following meeting content concisely. List the key points in bullet points.",
+      "opinion": "Please provide your AI opinion and analysis on the following meeting content. Point out any improvements or concerns.",
+      "idea": "Based on the following meeting content, please suggest 3 new ideas or proposals.",
+      "minutes": "From the following meeting transcript, please create structured meeting minutes.\n\nInclude:\n1. **Agenda**: List the main topics discussed\n2. **Decisions**: Clearly state any conclusions reached\n3. **Action Items**: Who will do what (as far as possible)\n4. **Next Steps**: Any upcoming actions or schedules\n\nFormat:\n- Use ## for headings\n- Use bullet points\n- **Bold** important content",
+      "custom": "Please answer the question about the following meeting content."
+    }
+  },
+  "export": {
+    "title": "Export",
+    "selectItems": "Select items to export",
+    "preview": "Preview",
+    "presets": {
+      "all": "Select All",
+      "minutesOnly": "Minutes Only",
+      "aiOnly": "AI Responses Only",
+      "clear": "Clear"
+    },
+    "items": {
+      "minutes": "Minutes",
+      "summary": "Summary",
+      "opinion": "Opinion",
+      "idea": "Ideas",
+      "qa": "Q&A",
+      "transcript": "Transcript",
+      "cost": "Cost Details"
+    },
+    "document": {
+      "title": "Meeting Record",
+      "datetime": "Date/Time:",
+      "sectionMinutes": "Minutes",
+      "sectionAI": "AI Responses",
+      "sectionTranscript": "Transcript",
+      "sectionCost": "Cost Details"
+    }
+  },
+  "modal": {
+    "welcome": {
+      "title": "Welcome to AI Meeting Assistant",
+      "description": "AI participates in your meetings in real-time, providing transcription, summaries, opinions, and ideas.",
+      "feature1": "High-precision voice transcription (OpenAI Whisper)",
+      "feature2": "Support for multiple AI models",
+      "feature3": "API keys encrypted and stored locally",
+      "feature4": "Real-time display of estimated usage costs",
+      "terms": "By starting, you agree to the Terms of Service and Privacy Policy.",
+      "skipButton": "Configure later",
+      "startButton": "Start Configuration"
+    }
+  },
+  "footer": {
+    "terms": "Terms of Service",
+    "privacy": "Privacy Policy",
+    "security": "Security",
+    "copyright": "© 2024 AI Meeting Assistant | MIT License"
+  },
+  "notFound": {
+    "title": "Page Not Found",
+    "pageTitle": "404 - AI Meeting Assistant",
+    "description": "The page you are looking for does not exist or may have been moved.",
+    "backHome": "Return to Home"
+  },
+  "language": {
+    "label": "Language",
+    "ja": "Japanese",
+    "en": "English"
+  }
+}

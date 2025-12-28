@@ -1,0 +1,293 @@
+{
+  "common": {
+    "save": "保存",
+    "cancel": "キャンセル",
+    "close": "閉じる",
+    "clear": "クリア",
+    "copy": "コピー",
+    "download": "ダウンロード",
+    "export": "エクスポート",
+    "import": "インポート",
+    "delete": "削除",
+    "retry": "再試行",
+    "send": "送信",
+    "back": "戻る",
+    "settings": "設定",
+    "loading": "読み込み中...",
+    "generating": "回答を生成中...",
+    "verifying": "検証中..."
+  },
+  "app": {
+    "title": "AI参加会議",
+    "pageTitle": "AI参加会議 - リアルタイム文字起こし＆AI要約",
+    "header": {
+      "title": "AI参加会議",
+      "settings": "設定",
+      "detailSettings": "詳細設定"
+    },
+    "recording": {
+      "start": "録音開始",
+      "stop": "録音停止",
+      "statusReady": "待機中",
+      "statusRecording": "録音中",
+      "statusConnecting": "接続中",
+      "statusReconnecting": "再接続中",
+      "statusDisconnected": "切断"
+    },
+    "panel": {
+      "transcript": "文字起こし",
+      "aiResponse": "AI回答",
+      "clear": "クリア"
+    },
+    "ai": {
+      "summary": "要約",
+      "opinion": "意見を聞く",
+      "idea": "アイデア",
+      "minutes": "議事録",
+      "qa": "Q&A",
+      "customPlaceholder": "自由に質問...（文字起こしをコピペして該当箇所を聞くことも可能）",
+      "send": "送信"
+    },
+    "details": {
+      "toggle": "詳細設定",
+      "transcriptApi": "文字起こしAPI",
+      "audioLanguage": "音声言語",
+      "sendInterval": "送信間隔",
+      "langJa": "日本語",
+      "langEn": "English",
+      "langAuto": "Auto（自動検出）"
+    },
+    "intervals": {
+      "5sec": "5秒",
+      "10sec": "10秒",
+      "15sec": "15秒",
+      "30sec": "30秒",
+      "60sec": "60秒",
+      "2min": "2分"
+    },
+    "cost": {
+      "transcriptCost": "文字起こしコスト",
+      "llmCost": "LLMコスト",
+      "total": "合計概算",
+      "low": "低",
+      "medium": "中",
+      "high": "高",
+      "usage": "使用量",
+      "processingTime": "処理時間",
+      "apiCalls": "API呼び出し",
+      "byProvider": "プロバイダー別",
+      "rate": "レート",
+      "seconds": "{n}秒",
+      "minutes": "{n}分",
+      "minSec": "{min}分{sec}秒",
+      "calls": "{n}回",
+      "warningNear": "上限（¥{limit}）の{percent}%に達しています",
+      "warningExceeded": "上限（¥{limit}）を超えました！"
+    },
+    "meeting": {
+      "modeButton": "会議中モード",
+      "recording": "録音中",
+      "focusHint": "会議に集中してください",
+      "returnButton": "通常画面に戻る"
+    },
+    "transcript": {
+      "placeholder": "録音を開始すると、ここに文字起こしが表示されます...",
+      "markerSet": "ここから会議開始（これより前は除外）",
+      "markerClear": "マーカーを解除",
+      "exclude": "この文節を除外",
+      "restore": "この文節を復元",
+      "copySegment": "この文節をコピー",
+      "clearConfirm": "文字起こしをクリアしますか？"
+    },
+    "aiResponse": {
+      "placeholder": "AIに質問すると、ここに回答が表示されます...",
+      "minutesPlaceholder": "録音停止後に「議事録」ボタンを押すと、構造化された議事録が生成されます。"
+    },
+    "browser": {
+      "incompatibleTitle": "非対応ブラウザ",
+      "incompatibleMessage": "お使いのブラウザは一部機能に対応していません。Chrome/Edge/Safari最新版をご利用ください。"
+    }
+  },
+  "config": {
+    "title": "設定",
+    "pageTitle": "設定 - AI参加会議",
+    "backToMain": "メイン画面に戻る",
+    "security": {
+      "title": "APIキーのセキュリティ",
+      "description": "APIキーはこのアプリ内で暗号化され、ブラウザのローカルストレージに保存されます。外部サーバーには一切送信されません。",
+      "encrypted": "暗号化してローカル保存（平文では保存しない）",
+      "httpsOnly": "API呼び出し時のみHTTPS経由で送信",
+      "isolated": "他のWebサイトからはアクセス不可",
+      "exportable": "設定のエクスポート/インポート対応"
+    },
+    "stt": {
+      "title": "文字起こし（STT）- プロバイダー選択",
+      "provider": "STTプロバイダー",
+      "providerHint": "STTプロバイダーを選択してください。WebSocket系はリアルタイム性に優れます。",
+      "openaiWhisper": "OpenAI Whisper（チャンク送信・安定）",
+      "deepgramRealtime": "Deepgram Realtime（WebSocket・高速）",
+      "assemblyaiRealtime": "AssemblyAI Realtime（WebSocket・高精度）",
+      "model": "モデル",
+      "apiKey": "APIキー",
+      "getApiKey": "APIキーを取得",
+      "validate": "認証チェック",
+      "userDictionary": "ユーザー辞書（固有名詞ヒント）",
+      "userDictPlaceholder": "例: OpenAI, ChatGPT, Anthropic アンソロピック, 田中 たなか",
+      "userDictHint": "文字起こしで認識させたい固有名詞をカンマ区切りで入力。ローマ字＋読み仮名を併記すると認識精度が向上します（例: Anthropic アンソロピック）"
+    },
+    "llm": {
+      "title": "AI回答・要約（任意）- LLMを選択",
+      "priority": "LLM優先順位",
+      "priorityAuto": "自動選択（設定されたAPIを順に使用）",
+      "priorityHint": "自動選択の場合: Claude → OpenAI → Gemini → Groq の順で、APIキーが設定されているものを使用",
+      "notConfiguredWarning": "LLM APIキーが未設定の場合、要約・意見・議事録などのAI機能は使用できません。上記のいずれかを設定してください。"
+    },
+    "options": {
+      "title": "オプション設定",
+      "securityTitle": "セキュリティオプション",
+      "clearOnClose": "ブラウザを閉じたらAPIキーを自動削除（共有PC向け）",
+      "costAlertTitle": "コストアラート",
+      "costLimit": "1セッションの上限金額（円）",
+      "costAlertEnabled": "上限の80%で警告を表示"
+    },
+    "backup": {
+      "title": "設定のバックアップ",
+      "export": "エクスポート",
+      "import": "インポート",
+      "clearAll": "全削除",
+      "hint": "エクスポートファイルは暗号化されています。他のデバイスへの移行に使用できます。"
+    },
+    "validation": {
+      "valid": "認証OK",
+      "invalid": "認証NG（キー確認）",
+      "unknown": "未検証（使用時に判定）",
+      "browserLimit": "未検証（ブラウザ制限）",
+      "checking": "検証中..."
+    },
+    "messages": {
+      "saved": "設定を保存しました。メイン画面に戻って利用を開始できます。",
+      "migrated": "旧設定を移行しました。STTプロバイダーがOpenAI Whisperに設定されています。",
+      "exported": "設定をエクスポートしました。パスワードは安全に保管してください。",
+      "imported": "設定をインポートしました",
+      "cleared": "設定を削除しました",
+      "importFailed": "インポートに失敗しました。パスワードが正しいか確認してください。",
+      "fileFailed": "ファイルの読み込みに失敗しました",
+      "noApiKey": "APIキーが入力されていません",
+      "invalidApiKey": "APIキーが無効です。正しいキーを入力してください。"
+    },
+    "prompts": {
+      "exportPassword": "エクスポート用パスワードを設定してください（インポート時に必要）:",
+      "importPassword": "インポート用パスワードを入力してください:",
+      "clearConfirm": "すべての設定（APIキー含む）を削除しますか？この操作は取り消せません。"
+    }
+  },
+  "toast": {
+    "recording": {
+      "started": "録音を開始しました（{provider}）",
+      "stopped": "録音を停止しました"
+    },
+    "copy": {
+      "success": "コピーしました",
+      "failed": "コピーに失敗しました",
+      "noTarget": "コピー対象が見つかりません"
+    },
+    "export": {
+      "success": "エクスポートしました",
+      "selectItems": "エクスポートする項目を選択してください"
+    },
+    "llm": {
+      "notConfigured": "LLM APIキーが未設定です。設定画面でAPIキーを登録してください。"
+    },
+    "qa": {
+      "submitting": "送信中です。しばらくお待ちください。",
+      "duplicate": "同じ質問が直近で送信されました。少し待ってから再度お試しください。",
+      "timeout": "タイムアウト（30秒）。再度お試しください。",
+      "enterQuestion": "質問を入力してください",
+      "minutesAfterStop": "議事録は録音停止後に作成できます"
+    }
+  },
+  "error": {
+    "init": "初期化エラー: {message}",
+    "recording": "録音エラー: {message}",
+    "mic": {
+      "accessDenied": "マイクへのアクセスに失敗しました"
+    },
+    "transcript": {
+      "failed": "文字起こしエラー: {message}",
+      "noText": "文字起こしがありません（除外された部分のみの可能性があります）"
+    },
+    "api": {
+      "callFailed": "API呼び出し失敗 ({attempt}/{maxAttempts})",
+      "generic": "エラーが発生しました: {message}",
+      "timeout": "リクエストがタイムアウトしました（30秒）",
+      "notConfigured": "LLM用のAPIキーが設定されていません。\n設定画面でAPIキーを入力してください。"
+    }
+  },
+  "ai": {
+    "prompt": {
+      "summary": "以下の会議内容を簡潔に要約してください。重要なポイントを箇条書きでまとめてください。",
+      "opinion": "以下の会議内容について、AIとしての意見や分析を述べてください。改善点や注意点があれば指摘してください。",
+      "idea": "以下の会議内容を踏まえて、新しいアイデアや提案を3つ挙げてください。",
+      "minutes": "以下の会議の文字起こしから、構造化された議事録を作成してください。\n\n含めるべき項目:\n1. **議題**: 話し合われた主要トピックをリストアップ\n2. **決定事項**: 結論が出たことを明記\n3. **タスク・アクション**: 誰が何をするか（可能な範囲で）\n4. **次回予定**: 次のアクションや予定があれば記載\n\nフォーマット:\n- 見出しは ## を使用\n- 箇条書きを活用\n- 重要な内容は **太字** で強調",
+      "custom": "以下の会議内容について質問に答えてください。"
+    }
+  },
+  "export": {
+    "title": "エクスポート",
+    "selectItems": "出力項目を選択",
+    "preview": "プレビュー",
+    "presets": {
+      "all": "全選択",
+      "minutesOnly": "議事録のみ",
+      "aiOnly": "AI回答のみ",
+      "clear": "クリア"
+    },
+    "items": {
+      "minutes": "議事録",
+      "summary": "要約",
+      "opinion": "意見",
+      "idea": "アイデア",
+      "qa": "Q&A",
+      "transcript": "文字起こし",
+      "cost": "コスト詳細"
+    },
+    "document": {
+      "title": "会議記録",
+      "datetime": "日時:",
+      "sectionMinutes": "議事録",
+      "sectionAI": "AI回答",
+      "sectionTranscript": "文字起こし",
+      "sectionCost": "コスト詳細"
+    }
+  },
+  "modal": {
+    "welcome": {
+      "title": "AI参加会議へようこそ",
+      "description": "会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行います",
+      "feature1": "高精度な音声文字起こし（OpenAI Whisper）",
+      "feature2": "複数のAIモデルに対応",
+      "feature3": "APIキーは暗号化してローカル保存",
+      "feature4": "利用料金の概算をリアルタイム表示",
+      "terms": "利用開始により、利用規約とプライバシーポリシーに同意したものとみなされます。",
+      "skipButton": "後で設定する",
+      "startButton": "設定を開始する"
+    }
+  },
+  "footer": {
+    "terms": "利用規約",
+    "privacy": "プライバシーポリシー",
+    "security": "セキュリティ",
+    "copyright": "© 2024 AI参加会議 | MITライセンス"
+  },
+  "notFound": {
+    "title": "ページが見つかりません",
+    "pageTitle": "404 - AI参加会議",
+    "description": "お探しのページは存在しないか、移動した可能性があります。",
+    "backHome": "トップページに戻る"
+  },
+  "language": {
+    "label": "言語",
+    "ja": "日本語",
+    "en": "English"
+  }
+}
