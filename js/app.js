@@ -814,7 +814,7 @@ async function startStreamingRecording(provider) {
   // PCMストリームプロセッサを作成
   pcmStreamProcessor = new PCMStreamProcessor({
     sampleRate: 16000,
-    sendInterval: 100
+    sendInterval: 50  // 100ms→50msに短縮（断片化防止）
   });
 
   pcmStreamProcessor.setOnAudioData((pcmData) => {

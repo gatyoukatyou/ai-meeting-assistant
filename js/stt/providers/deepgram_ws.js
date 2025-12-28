@@ -47,6 +47,10 @@ class DeepgramWSProvider {
       wsUrl.searchParams.set('channels', '1');
       wsUrl.searchParams.set('punctuate', 'true');
       wsUrl.searchParams.set('interim_results', 'true');
+      // 発話区切り設定（断片化防止）
+      wsUrl.searchParams.set('endpointing', '1000');       // 1秒無音で発話区切り
+      wsUrl.searchParams.set('utterance_end_ms', '1500');  // 発話終了後1.5秒待機
+      wsUrl.searchParams.set('smart_format', 'true');      // 日本語向け書式
 
       console.log('[Deepgram] Connecting to Deepgram API...');
 
