@@ -1949,8 +1949,22 @@ async function callLLM(provider, prompt) {
     );
     console.warn('[LLM] fallback', { provider: provider, from: model, to: fb, error: e.message });
 
-    // 1回だけ再試行（これが失敗したらそのまま上に投げる）
-    return await callLLMOnce(provider, fb, prompt);
+    // 1回だけ再試行
+    try {
+      return await callLLMOnce(provider, fb, prompt);
+    } catch (fbError) {
+      // フォールバックも失敗：元のエラー情報を保持してデバッグしやすくする
+      console.error('[LLM] Both original and fallback failed', {
+        provider: provider,
+        originalModel: model,
+        originalError: e.message,
+        fallbackModel: fb,
+        fallbackError: fbError.message
+      });
+      // ユーザーには両方のエラー情報を含むメッセージを返す
+      var combinedMsg = 'Model ' + model + ' failed: ' + e.message + ' / Fallback ' + fb + ' also failed: ' + fbError.message;
+      throw new Error(combinedMsg);
+    }
   }
 }
 
