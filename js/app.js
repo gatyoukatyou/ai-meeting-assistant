@@ -2222,10 +2222,11 @@ function checkCostAlert() {
   const warningEl = document.getElementById('costWarning');
   if (total >= threshold) {
     warningEl.style.display = 'block';
-    warningEl.textContent = `⚠️ 上限（¥${costLimit}）の${Math.round(total / costLimit * 100)}%に達しています`;
+    const percent = Math.round(total / costLimit * 100);
+    warningEl.textContent = '⚠️ ' + t('app.cost.warningNear', { limit: costLimit, percent: percent });
 
     if (total >= costLimit) {
-      warningEl.textContent = `🚫 上限（¥${costLimit}）を超えました！`;
+      warningEl.textContent = '🚫 ' + t('app.cost.warningExceeded', { limit: costLimit });
       warningEl.style.background = '#fee2e2';
       warningEl.style.borderColor = '#fca5a5';
       warningEl.style.color = '#991b1b';

@@ -1798,23 +1798,23 @@
       </div>
       <div class="cost-display" id="transcriptCostPanel">
         <div class="cost-header" data-cost-target="transcript">
-          <span>💰 文字起こしコスト</span>
-          <span><span id="transcriptCostTotal">¥0</span> <span id="transcriptCostBadge" class="cost-badge cost-badge-low">低</span></span>
+          <span>💰 <span data-i18n="app.cost.transcriptCost">文字起こしコスト</span></span>
+          <span><span id="transcriptCostTotal">¥0</span> <span id="transcriptCostBadge" class="cost-badge cost-badge-low" data-i18n="app.cost.low">低</span></span>
         </div>
         <div class="cost-details" id="transcriptCostDetails">
           <div class="cost-section">
-            <div class="cost-section-title">📊 使用量</div>
+            <div class="cost-section-title">📊 <span data-i18n="app.cost.usage">使用量</span></div>
             <div class="cost-item">
-              <span class="cost-item-label">処理時間:</span>
+              <span class="cost-item-label" data-i18n="app.cost.processingTime">処理時間:</span>
               <span id="transcriptDuration">0秒</span>
             </div>
             <div class="cost-item">
-              <span class="cost-item-label">API呼び出し:</span>
+              <span class="cost-item-label" data-i18n="app.cost.apiCalls">API呼び出し:</span>
               <span id="transcriptCalls">0回</span>
             </div>
           </div>
           <div class="cost-section">
-            <div class="cost-section-title">💵 プロバイダー別</div>
+            <div class="cost-section-title">💵 <span data-i18n="app.cost.byProvider">プロバイダー別</span></div>
             <div class="cost-item">
               <span class="cost-item-label">OpenAI Whisper:</span>
               <span id="openaiTranscriptCost">¥0</span>
@@ -1895,27 +1895,27 @@
 
       <div class="cost-display" id="llmCostPanel">
         <div class="cost-header" data-cost-target="llm">
-          <span>💰 LLMコスト</span>
-          <span><span id="llmCostTotal">¥0</span> <span id="llmCostBadge" class="cost-badge cost-badge-low">低</span></span>
+          <span>💰 <span data-i18n="app.cost.llmCost">LLMコスト</span></span>
+          <span><span id="llmCostTotal">¥0</span> <span id="llmCostBadge" class="cost-badge cost-badge-low" data-i18n="app.cost.low">低</span></span>
         </div>
         <div class="cost-details" id="llmCostDetails">
           <div class="cost-section">
-            <div class="cost-section-title">📊 使用量</div>
+            <div class="cost-section-title">📊 <span data-i18n="app.cost.usage">使用量</span></div>
             <div class="cost-item">
-              <span class="cost-item-label">入力トークン:</span>
+              <span class="cost-item-label" data-i18n="export.document.costInputTokens">入力トークン:</span>
               <span id="llmInputTokens">0</span>
             </div>
             <div class="cost-item">
-              <span class="cost-item-label">出力トークン:</span>
+              <span class="cost-item-label" data-i18n="export.document.costOutputTokens">出力トークン:</span>
               <span id="llmOutputTokens">0</span>
             </div>
             <div class="cost-item">
-              <span class="cost-item-label">API呼び出し:</span>
+              <span class="cost-item-label" data-i18n="app.cost.apiCalls">API呼び出し:</span>
               <span id="llmCalls">0回</span>
             </div>
           </div>
           <div class="cost-section">
-            <div class="cost-section-title">💵 プロバイダー別</div>
+            <div class="cost-section-title">💵 <span data-i18n="app.cost.byProvider">プロバイダー別</span></div>
             <div class="cost-item">
               <span class="cost-item-label">Gemini:</span>
               <span id="geminiLlmCost">¥0</span>
@@ -1935,11 +1935,10 @@
           </div>
         </div>
         <div class="cost-row cost-total" style="margin-top: 0.5rem;">
-          <span>📊 合計概算:</span>
+          <span>📊 <span data-i18n="app.cost.total">合計概算</span>:</span>
           <span id="totalCost">¥0</span>
         </div>
         <div id="costWarning" class="cost-warning" style="display: none;">
-          ⚠️ 設定した上限に近づいています
         </div>
       </div>
     </div>
