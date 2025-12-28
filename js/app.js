@@ -1021,12 +1021,17 @@ function setMeetingStartMarker(chunkId) {
 // チャンクをレンダリング
 function renderTranscriptChunks() {
   const container = document.getElementById('transcriptText');
+  const placeholder = document.getElementById('transcriptPlaceholder');
   if (!container) return;
 
   if (transcriptChunks.length === 0) {
-    container.innerHTML = '<span class="placeholder-text">録音を開始すると文字起こしが表示されます...</span>';
+    // Show placeholder (already in HTML with data-i18n)
+    if (placeholder) placeholder.style.display = '';
     return;
   }
+  
+  // Hide placeholder when there's content
+  if (placeholder) placeholder.style.display = 'none';
 
   let html = '';
   transcriptChunks.forEach((chunk, idx) => {
@@ -1037,7 +1042,7 @@ function renderTranscriptChunks() {
 
     // マーカー行を表示
     if (isMarker) {
-      html += `<div class="transcript-marker">📍 ここから会議開始</div>`;
+      html += `<div class="transcript-marker">📍 ${t('app.transcript.markerSet')}</div>`;
     }
 
     html += `<div class="transcript-chunk ${isGrayed ? 'excluded' : ''}" data-id="${chunk.id}">`;
@@ -1046,13 +1051,13 @@ function renderTranscriptChunks() {
     html += `<span class="chunk-actions">`;
     // コピーボタン（誤タップ防止のため左端に配置）
     // CSP対応: onclick属性ではなくdata属性＋イベントデリゲーションを使用
-    html += `<button class="btn-icon" data-action="copy" data-id="${chunk.id}" title="この文節をコピー" aria-label="この文節をコピー">📋</button>`;
+    html += `<button class="btn-icon" data-action="copy" data-id="${chunk.id}" title="${t('app.transcript.copySegment')}" aria-label="${t('app.transcript.copySegment')}">📋</button>`;
     if (!isMarker) {
-      html += `<button class="btn-icon" data-action="marker" data-id="${chunk.id}" title="ここから会議開始（これより前は除外）" aria-label="ここから会議開始">📍</button>`;
+      html += `<button class="btn-icon" data-action="marker" data-id="${chunk.id}" title="${t('app.transcript.markerSet')}" aria-label="${t('app.transcript.markerSet')}">📍</button>`;
     } else {
-      html += `<button class="btn-icon active" data-action="marker" data-id="" title="マーカーを解除" aria-label="マーカーを解除">📍</button>`;
+      html += `<button class="btn-icon active" data-action="marker" data-id="" title="${t('app.transcript.markerClear')}" aria-label="${t('app.transcript.markerClear')}">📍</button>`;
     }
-    html += `<button class="btn-icon ${isExcluded ? 'active' : ''}" data-action="exclude" data-id="${chunk.id}" title="${isExcluded ? 'この文節を復元' : 'この文節を除外'}" aria-label="${isExcluded ? '復元' : '除外'}">`;
+    html += `<button class="btn-icon ${isExcluded ? 'active' : ''}" data-action="exclude" data-id="${chunk.id}" title="${isExcluded ? t('app.transcript.restore') : t('app.transcript.exclude')}" aria-label="${isExcluded ? t('app.transcript.restore') : t('app.transcript.exclude')}">`;
     html += isExcluded ? '♻️' : '🗑️';
     html += `</button>`;
     html += `</span>`;

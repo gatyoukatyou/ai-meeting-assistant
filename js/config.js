@@ -31,7 +31,10 @@ const ALLOWED_STT_PROVIDERS = new Set([
 // =====================================
 // 初期化
 // =====================================
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
+  // i18n初期化（言語切り替えに必要）
+  await I18n.init();
+  
   loadSavedSettings();
   setupSTTProviderSelector();
   setupApiKeyButtons(); // 認証チェック・クリアボタンのイベント設定

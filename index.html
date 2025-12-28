@@ -442,8 +442,7 @@
       line-height: 1.8;
     }
 
-    .transcript-text:empty::before {
-      content: '録音を開始すると、ここに文字起こしが表示されます...';
+    .transcript-placeholder {
       color: var(--text-secondary);
       font-style: italic;
     }
@@ -1794,7 +1793,7 @@
         <button class="btn btn-ghost" id="clearTranscriptBtn" style="font-size: 0.75rem;" data-i18n="common.clear">クリア</button>
       </div>
       <div class="panel-body" id="transcriptBody">
-        <div class="transcript-text" id="transcriptText"></div>
+        <div class="transcript-text" id="transcriptText"><span class="transcript-placeholder" id="transcriptPlaceholder" data-i18n="app.transcript.placeholder">録音を開始すると、ここに文字起こしが表示されます...</span></div>
       </div>
       <div class="cost-display" id="transcriptCostPanel">
         <div class="cost-header" data-cost-target="transcript">
