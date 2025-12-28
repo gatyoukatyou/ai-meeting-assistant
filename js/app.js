@@ -285,10 +285,10 @@ function checkBrowserCompatibility() {
     recordBtn.style.cursor = 'not-allowed';
     console.warn('[Compatibility] Browser does not support:', issues);
 
-    // 警告バナーを表示
+    // 警告バナーを表示（XSS防止: textContentを使用）
     var banner = document.createElement('div');
     banner.className = 'compatibility-warning';
-    banner.innerHTML = '⚠️ ' + t('app.browser.incompatibleMessage');
+    banner.textContent = '⚠️ ' + t('app.browser.incompatibleMessage');
     var header = document.querySelector('.header');
     if (header && header.parentNode) {
       header.parentNode.insertBefore(banner, header.nextSibling);
@@ -1597,10 +1597,17 @@ function showToast(message, type = 'info') {
     error: '❌'
   };
 
-  toast.innerHTML = `
-    <span class="toast-icon">${icons[type] || icons.info}</span>
-    <span class="toast-message">${message}</span>
-  `;
+  // XSS防止: innerHTMLではなくtextContentを使用
+  const iconSpan = document.createElement('span');
+  iconSpan.className = 'toast-icon';
+  iconSpan.textContent = icons[type] || icons.info;
+
+  const msgSpan = document.createElement('span');
+  msgSpan.className = 'toast-message';
+  msgSpan.textContent = message;
+
+  toast.appendChild(iconSpan);
+  toast.appendChild(msgSpan);
 
   container.appendChild(toast);
 
@@ -1851,7 +1858,12 @@ async function askAI(type) {
     if (type === 'custom') {
       // answerElを直接使用（既に参照を保持している）
       if (answerEl) {
-        answerEl.innerHTML = `<span class="error-text">${errorMsg}</span>`;
+        // XSS防止: innerHTMLではなくcreateElement/textContentを使用
+        answerEl.textContent = '';
+        const errSpan = document.createElement('span');
+        errSpan.className = 'error-text';
+        errSpan.textContent = errorMsg;
+        answerEl.appendChild(errSpan);
         // 再試行ボタンを追加
         const retryBtn = document.createElement('button');
         retryBtn.className = 'btn btn-ghost btn-sm';
@@ -1871,8 +1883,13 @@ async function askAI(type) {
         answerEl.appendChild(retryBtn);
       }
     } else {
-      document.getElementById(`response-${type}`).innerHTML =
-        `<span class="error-text">${errorMsg}</span>`;
+      // XSS防止: innerHTMLではなくcreateElement/textContentを使用
+      const responseEl = document.getElementById(`response-${type}`);
+      responseEl.textContent = '';
+      const errSpan = document.createElement('span');
+      errSpan.className = 'error-text';
+      errSpan.textContent = errorMsg;
+      responseEl.appendChild(errSpan);
     }
   } finally {
     // 送信ガードOFF
@@ -2175,8 +2192,14 @@ function updateLabelSpan(parentEl, i18nKey, iconPrefix) {
     span.setAttribute('data-i18n', i18nKey);
     span.textContent = t(i18nKey);
   } else {
-    // Fallback: if no span, create one (preserving icon prefix)
-    parentEl.innerHTML = iconPrefix + '<span data-i18n="' + i18nKey + '">' + t(i18nKey) + '</span>';
+    // Fallback: if no span, create one (XSS防止: createElementを使用)
+    parentEl.textContent = '';
+    const iconNode = document.createTextNode(iconPrefix);
+    const newSpan = document.createElement('span');
+    newSpan.setAttribute('data-i18n', i18nKey);
+    newSpan.textContent = t(i18nKey);
+    parentEl.appendChild(iconNode);
+    parentEl.appendChild(newSpan);
   }
 }
 
