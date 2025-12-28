@@ -1,5 +1,7 @@
 # AI参加会議
 
+🇯🇵 日本語 | [🇺🇸 English](README.en.md)
+
 会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行うWebアプリです。
 
 **🚀 今すぐ使う**: https://gatyoukatyou.github.io/ai-meeting-assistant/
