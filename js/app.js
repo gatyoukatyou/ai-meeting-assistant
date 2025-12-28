@@ -1710,6 +1710,17 @@ async function askAI(type) {
   const selection = window.getSelection().toString().trim();
   const targetText = selection || transcript;
 
+  // 入力サイズ制限（コスト暴発・フリーズ防止）
+  const MAX_PROMPT_CHARS = 50000;
+  if (targetText.length > MAX_PROMPT_CHARS) {
+    showToast(
+      t('error.prompt.tooLong', { max: MAX_PROMPT_CHARS, current: targetText.length }) ||
+      `Input too long (${targetText.length} chars). Max: ${MAX_PROMPT_CHARS}`,
+      'error'
+    );
+    return;
+  }
+
   // 使用可能なLLMを自動選択
   const llm = getAvailableLlm();
 

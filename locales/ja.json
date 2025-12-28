@@ -271,6 +271,9 @@
       "generic": "エラーが発生しました: {message}",
       "timeout": "リクエストがタイムアウトしました（30秒）",
       "notConfigured": "LLM用のAPIキーが設定されていません。\n設定画面でAPIキーを入力してください。"
+    },
+    "prompt": {
+      "tooLong": "入力が長すぎます（{current}文字）。{max}文字以内にしてください。"
     }
   },
   "ai": {
