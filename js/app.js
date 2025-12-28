@@ -1910,24 +1910,29 @@ async function callLLM(provider, prompt) {
       console.warn('[LLM] Model deprecated detected:', model, e.message);
       var alternatives = getAlternativeModels(provider, model);
 
-      for (var i = 0; i < alternatives.length; i++) {
-        var alt = alternatives[i];
-        try {
-          var result = await callLLMOnce(provider, alt, prompt);
-          // 成功したら設定を自動更新
-          await autoUpdateSavedModel(provider, alt);
-          showToast(
-            t('toast.model.deprecated', {from: model, to: alt}) || 'モデルが廃止されたため自動変更しました: ' + model + ' → ' + alt,
-            'warning'
-          );
-          return result;
-        } catch (altError) {
-          console.warn('[LLM] Alternative model also failed:', alt, altError.message);
-          continue;
+      // 代替候補がない場合は通常フォールバックへ
+      if (!alternatives || alternatives.length === 0) {
+        console.warn('[LLM] Deprecated-like error but no alternatives for provider:', provider);
+      } else {
+        for (var i = 0; i < alternatives.length; i++) {
+          var alt = alternatives[i];
+          try {
+            var result = await callLLMOnce(provider, alt, prompt);
+            // 成功したら設定を自動更新
+            await autoUpdateSavedModel(provider, alt);
+            showToast(
+              t('toast.model.deprecated', {from: model, to: alt}) || 'モデルが廃止されたため自動変更しました: ' + model + ' → ' + alt,
+              'warning'
+            );
+            return result;
+          } catch (altError) {
+            console.warn('[LLM] Alternative model also failed:', alt, altError.message);
+            continue;
+          }
         }
+        // 代替モデルが全滅しても、通常フォールバックを試す
+        console.warn('[LLM] All alternatives failed. Will try standard fallback next.');
       }
-      // 全ての代替モデルが失敗
-      throw new Error('All alternative models failed. Original error: ' + e.message);
     }
 
     // 通常のフォールバック処理
