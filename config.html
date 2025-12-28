@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
         content="default-src 'self'; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com wss://api.assemblyai.com https://api.assemblyai.com wss://streaming.assemblyai.com https://streaming.assemblyai.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
-  <title>設定 - AI参加会議</title>
+  <title>Settings - AI Meeting</title>
   <style>
     :root {
       --primary: #4f46e5;
@@ -314,7 +314,7 @@
       border-color: #fecaca;
     }
 
-    /* API操作ボタン */
+    /* API action buttons */
     .api-actions {
       display: flex;
       gap: 0.5rem;
@@ -413,13 +413,13 @@
 <body>
   <header class="header">
     <div class="header-content">
-      <h1>⚙️ <span data-i18n="config.title">設定</span></h1>
+      <h1>⚙️ <span data-i18n="config.title">Settings</span></h1>
       <div style="display: flex; align-items: center; gap: 0.75rem;">
         <select id="languageSwitcher" class="model-select" style="min-width: 90px; padding: 0.375rem 0.5rem; font-size: 0.8rem;">
-          <option value="ja">🇯🇵 日本語</option>
-          <option value="en">🇺🇸 English</option>
+          <option value="ja" data-i18n="config.lang.ja">Japanese</option>
+          <option value="en" data-i18n="config.lang.en">English</option>
         </select>
-        <a href="index.html" class="btn btn-secondary">← <span data-i18n="config.backToMain">メイン画面に戻る</span></a>
+        <a href="index.html" class="btn btn-secondary">← <span data-i18n="config.backToMain">Back to main</span></a>
       </div>
     </div>
   </header>
@@ -432,37 +432,37 @@
       <div class="security-notice">
         <div class="security-notice-title">
           <span>🔒</span>
-          <span data-i18n="config.security.title">APIキーのセキュリティ</span>
+          <span data-i18n="config.security.title">API Key Security</span>
         </div>
         <div class="security-notice-text" data-i18n="config.security.description">
-          APIキーはこのアプリ内で暗号化され、ブラウザのローカルストレージに保存されます。外部サーバーには一切送信されません。
+          API keys are encrypted and stored in your browser's local storage. They are never sent to external servers.
         </div>
         <div class="security-features">
-          <div class="security-feature" data-i18n="config.security.encrypted">暗号化してローカル保存（平文では保存しない）</div>
-          <div class="security-feature" data-i18n="config.security.httpsOnly">API呼び出し時のみHTTPS経由で送信</div>
-          <div class="security-feature" data-i18n="config.security.isolated">他のWebサイトからはアクセス不可</div>
-          <div class="security-feature" data-i18n="config.security.exportable">設定のエクスポート/インポート対応</div>
+          <div class="security-feature" data-i18n="config.security.encrypted">Encrypted local storage (never stored in plaintext)</div>
+          <div class="security-feature" data-i18n="config.security.httpsOnly">Sent via HTTPS only when calling APIs</div>
+          <div class="security-feature" data-i18n="config.security.isolated">Inaccessible from other websites</div>
+          <div class="security-feature" data-i18n="config.security.exportable">Settings export/import supported</div>
         </div>
       </div>
 
-      <!-- 文字起こし専用API（STT） -->
+      <!-- Speech-to-Text (STT) API -->
       <div class="api-section transcription">
-        <div class="api-section-title">🎤 <span data-i18n="config.stt.title">文字起こし（STT）- プロバイダー選択</span></div>
+        <div class="api-section-title">🎤 <span data-i18n="config.stt.title">Speech-to-Text (STT) - Provider Selection</span></div>
 
-        <!-- STTプロバイダー選択 -->
+        <!-- STT Provider Selection -->
         <div class="setting-group" style="margin-bottom: 1rem;">
-          <label class="setting-label" data-i18n="config.stt.provider">STTプロバイダー</label>
+          <label class="setting-label" data-i18n="config.stt.provider">STT Provider</label>
           <select class="model-select" id="sttProvider" style="width: 100%;">
-            <option value="openai_stt" selected>🎤 OpenAI Whisper（チャンク送信・安定）</option>
-            <option value="deepgram_realtime">⚡ Deepgram Realtime（WebSocket・高速）</option>
-            <option value="assemblyai_realtime">🔊 AssemblyAI Realtime（WebSocket・高精度）</option>
+            <option value="openai_stt" selected data-i18n="config.stt.openaiWhisper">OpenAI Whisper (Chunked, stable)</option>
+            <option value="deepgram_realtime" data-i18n="config.stt.deepgramRealtime">Deepgram Realtime (WebSocket, fast)</option>
+            <option value="assemblyai_realtime" data-i18n="config.stt.assemblyaiRealtime">AssemblyAI Realtime (WebSocket, accurate)</option>
           </select>
-          <div class="setting-hint" id="sttProviderHint">
-            STTプロバイダーを選択してください。WebSocket系はリアルタイム性に優れます。
+          <div class="setting-hint" id="sttProviderHint" data-i18n="config.stt.providerHint">
+            Select an STT provider. WebSocket-based providers offer better real-time performance.
           </div>
         </div>
 
-        <!-- OpenAI STT設定 -->
+        <!-- OpenAI STT Settings -->
         <div class="stt-provider-settings" id="openai_stt_settings">
           <div class="setting-group" style="margin-bottom: 0;">
             <label class="setting-label">
@@ -472,22 +472,22 @@
             <div class="setting-row">
               <input type="password" class="setting-input" id="openaiApiKey" placeholder="sk-...">
               <select class="model-select" id="openaiModel">
-                <option value="whisper-1" selected>whisper-1（推奨）</option>
-                <option value="gpt-4o-transcribe">gpt-4o-transcribe</option>
-                <option value="gpt-4o-mini-transcribe">gpt-4o-mini-transcribe</option>
+                <option value="whisper-1" selected data-i18n="config.stt.models.whisper1">whisper-1 (Recommended)</option>
+                <option value="gpt-4o-transcribe" data-i18n="config.stt.models.gpt4oTranscribe">gpt-4o-transcribe</option>
+                <option value="gpt-4o-mini-transcribe" data-i18n="config.stt.models.gpt4oMiniTranscribe">gpt-4o-mini-transcribe</option>
               </select>
             </div>
             <div class="api-actions">
-              <button type="button" class="api-action-btn btn-validate" data-validate="openai">🔍 認証チェック</button>
-              <button type="button" class="api-action-btn btn-clear" data-clear="openai">🗑️ クリア</button>
+              <button type="button" class="api-action-btn btn-validate" data-validate="openai" data-i18n="config.stt.validate">Validate</button>
+              <button type="button" class="api-action-btn btn-clear" data-clear="openai" data-i18n="config.stt.clear">Clear</button>
             </div>
-            <div class="setting-hint">
-              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得
+            <div class="setting-hint" data-i18n-html="config.stt.getFromOpenAI">
+              <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">Get from OpenAI Platform</a>
             </div>
           </div>
         </div>
 
-        <!-- Deepgram設定 -->
+        <!-- Deepgram Settings -->
         <div class="stt-provider-settings" id="deepgram_realtime_settings" style="display: none;">
           <div class="setting-group" style="margin-bottom: 0;">
             <label class="setting-label">
@@ -495,24 +495,24 @@
               <span class="validation-status" id="deepgram-status" style="display:none;"></span>
             </label>
             <div class="setting-row">
-              <input type="password" class="setting-input" id="deepgramApiKey" placeholder="APIキーを入力">
+              <input type="password" class="setting-input" id="deepgramApiKey" data-i18n-placeholder="config.stt.enterApiKey" placeholder="Enter API key">
               <select class="model-select" id="deepgramModel">
-                <option value="nova-3-general" selected>nova-3-general（最新・推奨）</option>
-                <option value="nova-2-general">nova-2-general（安定版）</option>
-                <option value="base">base（低コスト）</option>
+                <option value="nova-3-general" selected data-i18n="config.stt.models.nova3">nova-3-general (Latest, recommended)</option>
+                <option value="nova-2-general" data-i18n="config.stt.models.nova2">nova-2-general (Stable)</option>
+                <option value="base" data-i18n="config.stt.models.base">base (Low cost)</option>
               </select>
             </div>
             <div class="api-actions">
-              <button type="button" class="api-action-btn btn-validate" data-validate="deepgram">🔍 認証チェック</button>
-              <button type="button" class="api-action-btn btn-clear" data-clear="deepgram">🗑️ クリア</button>
+              <button type="button" class="api-action-btn btn-validate" data-validate="deepgram" data-i18n="config.stt.validate">Validate</button>
+              <button type="button" class="api-action-btn btn-clear" data-clear="deepgram" data-i18n="config.stt.clear">Clear</button>
             </div>
-            <div class="setting-hint">
-              <a href="https://console.deepgram.com/" target="_blank" rel="noopener">Deepgram Console</a> から取得 - WebSocketでリアルタイム送信
+            <div class="setting-hint" data-i18n-html="config.stt.getFromDeepgram">
+              <a href="https://console.deepgram.com/" target="_blank" rel="noopener">Get from Deepgram Console - WebSocket realtime</a>
             </div>
           </div>
         </div>
 
-        <!-- AssemblyAI設定 -->
+        <!-- AssemblyAI Settings -->
         <div class="stt-provider-settings" id="assemblyai_realtime_settings" style="display: none;">
           <div class="setting-group" style="margin-bottom: 0;">
             <label class="setting-label">
@@ -523,43 +523,44 @@
               <input type="password" class="setting-input" id="assemblyaiApiKey" placeholder="...">
             </div>
             <div class="api-actions">
-              <button type="button" class="api-action-btn btn-validate" data-validate="assemblyai">🔍 認証チェック</button>
-              <button type="button" class="api-action-btn btn-clear" data-clear="assemblyai">🗑️ クリア</button>
+              <button type="button" class="api-action-btn btn-validate" data-validate="assemblyai" data-i18n="config.stt.validate">Validate</button>
+              <button type="button" class="api-action-btn btn-clear" data-clear="assemblyai" data-i18n="config.stt.clear">Clear</button>
             </div>
-            <div class="setting-hint">
-              <a href="https://www.assemblyai.com/app" target="_blank" rel="noopener">AssemblyAI Dashboard</a> から取得 - WebSocketでリアルタイム送信
+            <div class="setting-hint" data-i18n-html="config.stt.getFromAssemblyAI">
+              <a href="https://www.assemblyai.com/app" target="_blank" rel="noopener">Get from AssemblyAI Dashboard</a> - WebSocket real-time
             </div>
           </div>
         </div>
 
-        <!-- 共通の注意事項 -->
+        <!-- STT Provider Notes -->
         <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-blue); border-radius: 0.5rem; border: 1px solid var(--accent-border-blue);">
-          <div style="font-size: 0.85rem; color: var(--text);">
-            💡 <strong>STTプロバイダーについて</strong><br>
-            • <strong>OpenAI Whisper</strong>: 安定性重視。チャンク送信で擬似リアルタイム<br>
-            • <strong>Deepgram/AssemblyAI</strong>: WebSocketで真のリアルタイム。低遅延
+          <div style="font-size: 0.85rem; color: var(--text);" data-i18n-html="config.stt.providerNotes">
+            💡 <strong>About STT Providers</strong><br>
+            • <strong>OpenAI Whisper</strong>: Stable, pseudo-real-time via chunked uploads<br>
+            • <strong>Deepgram/AssemblyAI</strong>: True real-time via WebSocket, low latency
           </div>
         </div>
 
-        <!-- ユーザー辞書（固有名詞ヒント） -->
+        <!-- User Dictionary (Proper Noun Hints) -->
         <div class="setting-group" style="margin-top: 1rem;">
-          <label class="setting-label">📖 ユーザー辞書（固有名詞ヒント）</label>
+          <label class="setting-label" data-i18n="config.stt.userDictionary">📖 User Dictionary (Proper Noun Hints)</label>
           <textarea
             id="sttUserDictionary"
             class="setting-input"
             style="width: 100%; min-height: 80px; resize: vertical; font-family: inherit;"
-            placeholder="例: OpenAI, ChatGPT, Anthropic アンソロピック, 田中 たなか"
+            data-i18n-placeholder="config.stt.userDictionaryPlaceholder"
+            placeholder="e.g. OpenAI, ChatGPT, Anthropic"
           ></textarea>
-          <div class="setting-hint">
-            文字起こしで認識させたい固有名詞をカンマ区切りで入力。<br>
-            ローマ字＋読み仮名を併記すると認識精度が向上します（例: Anthropic アンソロピック）
+          <div class="setting-hint" data-i18n-html="config.stt.userDictionaryHint">
+            Enter proper nouns to improve recognition, separated by commas.<br>
+            Adding pronunciation hints can improve accuracy.
           </div>
         </div>
       </div>
 
-      <!-- LLM用API（要約・AI回答） -->
+      <!-- LLM API (Summary & AI Response) -->
       <div class="api-section llm">
-        <div class="api-section-title">💬 <span data-i18n="config.llm.title">AI回答・要約（任意）- LLMを選択</span></div>
+        <div class="api-section-title">💬 <span data-i18n="config.llm.title">AI Response & Summary (Optional) - Select LLM</span></div>
 
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label">
@@ -569,17 +570,17 @@
           <div class="setting-row">
             <input type="password" class="setting-input" id="geminiApiKey" placeholder="AIza...">
             <select class="model-select" id="geminiModel">
-              <option value="gemini-2.0-flash-exp">gemini-2.0-flash（推奨）</option>
+              <option value="gemini-2.0-flash-exp" data-i18n="config.llm.models.gemini20flash">gemini-2.0-flash (Recommended)</option>
               <option value="gemini-1.5-flash-latest">gemini-1.5-flash</option>
               <option value="gemini-1.5-pro-latest">gemini-1.5-pro</option>
             </select>
           </div>
           <div class="api-actions">
-            <button type="button" class="api-action-btn btn-validate" data-validate="gemini">🔍 認証チェック</button>
-            <button type="button" class="api-action-btn btn-clear" data-clear="gemini">🗑️ クリア</button>
+            <button type="button" class="api-action-btn btn-validate" data-validate="gemini" data-i18n="config.llm.validate">Validate</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="gemini" data-i18n="config.llm.clear">Clear</button>
           </div>
-          <div class="setting-hint">
-            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a> から取得（要約・AI回答に使用）
+          <div class="setting-hint" data-i18n-html="config.llm.getFromGoogleAI">
+            <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get from Google AI Studio</a> - Used for summary & AI responses
           </div>
         </div>
 
@@ -596,33 +597,33 @@
             </select>
           </div>
           <div class="api-actions">
-            <button type="button" class="api-action-btn btn-validate" data-validate="claude">🔍 認証チェック</button>
-            <button type="button" class="api-action-btn btn-clear" data-clear="claude">🗑️ クリア</button>
+            <button type="button" class="api-action-btn btn-validate" data-validate="claude" data-i18n="config.llm.validate">Validate</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="claude" data-i18n="config.llm.clear">Clear</button>
           </div>
-          <div class="setting-hint">
-            <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Anthropic Console</a> から取得
+          <div class="setting-hint" data-i18n-html="config.llm.getFromAnthropic">
+            <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Get from Anthropic Console</a>
           </div>
         </div>
 
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label">
-            OpenAI API（ChatGPT）
+            OpenAI API (ChatGPT)
             <span class="validation-status" id="openai-llm-status" style="display:none;"></span>
           </label>
           <div class="setting-row">
             <input type="password" class="setting-input" id="openaiLlmApiKey" placeholder="sk-...">
             <select class="model-select" id="openaiLlmModel">
-              <option value="gpt-4o">gpt-4o（推奨）</option>
-              <option value="gpt-4o-mini">gpt-4o-mini（低コスト）</option>
-              <option value="gpt-4-turbo-2024-04-09">gpt-4-turbo（互換用）</option>
+              <option value="gpt-4o" data-i18n="config.llm.models.gpt4o">gpt-4o (Recommended)</option>
+              <option value="gpt-4o-mini" data-i18n="config.llm.models.gpt4oMini">gpt-4o-mini (Low cost)</option>
+              <option value="gpt-4-turbo-2024-04-09" data-i18n="config.llm.models.gpt4turbo">gpt-4-turbo (Legacy)</option>
             </select>
           </div>
           <div class="api-actions">
-            <button type="button" class="api-action-btn btn-validate" data-validate="openai_llm">🔍 認証チェック</button>
-            <button type="button" class="api-action-btn btn-clear" data-clear="openai_llm">🗑️ クリア</button>
+            <button type="button" class="api-action-btn btn-validate" data-validate="openai_llm" data-i18n="config.llm.validate">Validate</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="openai_llm" data-i18n="config.llm.clear">Clear</button>
           </div>
-          <div class="setting-hint">
-            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a> から取得（STTと別のキーを推奨）
+          <div class="setting-hint" data-i18n-html="config.llm.getFromOpenAI">
+            <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">Get from OpenAI Platform</a> - Separate key from STT recommended
           </div>
         </div>
 
@@ -634,79 +635,79 @@
           <div class="setting-row">
             <input type="password" class="setting-input" id="groqApiKey" placeholder="gsk_...">
             <select class="model-select" id="groqModel">
-              <option value="llama-3.3-70b-versatile">llama-3.3-70b（推奨）</option>
+              <option value="llama-3.3-70b-versatile" data-i18n="config.llm.models.llama33">llama-3.3-70b (Recommended)</option>
               <option value="llama-3.1-70b-versatile">llama-3.1-70b</option>
-              <option value="llama-3.1-8b-instant">llama-3.1-8b（低コスト）</option>
+              <option value="llama-3.1-8b-instant" data-i18n="config.llm.models.llama8b">llama-3.1-8b (Low cost)</option>
             </select>
           </div>
           <div class="api-actions">
-            <button type="button" class="api-action-btn btn-validate" data-validate="groq">🔍 認証チェック</button>
-            <button type="button" class="api-action-btn btn-clear" data-clear="groq">🗑️ クリア</button>
+            <button type="button" class="api-action-btn btn-validate" data-validate="groq" data-i18n="config.llm.validate">Validate</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="groq" data-i18n="config.llm.clear">Clear</button>
           </div>
-          <div class="setting-hint">
-            <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a> から取得（高速・低コスト）
+          <div class="setting-hint" data-i18n-html="config.llm.getFromGroq">
+            <a href="https://console.groq.com/keys" target="_blank" rel="noopener">Get from Groq Console</a> - Fast & low cost
           </div>
         </div>
 
         <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 0.5rem; border: 1px solid #fef08a;">
-          <div style="font-size: 0.85rem; color: #92400e;">
-            ⚠️ <strong>LLM APIキーが未設定の場合</strong><br>
-            要約・意見・議事録などのAI機能は使用できません。上記のいずれかを設定してください。
+          <div style="font-size: 0.85rem; color: #92400e;" data-i18n-html="config.llm.noKeyWarning">
+            ⚠️ <strong>If no LLM API key is configured</strong><br>
+            AI features like summary, opinions, and meeting notes will not be available. Please configure at least one above.
           </div>
         </div>
       </div>
 
-      <!-- LLM優先順位 -->
+      <!-- LLM Priority -->
       <div class="setting-group">
-        <label class="setting-label">💬 <span data-i18n="config.llm.priority">LLM優先順位</span></label>
+        <label class="setting-label">💬 <span data-i18n="config.llm.priority">LLM Priority</span></label>
         <select class="model-select" id="llmPriority" style="width: 100%;">
-          <option value="auto">自動選択（設定されたAPIを順に使用）</option>
-          <option value="gemini">Gemini を優先</option>
-          <option value="claude">Claude を優先</option>
-          <option value="openai_llm">OpenAI (ChatGPT) を優先</option>
-          <option value="groq">Groq を優先</option>
+          <option value="auto" data-i18n="config.llm.priorityAuto">Auto (use configured APIs in order)</option>
+          <option value="gemini" data-i18n="config.llm.priorityGemini">Prefer Gemini</option>
+          <option value="claude" data-i18n="config.llm.priorityClaude">Prefer Claude</option>
+          <option value="openai_llm" data-i18n="config.llm.priorityOpenAI">Prefer OpenAI (ChatGPT)</option>
+          <option value="groq" data-i18n="config.llm.priorityGroq">Prefer Groq</option>
         </select>
-        <div class="setting-hint">
-          自動選択の場合: Claude → OpenAI → Gemini → Groq の順で、APIキーが設定されているものを使用
+        <div class="setting-hint" data-i18n="config.llm.priorityHint">
+          Auto mode: Uses Claude, OpenAI, Gemini, Groq in order, based on which API keys are configured
         </div>
       </div>
 
       <div class="security-options">
-        <div class="security-options-title">🛡️ <span data-i18n="config.options.securityTitle">セキュリティオプション</span></div>
+        <div class="security-options-title">🛡️ <span data-i18n="config.options.securityTitle">Security Options</span></div>
         <div class="checkbox-group">
           <input type="checkbox" id="clearOnClose">
-          <label for="clearOnClose" data-i18n="config.options.clearOnClose">ブラウザを閉じたらAPIキーを自動削除（共有PC向け）</label>
+          <label for="clearOnClose" data-i18n="config.options.clearOnClose">Auto-delete API keys when browser closes (for shared PCs)</label>
         </div>
       </div>
 
       <div class="security-options" style="background: #eff6ff; border-color: #bfdbfe;">
-        <div class="security-options-title" style="color: #1e40af;">💰 <span data-i18n="config.options.costAlertTitle">コストアラート</span></div>
+        <div class="security-options-title" style="color: #1e40af;">💰 <span data-i18n="config.options.costAlertTitle">Cost Alert</span></div>
         <div class="setting-group" style="margin-bottom: 0.5rem;">
-          <label class="setting-label" style="font-size: 0.8rem;" data-i18n="config.options.costLimit">1セッションの上限金額（円）</label>
-          <input type="number" class="setting-input" id="costLimit" placeholder="例: 100" value="100" min="0" step="10" style="max-width: 150px;">
+          <label class="setting-label" style="font-size: 0.8rem;" data-i18n="config.options.costLimit">Session cost limit (JPY)</label>
+          <input type="number" class="setting-input" id="costLimit" data-i18n-placeholder="config.options.costLimitPlaceholder" placeholder="e.g. 100" value="100" min="0" step="10" style="max-width: 150px;">
         </div>
         <div class="checkbox-group">
           <input type="checkbox" id="costAlertEnabled" checked>
-          <label for="costAlertEnabled" style="color: #1e40af;" data-i18n="config.options.costAlertEnabled">上限の80%で警告を表示</label>
+          <label for="costAlertEnabled" style="color: #1e40af;" data-i18n="config.options.costAlertEnabled">Show warning at 80% of limit</label>
         </div>
       </div>
 
       <div class="settings-transfer">
-        <div class="settings-transfer-title">📦 <span data-i18n="config.backup.title">設定のバックアップ</span></div>
+        <div class="settings-transfer-title">📦 <span data-i18n="config.backup.title">Settings Backup</span></div>
         <div class="settings-transfer-buttons">
-          <button class="btn btn-secondary" id="exportSettingsBtn">📤 <span data-i18n="config.backup.export">エクスポート</span></button>
-          <button class="btn btn-secondary" id="importSettingsTrigger">📥 <span data-i18n="config.backup.import">インポート</span></button>
+          <button class="btn btn-secondary" id="exportSettingsBtn">📤 <span data-i18n="config.backup.export">Export</span></button>
+          <button class="btn btn-secondary" id="importSettingsTrigger">📥 <span data-i18n="config.backup.import">Import</span></button>
           <input type="file" id="importFile" accept=".json" style="display:none;">
-          <button class="btn btn-danger" id="clearAllSettingsBtn">🗑️ <span data-i18n="config.backup.clearAll">全削除</span></button>
+          <button class="btn btn-danger" id="clearAllSettingsBtn">🗑️ <span data-i18n="config.backup.clearAll">Clear All</span></button>
         </div>
         <div class="settings-transfer-hint" data-i18n="config.backup.hint">
-          エクスポートファイルは暗号化されています。他のデバイスへの移行に使用できます。
+          Export file is encrypted. Can be used to migrate settings to another device.
         </div>
       </div>
 
       <div class="action-buttons">
-        <a href="index.html" class="btn btn-secondary" data-i18n="common.cancel">キャンセル</a>
-        <button class="btn btn-primary" id="saveSettingsBtn">💾 <span data-i18n="common.save">保存</span></button>
+        <a href="index.html" class="btn btn-secondary" data-i18n="common.cancel">Cancel</a>
+        <button class="btn btn-primary" id="saveSettingsBtn">💾 <span data-i18n="common.save">Save</span></button>
       </div>
     </div>
   </main>
