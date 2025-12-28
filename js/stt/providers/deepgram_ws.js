@@ -3,6 +3,10 @@
  *
  * 真のリアルタイム文字起こし
  * WebSocket経由でPCMストリームを送信
+ *
+ * 断片化防止:
+ * - is_finalをそのまま確定扱いせず、UtteranceEndまでバッファリング
+ * - vad_eventsでSpeechStarted/UtteranceEndを受信
  */
 
 class DeepgramWSProvider {
@@ -20,6 +24,11 @@ class DeepgramWSProvider {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 3;
     this._connectTimer = null;
+
+    // Utteranceバッファリング（断片化防止）
+    this._finalBuffer = '';        // is_final=trueの断片を蓄積
+    this._partialBuffer = '';      // 最新のpartialを保持（interim表示用）
+    this._isSpeaking = false;      // 発話中フラグ
   }
 
   // イベントハンドラ設定
@@ -34,6 +43,11 @@ class DeepgramWSProvider {
     if (!this.apiKey) {
       throw new Error('Deepgram API key is required');
     }
+
+    // バッファをリセット
+    this._finalBuffer = '';
+    this._partialBuffer = '';
+    this._isSpeaking = false;
 
     return new Promise((resolve, reject) => {
       this.updateStatus('connecting');
@@ -51,6 +65,8 @@ class DeepgramWSProvider {
       wsUrl.searchParams.set('endpointing', '1000');       // 1秒無音で発話区切り
       wsUrl.searchParams.set('utterance_end_ms', '1500');  // 発話終了後1.5秒待機
       wsUrl.searchParams.set('smart_format', 'true');      // 日本語向け書式
+      // VADイベント（SpeechStarted/UtteranceEnd）を有効化
+      wsUrl.searchParams.set('vad_events', 'true');
 
       console.log('[Deepgram] Connecting to Deepgram API...');
 
@@ -95,6 +111,9 @@ class DeepgramWSProvider {
         console.log('[Deepgram] WebSocket closed:', event.code, event.reason);
         this.isConnected = false;
 
+        // 残っているバッファがあればフラッシュ
+        this._flushFinalBuffer();
+
         if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
           console.log(`[Deepgram] Attempting reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
@@ -132,6 +151,9 @@ class DeepgramWSProvider {
       clearTimeout(this._connectTimer);
       this._connectTimer = null;
     }
+
+    // 残っているバッファをフラッシュ
+    this._flushFinalBuffer();
 
     if (this.ws) {
       // 正常終了を通知
@@ -175,6 +197,25 @@ class DeepgramWSProvider {
     try {
       const message = JSON.parse(data);
 
+      // VADイベント: SpeechStarted
+      if (message.type === 'SpeechStarted') {
+        console.log('[Deepgram] SpeechStarted');
+        this._isSpeaking = true;
+        // 新しい発話開始時はバッファをクリア（必要に応じて）
+        // this._finalBuffer = '';
+        return;
+      }
+
+      // VADイベント: UtteranceEnd（発話終了）
+      if (message.type === 'UtteranceEnd') {
+        console.log('[Deepgram] UtteranceEnd - flushing buffer:', this._finalBuffer);
+        this._isSpeaking = false;
+        // UtteranceEndで蓄積したfinalBufferを確定として出力
+        this._flushFinalBuffer();
+        return;
+      }
+
+      // 通常の文字起こし結果
       if (message.type === 'Results') {
         var transcript = '';
         if (message.channel && message.channel.alternatives &&
@@ -182,10 +223,29 @@ class DeepgramWSProvider {
           transcript = message.channel.alternatives[0].transcript;
         }
         const isFinal = message.is_final || false;
+        const speechFinal = message.speech_final || false;
 
         if (transcript) {
-          console.log(`[Deepgram] ${isFinal ? 'Final' : 'Partial'}:`, transcript);
-          this.emitTranscript(transcript, isFinal);
+          if (isFinal) {
+            // is_final=trueの断片はバッファに蓄積
+            this._finalBuffer += transcript;
+            console.log(`[Deepgram] Final (buffered):`, transcript, '| Total:', this._finalBuffer);
+
+            // Partialとして表示（確定前のプレビュー）
+            this.emitTranscript(this._finalBuffer, false);
+
+            // speech_final=trueなら即座にフラッシュ（UtteranceEndの代わり）
+            if (speechFinal) {
+              console.log('[Deepgram] speech_final=true - flushing buffer');
+              this._flushFinalBuffer();
+            }
+          } else {
+            // Partialはバッファ+現在のpartialを表示
+            this._partialBuffer = transcript;
+            const displayText = this._finalBuffer + transcript;
+            console.log(`[Deepgram] Partial:`, transcript);
+            this.emitTranscript(displayText, false);
+          }
         }
       } else if (message.type === 'Metadata') {
         console.log('[Deepgram] Metadata:', message);
@@ -196,6 +256,18 @@ class DeepgramWSProvider {
     } catch (e) {
       console.error('[Deepgram] Failed to parse message:', e);
     }
+  }
+
+  /**
+   * finalBufferをフラッシュして確定出力
+   */
+  _flushFinalBuffer() {
+    if (this._finalBuffer.trim()) {
+      console.log('[Deepgram] Emitting final:', this._finalBuffer);
+      this.emitTranscript(this._finalBuffer.trim(), true);
+    }
+    this._finalBuffer = '';
+    this._partialBuffer = '';
   }
 
   // ステータス更新
