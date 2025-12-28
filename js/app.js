@@ -1917,7 +1917,7 @@ async function callLLM(provider, prompt) {
           // 成功したら設定を自動更新
           await autoUpdateSavedModel(provider, alt);
           showToast(
-            t('toast.model.deprecated') || 'モデルが廃止されたため自動変更しました: ' + model + ' → ' + alt,
+            t('toast.model.deprecated', {from: model, to: alt}) || 'モデルが廃止されたため自動変更しました: ' + model + ' → ' + alt,
             'warning'
           );
           return result;
@@ -2083,12 +2083,9 @@ function getDefaultModel(provider) {
 }
 
 // プロバイダーごとの代替モデルリスト（優先順）
+// 現時点では Groq のみ（他プロバイダーは必要時に追加）
 const ALTERNATIVE_MODELS = {
-  groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
-  gemini: ['gemini-2.0-flash-exp', 'gemini-1.5-flash-latest'],
-  claude: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022'],
-  openai: ['gpt-4o', 'gpt-4o-mini'],
-  openai_llm: ['gpt-4o', 'gpt-4o-mini']
+  groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
 };
 
 // モデル廃止エラーかどうかを判定
@@ -2107,12 +2104,22 @@ function getAlternativeModels(provider, currentModel) {
   return alts.filter(function(m) { return m !== currentModel; });
 }
 
+// プロバイダー名から設定画面のselect IDへのマッピング
+const MODEL_SELECT_ID = {
+  groq: 'groqModel',
+  gemini: 'geminiModel',
+  claude: 'claudeModel',
+  openai: 'openaiModel',
+  openai_llm: 'openaiLlmModel'
+};
+
 // 保存済みモデルを自動更新
 async function autoUpdateSavedModel(provider, newModel) {
   try {
     await SecureStorage.setModel(provider, newModel);
     // 設定画面のドロップダウンも更新（表示中の場合）
-    var select = document.getElementById(provider + 'Model');
+    var selectId = MODEL_SELECT_ID[provider] || (provider + 'Model');
+    var select = document.getElementById(selectId);
     if (select) select.value = newModel;
     console.log('[Model] Auto-updated saved model:', provider, '->', newModel);
   } catch (e) {
