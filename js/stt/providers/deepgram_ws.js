@@ -19,6 +19,7 @@ class DeepgramWSProvider {
     this.isConnected = false;
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 3;
+    this._connectTimer = null;
   }
 
   // イベントハンドラ設定
@@ -37,9 +38,8 @@ class DeepgramWSProvider {
     return new Promise((resolve, reject) => {
       this.updateStatus('connecting');
 
-      // Deepgram WebSocket URL with token authentication
+      // Deepgram WebSocket URL (token is passed via subprotocol, NOT in URL)
       const wsUrl = new URL('wss://api.deepgram.com/v1/listen');
-      wsUrl.searchParams.set('token', this.apiKey);  // Browser requires token in URL query
       wsUrl.searchParams.set('model', this.model);
       wsUrl.searchParams.set('language', this.language);
       wsUrl.searchParams.set('encoding', 'linear16');
@@ -48,11 +48,24 @@ class DeepgramWSProvider {
       wsUrl.searchParams.set('punctuate', 'true');
       wsUrl.searchParams.set('interim_results', 'true');
 
-      console.log('[Deepgram] Connecting to Deepgram API...');  // Don't log URL with token
+      console.log('[Deepgram] Connecting to Deepgram API...');
 
-      this.ws = new WebSocket(wsUrl.toString());
+      // Browser auth: pass token via WebSocket subprotocol (Deepgram official method)
+      const ws = new WebSocket(wsUrl.toString(), ['token', this.apiKey]);
+      this.ws = ws;
 
-      this.ws.onopen = () => {
+      // Clear any existing timer
+      if (this._connectTimer) {
+        clearTimeout(this._connectTimer);
+        this._connectTimer = null;
+      }
+
+      ws.onopen = () => {
+        // Clear timeout on successful connection
+        if (this._connectTimer) {
+          clearTimeout(this._connectTimer);
+          this._connectTimer = null;
+        }
         console.log('[Deepgram] WebSocket connected');
         this.isConnected = true;
         this.reconnectAttempts = 0;
@@ -60,16 +73,21 @@ class DeepgramWSProvider {
         resolve();
       };
 
-      this.ws.onmessage = (event) => {
+      ws.onmessage = (event) => {
         this.handleMessage(event.data);
       };
 
-      this.ws.onerror = (error) => {
+      ws.onerror = (error) => {
         console.error('[Deepgram] WebSocket error:', error);
         this.emitError(new Error('WebSocket connection error'));
       };
 
-      this.ws.onclose = (event) => {
+      ws.onclose = (event) => {
+        // Clear timeout on close
+        if (this._connectTimer) {
+          clearTimeout(this._connectTimer);
+          this._connectTimer = null;
+        }
         console.log('[Deepgram] WebSocket closed:', event.code, event.reason);
         this.isConnected = false;
 
@@ -83,10 +101,18 @@ class DeepgramWSProvider {
         }
       };
 
-      // 接続タイムアウト
-      setTimeout(() => {
-        if (!this.isConnected) {
-          this.ws.close();
+      // Connection timeout with proper guard
+      this._connectTimer = setTimeout(() => {
+        // Guard: only act if this is still the current connection attempt
+        if (this.ws !== ws) return;
+
+        if (!this.isConnected && ws.readyState === WebSocket.CONNECTING) {
+          console.log('[Deepgram] Connection timeout, closing...');
+          try {
+            ws.close();
+          } catch (e) {
+            // Ignore close errors
+          }
           reject(new Error('Connection timeout'));
         }
       }, 10000);
@@ -97,12 +123,26 @@ class DeepgramWSProvider {
    * WebSocket接続を停止
    */
   async stop() {
+    // Clear connection timer
+    if (this._connectTimer) {
+      clearTimeout(this._connectTimer);
+      this._connectTimer = null;
+    }
+
     if (this.ws) {
       // 正常終了を通知
       if (this.ws.readyState === WebSocket.OPEN) {
-        this.ws.send(JSON.stringify({ type: 'CloseStream' }));
+        try {
+          this.ws.send(JSON.stringify({ type: 'CloseStream' }));
+        } catch (e) {
+          // Ignore send errors during shutdown
+        }
       }
-      this.ws.close(1000, 'Normal closure');
+      try {
+        this.ws.close(1000, 'Normal closure');
+      } catch (e) {
+        // Ignore close errors
+      }
       this.ws = null;
     }
     this.isConnected = false;
