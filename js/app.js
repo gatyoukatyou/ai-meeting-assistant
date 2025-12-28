@@ -1686,7 +1686,7 @@ async function askAI(type) {
         showToast(t('toast.qa.duplicate'), 'warning');
         return;
       }
-      prompt = `${t('ai.prompt.custom')}\n\n【会議内容】\n${targetText}\n\n【質問】\n${customQ}`;
+      prompt = t('ai.prompt.custom', { transcript: targetText, question: customQ });
       document.getElementById('customQuestion').value = '';
       break;
   }
@@ -1741,7 +1741,9 @@ async function askAI(type) {
     const llmPromise = callLLM(provider, prompt);
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
-        reject(new Error(t('error.api.timeout')));
+        const err = new Error(t('error.api.timeout'));
+        err.code = 'TIMEOUT';
+        reject(err);
       }, QA_TIMEOUT_MS);
     });
 
@@ -1772,7 +1774,7 @@ async function askAI(type) {
   } catch (err) {
     clearTimeout(timeoutId);
     const duration = ((Date.now() - startTime) / 1000).toFixed(1);
-    const isTimeout = err.message.includes(t('error.api.timeout'));
+    const isTimeout = err.code === 'TIMEOUT';
 
     logQA(requestId, isTimeout ? 'timeout' : 'failed', {
       type,
@@ -2361,7 +2363,7 @@ function generateExportMarkdown(options = null) {
   // 選択された項目がない場合の警告
   const hasAnySelection = Object.values(opts).some(v => v);
   if (!hasAnySelection) {
-    md += `⚠️ エクスポートする項目が選択されていません。\n`;
+    md += `⚠️ ${t('export.document.noSelection')}\n`;
     return md;
   }
 
@@ -2421,10 +2423,10 @@ function generateExportMarkdown(options = null) {
     md += `---\n\n`;
     md += `## 📜 ${t('export.document.sectionTranscript')}\n\n`;
     // フィルタリングされたテキストを使用
-    const transcriptText = getFilteredTranscriptText() || '(none)';
+    const transcriptText = getFilteredTranscriptText() || t('export.document.none');
     const lineCount = transcriptText.split('\n').filter(l => l.trim()).length;
     md += `<details>\n`;
-    md += `<summary>${lineCount} lines</summary>\n\n`;
+    md += `<summary>${t('export.document.linesCount', { n: lineCount })}</summary>\n\n`;
     md += `${transcriptText}\n\n`;
     md += `</details>\n\n`;
   }
@@ -2433,26 +2435,26 @@ function generateExportMarkdown(options = null) {
   if (opts.cost) {
     md += `---\n\n`;
     md += `## 💰 ${t('export.document.sectionCost')}\n\n`;
-    md += `### 文字起こし（STT）\n`;
-    md += `- 処理時間: ${formatDuration(costs.transcript.duration)}\n`;
-    md += `- API呼び出し: ${costs.transcript.calls}回\n`;
+    md += `### ${t('export.document.costStt')}\n`;
+    md += `- ${t('export.document.costProcessingTime')}: ${formatDuration(costs.transcript.duration)}\n`;
+    md += `- ${t('export.document.costApiCalls')}: ${costs.transcript.calls}\n`;
     md += `- OpenAI Whisper: ${formatCost(costs.transcript.byProvider.openai)}\n`;
     md += `- Deepgram: ${formatCost(costs.transcript.byProvider.deepgram)}\n`;
     md += `- AssemblyAI: ${formatCost(costs.transcript.byProvider.assemblyai)}\n`;
-    md += `- 小計: ${formatCost(costs.transcript.total)}\n\n`;
-    md += `### LLM（AI回答）\n`;
-    md += `- 入力トークン: ${formatNumber(costs.llm.inputTokens)}\n`;
-    md += `- 出力トークン: ${formatNumber(costs.llm.outputTokens)}\n`;
-    md += `- API呼び出し: ${costs.llm.calls}回\n`;
+    md += `- ${t('export.document.costSubtotal')}: ${formatCost(costs.transcript.total)}\n\n`;
+    md += `### ${t('export.document.costLlm')}\n`;
+    md += `- ${t('export.document.costInputTokens')}: ${formatNumber(costs.llm.inputTokens)}\n`;
+    md += `- ${t('export.document.costOutputTokens')}: ${formatNumber(costs.llm.outputTokens)}\n`;
+    md += `- ${t('export.document.costApiCalls')}: ${costs.llm.calls}\n`;
     md += `- Gemini: ${formatCost(costs.llm.byProvider.gemini)}\n`;
     md += `- Claude: ${formatCost(costs.llm.byProvider.claude)}\n`;
     md += `- OpenAI: ${formatCost(costs.llm.byProvider.openai)}\n`;
     md += `- Groq: ${formatCost(costs.llm.byProvider.groq)}\n`;
-    md += `- 小計: ${formatCost(costs.llm.total)}\n\n`;
-    md += `### 合計\n`;
+    md += `- ${t('export.document.costSubtotal')}: ${formatCost(costs.llm.total)}\n\n`;
+    md += `### ${t('export.document.costTotal')}\n`;
     md += `**${formatCost(total)}**\n\n`;
     md += `---\n`;
-    md += `*この金額は概算です。実際の請求額とは異なる場合があります。*\n`;
+    md += `*${t('export.document.costDisclaimer')}*\n`;
   }
 
   return md;

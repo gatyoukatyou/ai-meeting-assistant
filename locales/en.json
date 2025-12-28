@@ -229,7 +229,7 @@
       "opinion": "Please provide your AI opinion and analysis on the following meeting content. Point out any improvements or concerns.",
       "idea": "Based on the following meeting content, please suggest 3 new ideas or proposals.",
       "minutes": "From the following meeting transcript, please create structured meeting minutes.\n\nInclude:\n1. **Agenda**: List the main topics discussed\n2. **Decisions**: Clearly state any conclusions reached\n3. **Action Items**: Who will do what (as far as possible)\n4. **Next Steps**: Any upcoming actions or schedules\n\nFormat:\n- Use ## for headings\n- Use bullet points\n- **Bold** important content",
-      "custom": "Please answer the question about the following meeting content."
+      "custom": "Please answer the question about the following meeting content.\n\n[Meeting Content]\n{transcript}\n\n[Question]\n{question}"
     }
   },
   "export": {
@@ -257,7 +257,19 @@
       "sectionMinutes": "Minutes",
       "sectionAI": "AI Responses",
       "sectionTranscript": "Transcript",
-      "sectionCost": "Cost Details"
+      "sectionCost": "Cost Details",
+      "noSelection": "No items selected for export.",
+      "none": "(none)",
+      "linesCount": "Click to expand ({n} lines)",
+      "costStt": "Transcription (STT)",
+      "costLlm": "LLM (AI Responses)",
+      "costTotal": "Total",
+      "costProcessingTime": "Processing Time",
+      "costApiCalls": "API Calls",
+      "costSubtotal": "Subtotal",
+      "costInputTokens": "Input Tokens",
+      "costOutputTokens": "Output Tokens",
+      "costDisclaimer": "These amounts are estimates. Actual charges may differ."
     }
   },
   "modal": {

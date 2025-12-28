@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ja" data-i18n-title="notFound.pageTitle">
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ページが見つかりません - AI参加会議</title>
+  <title data-i18n="notFound.pageTitle">ページが見つかりません - AI参加会議</title>
   <style>
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Hiragino Sans', sans-serif;
@@ -51,15 +51,21 @@
     <div class="emoji">🤔</div>
     <h1 data-i18n="notFound.title">ページが見つかりません</h1>
     <p data-i18n="notFound.description">お探しのページは存在しないか、移動した可能性があります。</p>
-    <a href="index.html" data-i18n="notFound.backHome">トップページに戻る</a>
+    <a href="/ai-meeting-assistant/index.html" data-i18n="notFound.backHome">トップページに戻る</a>
   </div>
 
-  <!-- i18n -->
-  <script src="js/i18n.js"></script>
+  <!-- i18n (absolute path for GitHub Pages 404) -->
+  <script src="/ai-meeting-assistant/js/i18n.js"></script>
   <script>
-    // Initialize i18n
+    // Initialize i18n and update title
     document.addEventListener('DOMContentLoaded', async function() {
       await I18n.init();
+      // Update document.title from data-i18n on title element
+      var titleEl = document.querySelector('title[data-i18n]');
+      if (titleEl) {
+        var key = titleEl.getAttribute('data-i18n');
+        if (key) document.title = t(key);
+      }
     });
   </script>
 </body>

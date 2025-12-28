@@ -229,7 +229,7 @@
       "opinion": "以下の会議内容について、AIとしての意見や分析を述べてください。改善点や注意点があれば指摘してください。",
       "idea": "以下の会議内容を踏まえて、新しいアイデアや提案を3つ挙げてください。",
       "minutes": "以下の会議の文字起こしから、構造化された議事録を作成してください。\n\n含めるべき項目:\n1. **議題**: 話し合われた主要トピックをリストアップ\n2. **決定事項**: 結論が出たことを明記\n3. **タスク・アクション**: 誰が何をするか（可能な範囲で）\n4. **次回予定**: 次のアクションや予定があれば記載\n\nフォーマット:\n- 見出しは ## を使用\n- 箇条書きを活用\n- 重要な内容は **太字** で強調",
-      "custom": "以下の会議内容について質問に答えてください。"
+      "custom": "以下の会議内容について質問に答えてください。\n\n【会議内容】\n{transcript}\n\n【質問】\n{question}"
     }
   },
   "export": {
@@ -257,7 +257,19 @@
       "sectionMinutes": "議事録",
       "sectionAI": "AI回答",
       "sectionTranscript": "文字起こし",
-      "sectionCost": "コスト詳細"
+      "sectionCost": "コスト詳細",
+      "noSelection": "エクスポートする項目が選択されていません。",
+      "none": "（なし）",
+      "linesCount": "クリックして展開（全{n}行）",
+      "costStt": "文字起こし（STT）",
+      "costLlm": "LLM（AI回答）",
+      "costTotal": "合計",
+      "costProcessingTime": "処理時間",
+      "costApiCalls": "API呼び出し",
+      "costSubtotal": "小計",
+      "costInputTokens": "入力トークン",
+      "costOutputTokens": "出力トークン",
+      "costDisclaimer": "この金額は概算です。実際の請求額とは異なる場合があります。"
     }
   },
   "modal": {
