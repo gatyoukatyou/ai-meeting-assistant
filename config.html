@@ -691,6 +691,21 @@
         </div>
       </div>
 
+      <div class="security-options" style="background: #faf5ff; border-color: #e9d5ff;">
+        <div class="security-options-title" style="color: #7c3aed;">🎨 <span data-i18n="config.theme.title">Color Theme</span></div>
+        <div class="setting-group" style="margin-bottom: 0;">
+          <label class="setting-label" style="font-size: 0.8rem;" data-i18n="config.theme.label">Accent color</label>
+          <select class="setting-input" id="colorTheme" style="max-width: 200px;">
+            <option value="sky" data-i18n="theme.sky">Sky</option>
+            <option value="indigo" data-i18n="theme.indigo">Indigo</option>
+            <option value="emerald" data-i18n="theme.emerald">Emerald</option>
+            <option value="violet" data-i18n="theme.violet">Violet</option>
+            <option value="slate" data-i18n="theme.slate">Slate</option>
+            <option value="coral" data-i18n="theme.coral">Coral</option>
+          </select>
+        </div>
+      </div>
+
       <div class="settings-transfer">
         <div class="settings-transfer-title">📦 <span data-i18n="config.backup.title">Settings Backup</span></div>
         <div class="settings-transfer-buttons">
@@ -711,6 +726,7 @@
     </div>
   </main>
   <script src="js/i18n.js"></script>
+  <script src="js/theme.js"></script>
   <script src="js/secure-storage.js" defer></script>
   <script src="js/config.js" defer></script>
 </body>

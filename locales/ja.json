@@ -196,6 +196,10 @@
       "costLimit": "1セッションの上限金額（円）",
       "costAlertEnabled": "上限の80%で警告を表示"
     },
+    "theme": {
+      "title": "カラーテーマ",
+      "label": "アクセントカラー"
+    },
     "backup": {
       "title": "設定のバックアップ",
       "export": "エクスポート",
@@ -354,5 +358,13 @@
     "label": "言語",
     "ja": "日本語",
     "en": "English"
+  },
+  "theme": {
+    "sky": "スカイブルー",
+    "indigo": "インディゴ",
+    "emerald": "エメラルド",
+    "violet": "バイオレット",
+    "slate": "スレート",
+    "coral": "コーラル"
   }
 }

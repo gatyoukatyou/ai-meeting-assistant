@@ -197,6 +197,10 @@
       "costLimit": "Session cost limit (JPY)",
       "costAlertEnabled": "Show warning at 80% of limit"
     },
+    "theme": {
+      "title": "Color Theme",
+      "label": "Accent color"
+    },
     "backup": {
       "title": "Settings Backup",
       "export": "Export",
@@ -355,5 +359,13 @@
     "label": "Language",
     "ja": "Japanese",
     "en": "English"
+  },
+  "theme": {
+    "sky": "Sky",
+    "indigo": "Indigo",
+    "emerald": "Emerald",
+    "violet": "Violet",
+    "slate": "Slate",
+    "coral": "Coral"
   }
 }
