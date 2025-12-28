@@ -32,7 +32,10 @@
       "statusRecording": "Recording",
       "statusConnecting": "Connecting",
       "statusReconnecting": "Reconnecting",
-      "statusDisconnected": "Disconnected"
+      "statusDisconnected": "Disconnected",
+      "minutesTooltipDisabled": "Available after stopping recording",
+      "minutesTooltipReady": "Create meeting minutes",
+      "noTranscript": "No transcript available"
     },
     "panel": {
       "transcript": "Transcript",
@@ -105,11 +108,14 @@
     },
     "browser": {
       "incompatibleTitle": "Unsupported Browser",
-      "incompatibleMessage": "Some features are not supported in your browser. Please use the latest version of Chrome, Edge, or Safari."
+      "incompatibleMessage": "Some features are not supported in your browser. Please use the latest version of Chrome, Edge, or Safari.",
+      "incompatibleButton": "⚠️ Unsupported Browser",
+      "incompatibleTooltip": "The following features are not available: {features}"
     }
   },
   "config": {
     "title": "Settings",
+    "apiNotConfigured": "⚠️ API not configured",
     "pageTitle": "Settings - AI Meeting Assistant",
     "backToMain": "Back to main screen",
     "security": {

@@ -263,27 +263,32 @@ function checkBrowserCompatibility() {
   // getUserMedia チェック
   var hasGetUserMedia = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia);
   if (!hasGetUserMedia) {
-    issues.push('マイクアクセス（getUserMedia）');
+    issues.push('getUserMedia');
   }
 
   // MediaRecorder チェック
   var hasMediaRecorder = typeof MediaRecorder !== 'undefined';
   if (!hasMediaRecorder) {
-    issues.push('音声録音（MediaRecorder）');
+    issues.push('MediaRecorder');
   }
 
   // 問題があればUIに表示
   if (issues.length > 0 && recordBtn) {
     recordBtn.disabled = true;
-    recordBtn.textContent = '⚠️ 非対応ブラウザ';
-    recordBtn.title = '以下の機能が使用できません: ' + issues.join(', ');
+    // Use updateLabelSpan if available, otherwise set directly
+    if (typeof updateLabelSpan === 'function') {
+      updateLabelSpan(recordBtn, 'app.browser.incompatibleButton', '');
+    } else {
+      recordBtn.textContent = t('app.browser.incompatibleButton');
+    }
+    recordBtn.title = t('app.browser.incompatibleTooltip', { features: issues.join(', ') });
     recordBtn.style.cursor = 'not-allowed';
     console.warn('[Compatibility] Browser does not support:', issues);
 
     // 警告バナーを表示
     var banner = document.createElement('div');
     banner.className = 'compatibility-warning';
-    banner.innerHTML = '⚠️ お使いのブラウザは一部機能に対応していません。Chrome/Edge/Safari最新版をご利用ください。';
+    banner.innerHTML = '⚠️ ' + t('app.browser.incompatibleMessage');
     var header = document.querySelector('.header');
     if (header && header.parentNode) {
       header.parentNode.insertBefore(banner, header.nextSibling);
@@ -296,10 +301,13 @@ function checkBrowserCompatibility() {
 // =====================================
 // 初期化
 // =====================================
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
   try {
   // JS読み込み確認（デバッグ用）
   console.log('[Init] DOMContentLoaded fired, JS loaded successfully');
+
+  // i18n初期化（言語切り替えに必要）
+  await I18n.init();
 
   // セキュリティオプション：ブラウザを閉じたらクリア
   if (SecureStorage.getOption('clearOnClose', false)) {
@@ -329,6 +337,14 @@ document.addEventListener('DOMContentLoaded', function() {
     if (SecureStorage.getOption('clearOnClose', false)) {
       SecureStorage.clearApiKeys();
     }
+  });
+
+  // 言語切り替え時にUIを再描画
+  window.addEventListener('languagechange', function(e) {
+    console.log('[i18n] Language changed, re-rendering UI');
+    updateUI();
+    updateCosts();
+    updateLlmIndicator();
   });
 
   // ユーザー辞書を読み込み
@@ -1794,7 +1810,7 @@ async function askAI(type) {
         // 再試行ボタンを追加
         const retryBtn = document.createElement('button');
         retryBtn.className = 'btn btn-ghost btn-sm';
-        retryBtn.textContent = '🔄 再試行';
+        retryBtn.textContent = '🔄 ' + t('common.retry');
         retryBtn.onclick = () => {
           // 失敗したアイテムを削除して再送信
           if (qaItem && qaItem.parentNode) {
@@ -2013,6 +2029,22 @@ function getFallbackModel(provider, requestedModel) {
 // =====================================
 // UI更新
 // =====================================
+/**
+ * Helper: Update inner label span with i18n key
+ * Preserves the data-i18n attribute and updates text via t()
+ */
+function updateLabelSpan(parentEl, i18nKey, iconPrefix) {
+  if (!parentEl) return;
+  const span = parentEl.querySelector('[data-i18n]');
+  if (span) {
+    span.setAttribute('data-i18n', i18nKey);
+    span.textContent = t(i18nKey);
+  } else {
+    // Fallback: if no span, create one (preserving icon prefix)
+    parentEl.innerHTML = iconPrefix + '<span data-i18n="' + i18nKey + '">' + t(i18nKey) + '</span>';
+  }
+}
+
 function updateUI() {
   const btn = document.getElementById('recordBtn');
   const badge = document.getElementById('statusBadge');
@@ -2021,10 +2053,12 @@ function updateUI() {
   const minutesBtn = document.getElementById('minutesBtn');
 
   if (isRecording) {
-    btn.textContent = '⏹ 録音停止';
+    // Update button label via inner span (preserves data-i18n)
+    updateLabelSpan(btn, 'app.recording.stop', '⏹ ');
     btn.classList.remove('btn-primary');
     btn.classList.add('btn-danger');
-    badge.textContent = '🔴 録音中';
+    // Update status badge via inner span
+    updateLabelSpan(badge, 'app.recording.statusRecording', '🔴 ');
     badge.classList.remove('status-ready');
     badge.classList.add('status-recording');
     // Phase 2: フローティング停止ボタンを表示（スマホ用）
@@ -2038,17 +2072,19 @@ function updateUI() {
     // 議事録ボタンは録音中は無効
     if (minutesBtn) {
       minutesBtn.disabled = true;
-      minutesBtn.title = '録音停止後に利用可能';
+      minutesBtn.title = t('app.recording.minutesTooltipDisabled');
     }
     // 録音開始時間を記録
     if (!recordingStartTime) {
       recordingStartTime = Date.now();
     }
   } else {
-    btn.textContent = '🎤 録音開始';
+    // Update button label via inner span (preserves data-i18n)
+    updateLabelSpan(btn, 'app.recording.start', '🎤 ');
     btn.classList.remove('btn-danger');
     btn.classList.add('btn-primary');
-    badge.textContent = '⏸ 待機中';
+    // Update status badge via inner span
+    updateLabelSpan(badge, 'app.recording.statusReady', '⏸ ');
     badge.classList.remove('status-recording');
     badge.classList.add('status-ready');
     // Phase 2: フローティング停止ボタンを非表示
@@ -2063,7 +2099,7 @@ function updateUI() {
     if (minutesBtn) {
       const hasTranscript = fullTranscript && fullTranscript.trim().length > 0;
       minutesBtn.disabled = !hasTranscript;
-      minutesBtn.title = hasTranscript ? '会議の議事録を作成' : '文字起こしがありません';
+      minutesBtn.title = hasTranscript ? t('app.recording.minutesTooltipReady') : t('app.recording.noTranscript');
     }
     // 録音開始時間をリセット
     recordingStartTime = null;
@@ -2071,11 +2107,21 @@ function updateUI() {
 }
 
 // ステータスバッジを直接更新（streaming系プロバイダー用）
+// Note: text should include icon prefix (e.g., '🎙️ Connecting')
 function updateStatusBadge(text, status) {
   const badge = document.getElementById('statusBadge');
   if (!badge) return;
 
-  badge.textContent = text;
+  // Preserve span structure: find or create inner span
+  let span = badge.querySelector('[data-i18n]');
+  if (span) {
+    // Clear data-i18n since we're setting raw text
+    span.removeAttribute('data-i18n');
+    span.textContent = text;
+  } else {
+    // No span exists, update badge directly
+    badge.textContent = text;
+  }
   badge.classList.remove('status-ready', 'status-recording', 'status-error');
 
   switch (status) {
@@ -2096,7 +2142,7 @@ function updateCosts() {
   // 文字起こしコスト
   document.getElementById('transcriptCostTotal').textContent = formatCost(costs.transcript.total);
   document.getElementById('transcriptDuration').textContent = formatDuration(costs.transcript.duration);
-  document.getElementById('transcriptCalls').textContent = `${costs.transcript.calls}回`;
+  document.getElementById('transcriptCalls').textContent = t('app.cost.calls', { n: costs.transcript.calls });
   document.getElementById('openaiTranscriptCost').textContent = formatCost(costs.transcript.byProvider.openai);
   document.getElementById('deepgramTranscriptCost').textContent = formatCost(costs.transcript.byProvider.deepgram);
   document.getElementById('assemblyaiTranscriptCost').textContent = formatCost(costs.transcript.byProvider.assemblyai);
@@ -2109,7 +2155,7 @@ function updateCosts() {
   document.getElementById('llmCostTotal').textContent = formatCost(costs.llm.total);
   document.getElementById('llmInputTokens').textContent = formatNumber(costs.llm.inputTokens);
   document.getElementById('llmOutputTokens').textContent = formatNumber(costs.llm.outputTokens);
-  document.getElementById('llmCalls').textContent = `${costs.llm.calls}回`;
+  document.getElementById('llmCalls').textContent = t('app.cost.calls', { n: costs.llm.calls });
 
   // プロバイダー別
   document.getElementById('geminiLlmCost').textContent = formatCost(costs.llm.byProvider.gemini);
@@ -2134,11 +2180,11 @@ function formatCost(yen) {
 
 function formatDuration(seconds) {
   if (seconds < 60) {
-    return `${Math.round(seconds)}秒`;
+    return t('app.cost.seconds', { n: Math.round(seconds) });
   }
   const mins = Math.floor(seconds / 60);
   const secs = Math.round(seconds % 60);
-  return `${mins}分${secs}秒`;
+  return t('app.cost.minSec', { min: mins, sec: secs });
 }
 
 function formatNumber(num) {
@@ -2149,13 +2195,13 @@ function updateCostBadge(badge, cost) {
   badge.classList.remove('cost-badge-low', 'cost-badge-medium', 'cost-badge-high');
   if (cost < 10) {
     badge.classList.add('cost-badge-low');
-    badge.textContent = '低';
+    badge.textContent = t('app.cost.low');
   } else if (cost < 50) {
     badge.classList.add('cost-badge-medium');
-    badge.textContent = '中';
+    badge.textContent = t('app.cost.medium');
   } else {
     badge.classList.add('cost-badge-high');
-    badge.textContent = '高';
+    badge.textContent = t('app.cost.high');
   }
 }
 
@@ -2509,11 +2555,11 @@ function updateLLMIndicator() {
     };
     indicator.textContent = `${providerEmoji[llm.provider] || '🤖'} ${providerNames[llm.provider] || llm.provider}`;
     indicator.classList.remove('no-api');
-    indicator.title = `使用中LLM: ${llm.model}`;
+    indicator.title = `LLM: ${llm.model}`;
   } else {
-    indicator.textContent = '⚠️ API未設定';
+    indicator.textContent = t('config.apiNotConfigured');
     indicator.classList.add('no-api');
-    indicator.title = 'APIキーを設定してください';
+    indicator.title = t('toast.llm.notConfigured');
   }
   // ボタン状態も同期
   updateLLMButtonsState();

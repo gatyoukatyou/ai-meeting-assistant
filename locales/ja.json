@@ -32,7 +32,10 @@
       "statusRecording": "録音中",
       "statusConnecting": "接続中",
       "statusReconnecting": "再接続中",
-      "statusDisconnected": "切断"
+      "statusDisconnected": "切断",
+      "minutesTooltipDisabled": "録音停止後に利用可能",
+      "minutesTooltipReady": "会議の議事録を作成",
+      "noTranscript": "文字起こしがありません"
     },
     "panel": {
       "transcript": "文字起こし",
@@ -105,11 +108,14 @@
     },
     "browser": {
       "incompatibleTitle": "非対応ブラウザ",
-      "incompatibleMessage": "お使いのブラウザは一部機能に対応していません。Chrome/Edge/Safari最新版をご利用ください。"
+      "incompatibleMessage": "お使いのブラウザは一部機能に対応していません。Chrome/Edge/Safari最新版をご利用ください。",
+      "incompatibleButton": "⚠️ 非対応ブラウザ",
+      "incompatibleTooltip": "以下の機能が使用できません: {features}"
     }
   },
   "config": {
     "title": "設定",
+    "apiNotConfigured": "⚠️ API未設定",
     "pageTitle": "設定 - AI参加会議",
     "backToMain": "メイン画面に戻る",
     "security": {
