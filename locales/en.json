@@ -186,7 +186,6 @@
         "gpt4oMini": "gpt-4o-mini (Low cost)",
         "gpt4Turbo": "gpt-4-turbo (Legacy)",
         "llama33": "llama-3.3-70b (Recommended)",
-        "llama31_70b": "llama-3.1-70b",
         "llama31_8b": "llama-3.1-8b (Low cost)"
       }
     },
@@ -245,6 +244,10 @@
     },
     "llm": {
       "notConfigured": "LLM API key not set. Please register an API key in settings."
+    },
+    "model": {
+      "deprecated": "Model deprecated. Auto-switched: {from} → {to}",
+      "migrated": "Deprecated model settings were auto-updated"
     },
     "qa": {
       "submitting": "Submitting. Please wait.",

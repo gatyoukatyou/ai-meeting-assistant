@@ -185,7 +185,6 @@
         "gpt4oMini": "gpt-4o-mini（低コスト）",
         "gpt4Turbo": "gpt-4-turbo（互換用）",
         "llama33": "llama-3.3-70b（推奨）",
-        "llama31_70b": "llama-3.1-70b",
         "llama31_8b": "llama-3.1-8b（低コスト）"
       }
     },
@@ -244,6 +243,10 @@
     },
     "llm": {
       "notConfigured": "LLM APIキーが未設定です。設定画面でAPIキーを登録してください。"
+    },
+    "model": {
+      "deprecated": "モデルが廃止されたため自動変更しました: {from} → {to}",
+      "migrated": "廃止されたモデル設定を自動更新しました"
     },
     "qa": {
       "submitting": "送信中です。しばらくお待ちください。",

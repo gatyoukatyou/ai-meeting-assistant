@@ -146,7 +146,7 @@ const PRICING = {
     'gpt-4o-mini': { input: 0.15, output: 0.6 }
   },
   groq: {
-    'llama-3.1-70b-versatile': { input: 0.59, output: 0.79 },
+    'llama-3.3-70b-versatile': { input: 0.59, output: 0.79 },
     'llama-3.1-8b-instant': { input: 0.05, output: 0.08 }
   },
   yenPerDollar: 150
@@ -299,6 +299,43 @@ function checkBrowserCompatibility() {
 }
 
 // =====================================
+// 非推奨モデルのマイグレーション
+// =====================================
+async function migrateDeprecatedModels() {
+  var migrated = false;
+  var providers = ['groq', 'gemini', 'claude', 'openai', 'openai_llm'];
+
+  for (var i = 0; i < providers.length; i++) {
+    var provider = providers[i];
+    var deprecatedList = DEPRECATED_MODELS[provider] || [];
+    if (deprecatedList.length === 0) continue;
+
+    var savedModel = SecureStorage.getModel(provider);
+    if (savedModel && deprecatedList.includes(savedModel)) {
+      var newModel = getDefaultModel(provider);
+      console.warn('[Migration] Deprecated model detected:', provider, savedModel, '->', newModel);
+      await SecureStorage.setModel(provider, newModel);
+      migrated = true;
+    }
+  }
+
+  if (migrated) {
+    // 少し遅延してトースト表示（DOMが完全に準備されてから）
+    setTimeout(function() {
+      showToast(
+        t('toast.model.migrated') || '廃止されたモデル設定を自動更新しました',
+        'info'
+      );
+    }, 1000);
+  }
+}
+
+// 非推奨モデルリスト（API側で廃止されたモデル）- 起動時チェック用
+var DEPRECATED_MODELS = {
+  groq: ['llama-3.1-70b-versatile']
+};
+
+// =====================================
 // 初期化
 // =====================================
 document.addEventListener('DOMContentLoaded', async function() {
@@ -324,6 +361,9 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.warn('[Migration] llmPriority: openai → openai_llm');
     SecureStorage.setOption('llmPriority', 'openai_llm');
   }
+
+  // 非推奨モデルのマイグレーション
+  await migrateDeprecatedModels();
 
   // 初回訪問チェック
   const hasVisited = localStorage.getItem('_visited');
@@ -1631,7 +1671,7 @@ function getDefaultModel(provider) {
     claude: 'claude-sonnet-4-20250514',
     openai: 'gpt-4o',
     openai_llm: 'gpt-4o',
-    groq: 'llama-3.1-70b-versatile'
+    groq: 'llama-3.3-70b-versatile'
   };
   return defaults[provider];
 }
@@ -1865,6 +1905,32 @@ async function callLLM(provider, prompt) {
   try {
     return await callLLMOnce(provider, model, prompt);
   } catch (e) {
+    // モデル廃止エラーの場合は強制的に代替モデルを試す
+    if (isModelDeprecatedError(e)) {
+      console.warn('[LLM] Model deprecated detected:', model, e.message);
+      var alternatives = getAlternativeModels(provider, model);
+
+      for (var i = 0; i < alternatives.length; i++) {
+        var alt = alternatives[i];
+        try {
+          var result = await callLLMOnce(provider, alt, prompt);
+          // 成功したら設定を自動更新
+          await autoUpdateSavedModel(provider, alt);
+          showToast(
+            t('toast.model.deprecated') || 'モデルが廃止されたため自動変更しました: ' + model + ' → ' + alt,
+            'warning'
+          );
+          return result;
+        } catch (altError) {
+          console.warn('[LLM] Alternative model also failed:', alt, altError.message);
+          continue;
+        }
+      }
+      // 全ての代替モデルが失敗
+      throw new Error('All alternative models failed. Original error: ' + e.message);
+    }
+
+    // 通常のフォールバック処理
     var fb = getFallbackModel(provider, model);
     if (!fb) {
       // フォールバック不可（同じモデル or 未定義）→ そのまま投げる
@@ -2011,9 +2077,47 @@ function getDefaultModel(provider) {
     claude: 'claude-sonnet-4-20250514',
     openai: 'gpt-4o',
     openai_llm: 'gpt-4o',
-    groq: 'llama-3.1-70b-versatile'
+    groq: 'llama-3.3-70b-versatile'
   };
   return defaults[provider];
+}
+
+// プロバイダーごとの代替モデルリスト（優先順）
+const ALTERNATIVE_MODELS = {
+  groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
+  gemini: ['gemini-2.0-flash-exp', 'gemini-1.5-flash-latest'],
+  claude: ['claude-sonnet-4-20250514', 'claude-3-5-sonnet-20241022'],
+  openai: ['gpt-4o', 'gpt-4o-mini'],
+  openai_llm: ['gpt-4o', 'gpt-4o-mini']
+};
+
+// モデル廃止エラーかどうかを判定
+function isModelDeprecatedError(error) {
+  var msg = (error.message || '').toLowerCase();
+  return msg.includes('decommissioned') ||
+         msg.includes('no longer supported') ||
+         msg.includes('deprecated') ||
+         msg.includes('model not found') ||
+         msg.includes('does not exist');
+}
+
+// 代替モデルリストを取得（現在のモデルを除外）
+function getAlternativeModels(provider, currentModel) {
+  var alts = ALTERNATIVE_MODELS[provider] || [];
+  return alts.filter(function(m) { return m !== currentModel; });
+}
+
+// 保存済みモデルを自動更新
+async function autoUpdateSavedModel(provider, newModel) {
+  try {
+    await SecureStorage.setModel(provider, newModel);
+    // 設定画面のドロップダウンも更新（表示中の場合）
+    var select = document.getElementById(provider + 'Model');
+    if (select) select.value = newModel;
+    console.log('[Model] Auto-updated saved model:', provider, '->', newModel);
+  } catch (e) {
+    console.error('[Model] Failed to auto-update:', e);
+  }
 }
 
 // フォールバック用モデルを取得（リクエストモデルと同じなら null を返す）
@@ -2023,7 +2127,7 @@ function getFallbackModel(provider, requestedModel) {
     claude: 'claude-sonnet-4-20250514',
     openai: 'gpt-4o',
     openai_llm: 'gpt-4o',
-    groq: 'llama-3.1-70b-versatile'
+    groq: 'llama-3.3-70b-versatile'
   };
   var fb = fallbacks[provider];
   // フォールバックが同じモデルなら再試行しない
