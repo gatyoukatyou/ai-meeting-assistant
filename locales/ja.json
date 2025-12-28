@@ -145,6 +145,7 @@
       "infoTitle": "STTプロバイダーについて",
       "infoOpenAI": "OpenAI Whisper: 安定性重視。チャンク送信で擬似リアルタイム",
       "infoWebSocket": "Deepgram/AssemblyAI: WebSocketで真のリアルタイム。低遅延",
+      "providerNotes": "💡 <strong>STTプロバイダーについて</strong><br>• <strong>OpenAI Whisper</strong>: 安定性重視。チャンク送信で擬似リアルタイム<br>• <strong>Deepgram/AssemblyAI</strong>: WebSocketで真のリアルタイム。低遅延",
       "userDictionary": "📖 ユーザー辞書（固有名詞ヒント）",
       "userDictPlaceholder": "例: OpenAI, ChatGPT, Anthropic アンソロピック, 田中 たなか",
       "userDictHint": "文字起こしで認識させたい固有名詞をカンマ区切りで入力。",
@@ -160,10 +161,33 @@
     },
     "llm": {
       "title": "AI回答・要約（任意）- LLMを選択",
+      "validate": "🔍 認証チェック",
+      "clear": "🗑️ クリア",
       "priority": "LLM優先順位",
       "priorityAuto": "自動選択（設定されたAPIを順に使用）",
+      "priorityGemini": "Gemini を優先",
+      "priorityClaude": "Claude を優先",
+      "priorityOpenAI": "OpenAI (ChatGPT) を優先",
+      "priorityGroq": "Groq を優先",
       "priorityHint": "自動選択の場合: Claude → OpenAI → Gemini → Groq の順で、APIキーが設定されているものを使用",
-      "notConfiguredWarning": "LLM APIキーが未設定の場合、要約・意見・議事録などのAI機能は使用できません。上記のいずれかを設定してください。"
+      "notConfiguredWarning": "LLM APIキーが未設定の場合、要約・意見・議事録などのAI機能は使用できません。上記のいずれかを設定してください。",
+      "getFromGemini": "<a href=\"https://aistudio.google.com/apikey\" target=\"_blank\" rel=\"noopener\">Google AI Studio</a> から取得（要約・AI回答に使用）",
+      "getFromClaude": "<a href=\"https://console.anthropic.com/\" target=\"_blank\" rel=\"noopener\">Anthropic Console</a> から取得",
+      "getFromOpenAILLM": "<a href=\"https://platform.openai.com/api-keys\" target=\"_blank\" rel=\"noopener\">OpenAI Platform</a> から取得（STTと別のキーを推奨）",
+      "getFromGroq": "<a href=\"https://console.groq.com/keys\" target=\"_blank\" rel=\"noopener\">Groq Console</a> から取得（高速・低コスト）",
+      "models": {
+        "gemini20Flash": "gemini-2.0-flash（推奨）",
+        "gemini15Flash": "gemini-1.5-flash",
+        "gemini15Pro": "gemini-1.5-pro",
+        "claudeSonnet4": "claude-sonnet-4",
+        "claude35Sonnet": "claude-3.5-sonnet",
+        "gpt4o": "gpt-4o（推奨）",
+        "gpt4oMini": "gpt-4o-mini（低コスト）",
+        "gpt4Turbo": "gpt-4-turbo（互換用）",
+        "llama33": "llama-3.3-70b（推奨）",
+        "llama31_70b": "llama-3.1-70b",
+        "llama31_8b": "llama-3.1-8b（低コスト）"
+      }
     },
     "options": {
       "title": "オプション設定",

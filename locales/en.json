@@ -145,6 +145,7 @@
       "infoTitle": "About STT Providers",
       "infoOpenAI": "OpenAI Whisper: Stability-focused. Pseudo-realtime via chunked upload",
       "infoWebSocket": "Deepgram/AssemblyAI: True realtime via WebSocket. Low latency",
+      "providerNotes": "💡 <strong>About STT Providers</strong><br>• <strong>OpenAI Whisper</strong>: Stable, pseudo-real-time via chunked uploads<br>• <strong>Deepgram/AssemblyAI</strong>: True real-time via WebSocket, low latency",
       "userDictionary": "📖 User Dictionary (Proper noun hints)",
       "userDictPlaceholder": "e.g., OpenAI, ChatGPT, Anthropic, Tesla",
       "userDictHint": "Enter proper nouns to improve recognition, separated by commas.",
@@ -160,6 +161,8 @@
     },
     "llm": {
       "title": "AI Response & Summary (Optional) - Select LLM",
+      "validate": "Validate",
+      "clear": "Clear",
       "priority": "LLM Priority",
       "priorityAuto": "Auto-select (use configured APIs in order)",
       "priorityGemini": "Prefer Gemini",

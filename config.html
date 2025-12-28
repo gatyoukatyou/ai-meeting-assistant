@@ -416,8 +416,8 @@
       <h1>⚙️ <span data-i18n="config.title">Settings</span></h1>
       <div style="display: flex; align-items: center; gap: 0.75rem;">
         <select id="languageSwitcher" class="model-select" style="min-width: 90px; padding: 0.375rem 0.5rem; font-size: 0.8rem;">
-          <option value="ja" data-i18n="config.lang.ja">Japanese</option>
-          <option value="en" data-i18n="config.lang.en">English</option>
+          <option value="ja" data-i18n="language.ja">Japanese</option>
+          <option value="en" data-i18n="language.en">English</option>
         </select>
         <a href="index.html" class="btn btn-secondary">← <span data-i18n="config.backToMain">Back to main</span></a>
       </div>
@@ -548,10 +548,10 @@
             id="sttUserDictionary"
             class="setting-input"
             style="width: 100%; min-height: 80px; resize: vertical; font-family: inherit;"
-            data-i18n-placeholder="config.stt.userDictionaryPlaceholder"
+            data-i18n-placeholder="config.stt.userDictPlaceholder"
             placeholder="e.g. OpenAI, ChatGPT, Anthropic"
           ></textarea>
-          <div class="setting-hint" data-i18n-html="config.stt.userDictionaryHint">
+          <div class="setting-hint" data-i18n-html="config.stt.userDictHint">
             Enter proper nouns to improve recognition, separated by commas.<br>
             Adding pronunciation hints can improve accuracy.
           </div>
@@ -570,7 +570,7 @@
           <div class="setting-row">
             <input type="password" class="setting-input" id="geminiApiKey" placeholder="AIza...">
             <select class="model-select" id="geminiModel">
-              <option value="gemini-2.0-flash-exp" data-i18n="config.llm.models.gemini20flash">gemini-2.0-flash (Recommended)</option>
+              <option value="gemini-2.0-flash-exp" data-i18n="config.llm.models.gemini20Flash">gemini-2.0-flash (Recommended)</option>
               <option value="gemini-1.5-flash-latest">gemini-1.5-flash</option>
               <option value="gemini-1.5-pro-latest">gemini-1.5-pro</option>
             </select>
@@ -579,7 +579,7 @@
             <button type="button" class="api-action-btn btn-validate" data-validate="gemini" data-i18n="config.llm.validate">Validate</button>
             <button type="button" class="api-action-btn btn-clear" data-clear="gemini" data-i18n="config.llm.clear">Clear</button>
           </div>
-          <div class="setting-hint" data-i18n-html="config.llm.getFromGoogleAI">
+          <div class="setting-hint" data-i18n-html="config.llm.getFromGemini">
             <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Get from Google AI Studio</a> - Used for summary & AI responses
           </div>
         </div>
@@ -600,7 +600,7 @@
             <button type="button" class="api-action-btn btn-validate" data-validate="claude" data-i18n="config.llm.validate">Validate</button>
             <button type="button" class="api-action-btn btn-clear" data-clear="claude" data-i18n="config.llm.clear">Clear</button>
           </div>
-          <div class="setting-hint" data-i18n-html="config.llm.getFromAnthropic">
+          <div class="setting-hint" data-i18n-html="config.llm.getFromClaude">
             <a href="https://console.anthropic.com/" target="_blank" rel="noopener">Get from Anthropic Console</a>
           </div>
         </div>
@@ -615,14 +615,14 @@
             <select class="model-select" id="openaiLlmModel">
               <option value="gpt-4o" data-i18n="config.llm.models.gpt4o">gpt-4o (Recommended)</option>
               <option value="gpt-4o-mini" data-i18n="config.llm.models.gpt4oMini">gpt-4o-mini (Low cost)</option>
-              <option value="gpt-4-turbo-2024-04-09" data-i18n="config.llm.models.gpt4turbo">gpt-4-turbo (Legacy)</option>
+              <option value="gpt-4-turbo-2024-04-09" data-i18n="config.llm.models.gpt4Turbo">gpt-4-turbo (Legacy)</option>
             </select>
           </div>
           <div class="api-actions">
             <button type="button" class="api-action-btn btn-validate" data-validate="openai_llm" data-i18n="config.llm.validate">Validate</button>
             <button type="button" class="api-action-btn btn-clear" data-clear="openai_llm" data-i18n="config.llm.clear">Clear</button>
           </div>
-          <div class="setting-hint" data-i18n-html="config.llm.getFromOpenAI">
+          <div class="setting-hint" data-i18n-html="config.llm.getFromOpenAILLM">
             <a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">Get from OpenAI Platform</a> - Separate key from STT recommended
           </div>
         </div>
@@ -637,7 +637,7 @@
             <select class="model-select" id="groqModel">
               <option value="llama-3.3-70b-versatile" data-i18n="config.llm.models.llama33">llama-3.3-70b (Recommended)</option>
               <option value="llama-3.1-70b-versatile">llama-3.1-70b</option>
-              <option value="llama-3.1-8b-instant" data-i18n="config.llm.models.llama8b">llama-3.1-8b (Low cost)</option>
+              <option value="llama-3.1-8b-instant" data-i18n="config.llm.models.llama31_8b">llama-3.1-8b (Low cost)</option>
             </select>
           </div>
           <div class="api-actions">
@@ -650,7 +650,7 @@
         </div>
 
         <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 0.5rem; border: 1px solid #fef08a;">
-          <div style="font-size: 0.85rem; color: #92400e;" data-i18n-html="config.llm.noKeyWarning">
+          <div style="font-size: 0.85rem; color: #92400e;" data-i18n-html="config.llm.notConfiguredWarning">
             ⚠️ <strong>If no LLM API key is configured</strong><br>
             AI features like summary, opinions, and meeting notes will not be available. Please configure at least one above.
           </div>
