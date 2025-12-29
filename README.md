@@ -244,6 +244,11 @@ MIT License - 自由に使ってOKです
 
 GitHubの[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で質問してください。
 
+**サポートについて:**
+- このアプリは個人開発で、無保証で提供しています
+- バグ報告や質問には、できる限り対応しますが、時間がかかる場合があります
+- セキュリティ問題は優先的に対応します
+
 ---
 
 **作った人からのお願い:**

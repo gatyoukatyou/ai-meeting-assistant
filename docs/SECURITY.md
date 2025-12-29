@@ -128,9 +128,17 @@ APIキーは、そのまま保存されるのではなく、**暗号化**され�
 - 公共の Wi-Fi で重要な会議を録音する時
 - セキュリティソフトが入っていないパソコン
 
-## もし問題を見つけたら
+## セキュリティ問題の報告
 
-セキュリティ上の問題を見つけた場合は、GitHubの[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で教えてください。
+セキュリティ上の問題を見つけた場合は、以下の方法で報告してください：
+
+### 一般的な問題（公開可能）
+GitHubの[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で報告してください。
+
+### 深刻な脆弱性（非公開で報告したい場合）
+GitHubの[Security Advisories](https://github.com/gatyoukatyou/ai-meeting-assistant/security/advisories/new)から非公開で報告できます。
+
+報告いただいた問題は、できる限り早く対応します（個人開発のため、対応に時間がかかる場合があります）。
 
 ## 免責事項
 
