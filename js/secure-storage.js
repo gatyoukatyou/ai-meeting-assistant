@@ -95,7 +95,6 @@ const SecureStorage = {
       // STT用APIキー
       openai: { key: this.getApiKey('openai'), model: this.getModel('openai') },
       deepgram: { key: this.getApiKey('deepgram'), model: this.getModel('deepgram') },
-      assemblyai: { key: this.getApiKey('assemblyai') },
       options: {
         clearOnClose: this.getOption('clearOnClose', false),
         costAlertEnabled: this.getOption('costAlertEnabled', true),
@@ -153,7 +152,6 @@ const SecureStorage = {
       if (data.openai && data.openai.model) this.setModel('openai', data.openai.model);
       if (data.deepgram && data.deepgram.key) this.setApiKey('deepgram', data.deepgram.key);
       if (data.deepgram && data.deepgram.model) this.setModel('deepgram', data.deepgram.model);
-      if (data.assemblyai && data.assemblyai.key) this.setApiKey('assemblyai', data.assemblyai.key);
       if (data.options) {
         this.setOption('clearOnClose', data.options.clearOnClose || false);
         this.setOption('costAlertEnabled', data.options.costAlertEnabled !== undefined ? data.options.costAlertEnabled : true);
@@ -177,7 +175,7 @@ const SecureStorage = {
   // 全削除
   clearAll: function() {
     // LLM用 + STT用の全プロバイダー
-    ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram', 'assemblyai'].forEach(p => {
+    ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'].forEach(p => {
       localStorage.removeItem(`_ak_${p}`);
       localStorage.removeItem(`_m_${p}`);
     });
@@ -193,7 +191,7 @@ const SecureStorage = {
   // APIキーのみ削除（デバイスキーは残す）
   clearApiKeys: function() {
     // LLM用 + STT用の全プロバイダー
-    ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram', 'assemblyai'].forEach(p => {
+    ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'].forEach(p => {
       localStorage.removeItem(`_ak_${p}`);
     });
   }

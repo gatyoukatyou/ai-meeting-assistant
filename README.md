@@ -45,7 +45,7 @@
 - パソコンとブラウザ（Chrome か Edge がおすすめ）
 - マイク（話すため）
 - 文字起こし用のAPIキー（下記のどれか1つが必要）
-  - OpenAI API **または** Deepgram API **または** AssemblyAI API
+  - OpenAI API **または** Deepgram API
 - AI回答用のAPIキー（任意。より賢い回答が欲しい場合）
   - Gemini / Claude / OpenAI / Groq から選べます
 
@@ -56,7 +56,6 @@
 |-------------|--------|------|
 | OpenAI Whisper | チャンク送信 | 安定、疑似リアルタイム |
 | Deepgram | WebSocket | 真のリアルタイム、低遅延 |
-| AssemblyAI | WebSocket | 真のリアルタイム、高精度 |
 
 ### AI回答（LLM）
 | プロバイダー | モデル |
@@ -111,7 +110,7 @@
 ### 2. APIキーを設定する
 
 1. 初めて開くと説明が出るので、「設定を開始する」をクリック
-2. 文字起こし用のAPIキーを入力（OpenAI, Deepgram, AssemblyAI のいずれか）
+2. 文字起こし用のAPIキーを入力（OpenAI または Deepgram）
 3. もっと賢いAI回答が欲しければ、LLM用のAPIキーも入力
 4. 「保存」をクリック
 
@@ -121,7 +120,6 @@
 - [OpenAI Platform](https://platform.openai.com/api-keys) - GPT-4 / Whisper
 - [Groq Console](https://console.groq.com/keys) - Groq
 - [Deepgram Console](https://console.deepgram.com/) - Deepgram
-- [AssemblyAI Dashboard](https://www.assemblyai.com/app) - AssemblyAI
 
 ### 3. 📱 スマホでホーム画面に追加（任意だが推奨）
 
@@ -145,10 +143,10 @@
 
 ### 4. 会議を録音する
 
-1. 文字起こしに使うプロバイダーを選ぶ（OpenAI / Deepgram / AssemblyAI）
+1. 文字起こしに使うプロバイダーを選ぶ（OpenAI / Deepgram）
 2. 何秒ごとに文字起こしするか選ぶ（5秒/10秒/15秒/30秒/60秒/2分）
    - **スマホでは5秒または10秒がおすすめ**（リアルタイム性重視）
-   - **Deepgram/AssemblyAIはリアルタイム**（インターバル設定不要）
+   - **Deepgramはリアルタイム**（インターバル設定不要）
 3. 「🎤 録音開始」をクリック
 4. マイクの使用を許可する
 5. 話すと自動で文字になります
@@ -195,7 +193,7 @@ A: いいえ。あなたのブラウザで処理され、AIサービスに送ら
 A: 機能は全く同じです。オンライン版（GitHub Pages）は簡単に使えるので推奨しています。ローカル版は完全オフラインで使いたい開発者向けです。
 
 **Q: インターネット接続は必要ですか？**
-A: はい。文字起こし（OpenAI Whisper / Deepgram / AssemblyAI）とAI回答（Gemini / Claude / OpenAI / Groq）のためにインターネット接続が必要です。このアプリはBYOK（Bring Your Own Key）方式で、各AIサービスのAPI料金は従量課金で自己負担となります。完全オフラインでは動作しません。
+A: はい。文字起こし（OpenAI Whisper / Deepgram）とAI回答（Gemini / Claude / OpenAI / Groq）のためにインターネット接続が必要です。このアプリはBYOK（Bring Your Own Key）方式で、各AIサービスのAPI料金は従量課金で自己負担となります。完全オフラインでは動作しません。
 
 **Q: APIキーって何ですか？**
 A: AIサービスを使うための「パスワード」のようなものです。各サービスのサイトで無料で作れます。

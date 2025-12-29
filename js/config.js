@@ -24,8 +24,7 @@ function navigateTo(target) {
 // =====================================
 const ALLOWED_STT_PROVIDERS = new Set([
   'openai_stt',
-  'deepgram_realtime',
-  'assemblyai_realtime'
+  'deepgram_realtime'
 ]);
 
 // =====================================
@@ -84,7 +83,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 // =====================================
 function setupApiKeyButtons() {
   // 各プロバイダーのボタンにイベントリスナーを追加
-  const providers = ['openai', 'deepgram', 'assemblyai', 'gemini', 'claude', 'openai_llm', 'groq'];
+  const providers = ['openai', 'deepgram', 'gemini', 'claude', 'openai_llm', 'groq'];
   
   providers.forEach(provider => {
     // 認証チェックボタン
@@ -198,11 +197,6 @@ function loadSavedSettings() {
   if (deepgramKeyEl && deepgramKey) deepgramKeyEl.value = deepgramKey;
   if (deepgramModelEl && deepgramModel) deepgramModelEl.value = deepgramModel;
 
-  // AssemblyAI
-  const assemblyaiKey = SecureStorage.getApiKey('assemblyai');
-  const assemblyaiKeyEl = document.getElementById('assemblyaiApiKey');
-  if (assemblyaiKeyEl && assemblyaiKey) assemblyaiKeyEl.value = assemblyaiKey;
-
   // ユーザー辞書（STT用固有名詞ヒント）
   const userDictionary = SecureStorage.getOption('sttUserDictionary', '');
   const userDictEl = document.getElementById('sttUserDictionary');
@@ -258,10 +252,6 @@ async function saveSettings() {
   const deepgramModelEl = document.getElementById('deepgramModel');
   if (deepgramKeyEl) SecureStorage.setApiKey('deepgram', deepgramKeyEl.value.trim());
   if (deepgramModelEl) SecureStorage.setModel('deepgram', deepgramModelEl.value);
-
-  // AssemblyAI
-  const assemblyaiKeyEl = document.getElementById('assemblyaiApiKey');
-  if (assemblyaiKeyEl) SecureStorage.setApiKey('assemblyai', assemblyaiKeyEl.value.trim());
 
   // ユーザー辞書（STT用固有名詞ヒント）を保存
   const userDictEl = document.getElementById('sttUserDictionary');
@@ -330,19 +320,6 @@ async function validateSTTProvider(provider) {
       return { valid: true };
     }
 
-    case 'assemblyai_realtime': {
-      const key = SecureStorage.getApiKey('assemblyai');
-      if (!key) {
-        return { valid: false, message: 'AssemblyAI APIキーが必要です。' };
-      }
-      const result = await validateApiKey('assemblyai', key);
-      if (result === 'invalid') {
-        return { valid: false, message: 'AssemblyAI APIキーが無効です。' };
-      }
-      // 'valid' または 'unknown' の場合は続行
-      return { valid: true };
-    }
-
     default:
       return { valid: false, message: `不明なSTTプロバイダー: ${provider}` };
   }
@@ -359,7 +336,6 @@ async function validateApiKey(provider, key) {
   const statusIdMap = {
     'openai': 'openai-status',
     'deepgram': 'deepgram-status',
-    'assemblyai': 'assemblyai-status',
     'gemini': 'gemini-status',
     'claude': 'claude-status',
     'openai_llm': 'openai-llm-status',
@@ -406,13 +382,6 @@ async function validateApiKey(provider, key) {
       case 'deepgram':
         response = await fetch('https://api.deepgram.com/v1/projects', {
           headers: { 'Authorization': `Token ${key}` }
-        });
-        break;
-
-      case 'assemblyai':
-        response = await fetch('https://api.assemblyai.com/v2/transcript', {
-          method: 'GET',
-          headers: { 'Authorization': key }
         });
         break;
 
@@ -548,7 +517,6 @@ async function validateApiKeyManual(provider) {
   const inputIdMap = {
     'openai': 'openaiApiKey',
     'deepgram': 'deepgramApiKey',
-    'assemblyai': 'assemblyaiApiKey',
     'gemini': 'geminiApiKey',
     'claude': 'claudeApiKey',
     'openai_llm': 'openaiLlmApiKey',
@@ -593,7 +561,6 @@ function clearApiKey(provider) {
   const inputIdMap = {
     'openai': 'openaiApiKey',
     'deepgram': 'deepgramApiKey',
-    'assemblyai': 'assemblyaiApiKey',
     'gemini': 'geminiApiKey',
     'claude': 'claudeApiKey',
     'openai_llm': 'openaiLlmApiKey',
@@ -603,7 +570,6 @@ function clearApiKey(provider) {
   const statusIdMap = {
     'openai': 'openai-status',
     'deepgram': 'deepgram-status',
-    'assemblyai': 'assemblyai-status',
     'gemini': 'gemini-status',
     'claude': 'claude-status',
     'openai_llm': 'openai-llm-status',
@@ -637,7 +603,6 @@ function getProviderName(provider) {
   const names = {
     'openai': 'OpenAI (STT)',
     'deepgram': 'Deepgram',
-    'assemblyai': 'AssemblyAI',
     'gemini': 'Gemini',
     'claude': 'Claude',
     'openai_llm': 'OpenAI (LLM)',

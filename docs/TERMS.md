@@ -12,7 +12,7 @@
 
 ### 機能
 
-- 会議の音声を文字にする（OpenAI Whisper / Deepgram / AssemblyAI）
+- 会議の音声を文字にする（OpenAI Whisper / Deepgram）
 - AIに会議内容を要約してもらう（Gemini / Claude / OpenAI / Groq）
 - AIに意見や分析をしてもらう
 - AIにアイデアを出してもらう

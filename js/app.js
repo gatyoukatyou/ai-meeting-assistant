@@ -63,8 +63,7 @@ function createFinalStopPromise() {
 // streaming系: WebSocket経由でPCMストリーム送信（真のリアルタイム）
 const ALLOWED_STT_PROVIDERS = new Set([
   'openai_stt',       // chunked (HTTP)
-  'deepgram_realtime', // streaming (WebSocket)
-  'assemblyai_realtime' // streaming (WebSocket)
+  'deepgram_realtime' // streaming (WebSocket)
 ]);
 
 // chunked系プロバイダー
@@ -72,8 +71,7 @@ const CHUNKED_PROVIDERS = new Set(['openai_stt']);
 
 // streaming系プロバイダー
 const STREAMING_PROVIDERS = new Set([
-  'deepgram_realtime',
-  'assemblyai_realtime'
+  'deepgram_realtime'
 ]);
 
 // OpenAI STT用モデル
@@ -95,8 +93,7 @@ let costs = {
     calls: 0,         // API呼び出し回数
     byProvider: {
       openai: 0,      // OpenAI Whisper (chunked)
-      deepgram: 0,    // Deepgram Realtime (WebSocket)
-      assemblyai: 0   // AssemblyAI Realtime (WebSocket)
+      deepgram: 0     // Deepgram Realtime (WebSocket)
     }
   },
   llm: {
@@ -124,11 +121,6 @@ const PRICING = {
     deepgram: {
       // Deepgram Nova-3 - $0.0043/minute (pay-as-you-go)
       perMinute: 0.0043 * 150  // ~¥0.65/分
-    },
-    assemblyai: {
-      // AssemblyAI - $0.00025/second = $0.015/minute
-      perMinute: 0.015 * 150  // ~¥2.25/分 (Best tier)
-      // Note: Nano tier is $0.00012/sec = $0.0072/min = ~¥1.08/分
     }
   },
   // LLM料金（$/1M tokens）
@@ -754,13 +746,6 @@ async function validateSTTProviderForRecording(provider) {
       }
       return { valid: true };
     }
-    case 'assemblyai_realtime': {
-      const key = SecureStorage.getApiKey('assemblyai');
-      if (!key) {
-        return { valid: false, message: 'AssemblyAI APIキーを設定してください', redirectToConfig: true };
-      }
-      return { valid: true };
-    }
     default:
       return { valid: false, message: `不明なプロバイダー: ${provider}`, redirectToConfig: true };
   }
@@ -770,8 +755,7 @@ async function validateSTTProviderForRecording(provider) {
 function getProviderDisplayName(provider) {
   const names = {
     'openai_stt': 'OpenAI Whisper',
-    'deepgram_realtime': 'Deepgram Realtime',
-    'assemblyai_realtime': 'AssemblyAI Realtime'
+    'deepgram_realtime': 'Deepgram Realtime'
   };
   return names[provider] || provider;
 }
@@ -831,7 +815,7 @@ async function startChunkedRecording(provider) {
 }
 
 // =====================================
-// Streaming系録音（Deepgram/AssemblyAI）
+// Streaming系録音（Deepgram）
 // =====================================
 async function startStreamingRecording(provider) {
   console.log('[Streaming] Starting recording for provider:', provider);
@@ -842,11 +826,6 @@ async function startStreamingRecording(provider) {
       currentSTTProvider = new DeepgramWSProvider({
         apiKey: SecureStorage.getApiKey('deepgram'),
         model: SecureStorage.getModel('deepgram') || 'nova-3-general'
-      });
-      break;
-    case 'assemblyai_realtime':
-      currentSTTProvider = new AssemblyAIWSProvider({
-        apiKey: SecureStorage.getApiKey('assemblyai')
       });
       break;
     default:
@@ -1448,7 +1427,7 @@ function resolveQueueDrain() {
 // =====================================
 // Gemini generateContent APIは音声文字起こし（STT）には使用しない。
 // 理由: MediaRecorderのtimeslice使用時、2回目以降のチャンクにヘッダーがなく400エラーが発生する。
-// STTには専用API（OpenAI Whisper, Deepgram, AssemblyAI等）を使用すること。
+// STTには専用API（OpenAI Whisper, Deepgram等）を使用すること。
 // Gemini APIはLLMタスク（要約、Q&A等）専用として残す。
 
 // ユーザー辞書（固有名詞のヒント）- 設定画面から登録可能
@@ -2314,7 +2293,6 @@ function updateCosts() {
   document.getElementById('transcriptCalls').textContent = t('app.cost.calls', { n: costs.transcript.calls });
   document.getElementById('openaiTranscriptCost').textContent = formatCost(costs.transcript.byProvider.openai);
   document.getElementById('deepgramTranscriptCost').textContent = formatCost(costs.transcript.byProvider.deepgram);
-  document.getElementById('assemblyaiTranscriptCost').textContent = formatCost(costs.transcript.byProvider.assemblyai);
 
   // 文字起こしコストバッジ
   const transcriptBadge = document.getElementById('transcriptCostBadge');
@@ -2656,7 +2634,6 @@ function generateExportMarkdown(options = null) {
     md += `- ${t('export.document.costApiCalls')}: ${costs.transcript.calls}\n`;
     md += `- OpenAI Whisper: ${formatCost(costs.transcript.byProvider.openai)}\n`;
     md += `- Deepgram: ${formatCost(costs.transcript.byProvider.deepgram)}\n`;
-    md += `- AssemblyAI: ${formatCost(costs.transcript.byProvider.assemblyai)}\n`;
     md += `- ${t('export.document.costSubtotal')}: ${formatCost(costs.transcript.total)}\n\n`;
     md += `### ${t('export.document.costLlm')}\n`;
     md += `- ${t('export.document.costInputTokens')}: ${formatNumber(costs.llm.inputTokens)}\n`;

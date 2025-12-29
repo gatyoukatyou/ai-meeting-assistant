@@ -7,7 +7,6 @@
 - **リアルタイム文字起こし**: 会議音声を自動でテキスト化
   - OpenAI Whisper（チャンク送信、疑似リアルタイム）
   - Deepgram（WebSocket、真のリアルタイム）
-  - AssemblyAI（WebSocket、真のリアルタイム）
 - **AI回答**: 会議内容について質問・要約・意見・アイデアを取得
   - Google Gemini / Anthropic Claude / OpenAI / Groq に対応
 - **コスト表示**: 文字起こし・AI回答それぞれの推定コストをリアルタイム表示

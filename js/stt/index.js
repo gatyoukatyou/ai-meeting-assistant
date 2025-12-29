@@ -22,11 +22,6 @@ const STT_PROVIDERS = {
     type: STT_PROVIDER_TYPES.STREAMING,
     name: 'Deepgram Realtime',
     module: './providers/deepgram_ws.js'
-  },
-  'assemblyai_realtime': {
-    type: STT_PROVIDER_TYPES.STREAMING,
-    name: 'AssemblyAI Realtime',
-    module: './providers/assemblyai_ws.js'
   }
 };
 

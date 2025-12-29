@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com wss://api.assemblyai.com https://api.assemblyai.com wss://streaming.assemblyai.com https://streaming.assemblyai.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
   <title>Settings - AI Meeting</title>
   <style>
     :root {
@@ -455,7 +455,6 @@
           <select class="model-select" id="sttProvider" style="width: 100%;">
             <option value="openai_stt" selected data-i18n="config.stt.openaiWhisper">OpenAI Whisper (Chunked, stable)</option>
             <option value="deepgram_realtime" data-i18n="config.stt.deepgramRealtime">Deepgram Realtime (WebSocket, fast)</option>
-            <option value="assemblyai_realtime" data-i18n="config.stt.assemblyaiRealtime">AssemblyAI Realtime (WebSocket, accurate)</option>
           </select>
           <div class="setting-hint" id="sttProviderHint" data-i18n="config.stt.providerHint">
             Select an STT provider. WebSocket-based providers offer better real-time performance.
@@ -512,32 +511,12 @@
           </div>
         </div>
 
-        <!-- AssemblyAI Settings -->
-        <div class="stt-provider-settings" id="assemblyai_realtime_settings" style="display: none;">
-          <div class="setting-group" style="margin-bottom: 0;">
-            <label class="setting-label">
-              AssemblyAI API Key
-              <span class="validation-status" id="assemblyai-status" style="display:none;"></span>
-            </label>
-            <div class="setting-row">
-              <input type="password" class="setting-input" id="assemblyaiApiKey" placeholder="...">
-            </div>
-            <div class="api-actions">
-              <button type="button" class="api-action-btn btn-validate" data-validate="assemblyai" data-i18n="config.stt.validate">Validate</button>
-              <button type="button" class="api-action-btn btn-clear" data-clear="assemblyai" data-i18n="config.stt.clear">Clear</button>
-            </div>
-            <div class="setting-hint" data-i18n-html="config.stt.getFromAssemblyAI">
-              <a href="https://www.assemblyai.com/app" target="_blank" rel="noopener">Get from AssemblyAI Dashboard</a> - WebSocket real-time
-            </div>
-          </div>
-        </div>
-
         <!-- STT Provider Notes -->
         <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-blue); border-radius: 0.5rem; border: 1px solid var(--accent-border-blue);">
           <div style="font-size: 0.85rem; color: var(--text);" data-i18n-html="config.stt.providerNotes">
             💡 <strong>About STT Providers</strong><br>
             • <strong>OpenAI Whisper</strong>: Stable, pseudo-real-time via chunked uploads<br>
-            • <strong>Deepgram/AssemblyAI</strong>: True real-time via WebSocket, low latency
+            • <strong>Deepgram</strong>: True real-time via WebSocket, low latency
           </div>
         </div>
 

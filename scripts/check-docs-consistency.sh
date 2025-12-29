@@ -55,8 +55,7 @@ echo "  コード上のSTTプロバイダー: $(echo $CODE_STT | tr '\n' ' ')"
 
 # READMEでSTTとして記載されているプロバイダーを確認
 if grep -q "OpenAI Whisper" README.md && \
-   grep -q "Deepgram" README.md && \
-   grep -q "AssemblyAI" README.md; then
+   grep -q "Deepgram" README.md; then
   echo "  [OK] README.md のSTTプロバイダー記載がコードと一致"
 else
   echo "  [WARN] README.md のSTTプロバイダー記載を確認してください"

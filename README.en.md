@@ -45,7 +45,7 @@ See [Security Details](docs/SECURITY.md) for more information.
 - A computer with a modern browser (Chrome or Edge recommended)
 - A microphone
 - At least one STT API key for transcription:
-  - OpenAI API **or** Deepgram API **or** AssemblyAI API
+  - OpenAI API **or** Deepgram API
 - Optional: LLM API key for AI responses (Gemini / Claude / OpenAI / Groq)
 
 ## Supported Providers
@@ -55,7 +55,6 @@ See [Security Details](docs/SECURITY.md) for more information.
 |----------|------|-------|
 | OpenAI Whisper | Chunk-based | Stable, pseudo-realtime |
 | Deepgram | WebSocket | True realtime, low latency |
-| AssemblyAI | WebSocket | True realtime, high accuracy |
 
 ### Large Language Models (LLM)
 | Provider | Models |
@@ -102,7 +101,7 @@ Just visit: 👉 **https://gatyoukatyou.github.io/ai-meeting-assistant/**
 ### 2. Configure API Keys
 
 1. On first visit, you'll see a setup prompt – click "Open Settings"
-2. Enter your STT API key (OpenAI, Deepgram, or AssemblyAI)
+2. Enter your STT API key (OpenAI or Deepgram)
 3. Optionally, add LLM API keys for AI features
 4. Click "Save"
 
@@ -112,7 +111,6 @@ Just visit: 👉 **https://gatyoukatyou.github.io/ai-meeting-assistant/**
 - [OpenAI Platform](https://platform.openai.com/api-keys) – GPT-4 / Whisper
 - [Groq Console](https://console.groq.com/keys) – Groq
 - [Deepgram Console](https://console.deepgram.com/) – Deepgram
-- [AssemblyAI Dashboard](https://www.assemblyai.com/app) – AssemblyAI
 
 ---
 
@@ -183,7 +181,7 @@ This app is **free to use**, but the AI services have their own usage-based pric
 ## FAQ
 
 **Q: Is internet required?**
-A: Yes. Transcription (OpenAI Whisper / Deepgram / AssemblyAI) and AI features (Gemini / Claude / OpenAI / Groq) require internet connections. This app uses BYOK (Bring Your Own Key) model – API costs are usage-based and billed directly by each provider. Offline mode is not supported.
+A: Yes. Transcription (OpenAI Whisper / Deepgram) and AI features (Gemini / Claude / OpenAI / Groq) require internet connections. This app uses BYOK (Bring Your Own Key) model – API costs are usage-based and billed directly by each provider. Offline mode is not supported.
 
 **Q: What if I don't set up LLM keys?**
 A: Transcription will still work. AI features (summary, opinions, ideas) will be unavailable.

@@ -23,7 +23,6 @@ README・TERMS・その他ドキュメントを更新する際は、必ずこの
 |-------------|--------|--------|------|
 | `openai_stt` | OpenAI Whisper | チャンク送信（HTTP） | 安定、疑似リアルタイム |
 | `deepgram_realtime` | Deepgram | WebSocket | 真のリアルタイム、低遅延 |
-| `assemblyai_realtime` | AssemblyAI | WebSocket | 真のリアルタイム、高精度 |
 
 **ソース**: `js/app.js` の `ALLOWED_STT_PROVIDERS`
 

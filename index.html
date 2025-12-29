@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com wss://api.assemblyai.com https://api.assemblyai.com wss://streaming.assemblyai.com https://streaming.assemblyai.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; manifest-src 'self';">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; manifest-src 'self';">
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
@@ -1750,7 +1750,6 @@
           <select id="transcriptProvider" class="model-select" title="文字起こしAPI（STT専用）">
             <option value="openai_stt" selected>🎤 OpenAI Whisper</option>
             <option value="deepgram_realtime">⚡ Deepgram</option>
-            <option value="assemblyai_realtime">🔊 AssemblyAI</option>
           </select>
         </div>
         <div class="details-row">
@@ -1822,10 +1821,6 @@
               <span class="cost-item-label">Deepgram:</span>
               <span id="deepgramTranscriptCost">¥0</span>
             </div>
-            <div class="cost-item">
-              <span class="cost-item-label">AssemblyAI:</span>
-              <span id="assemblyaiTranscriptCost">¥0</span>
-            </div>
           </div>
           <div class="cost-section">
             <div class="cost-section-title">📈 レート</div>
@@ -1836,10 +1831,6 @@
             <div class="cost-item">
               <span class="cost-item-label">Deepgram:</span>
               <span>~¥0.36/分</span>
-            </div>
-            <div class="cost-item">
-              <span class="cost-item-label">AssemblyAI:</span>
-              <span>~¥0.55/分</span>
             </div>
           </div>
         </div>
@@ -2097,7 +2088,6 @@
   <script src="js/stt/index.js" defer></script>
   <script src="js/stt/providers/openai_chunked.js" defer></script>
   <script src="js/stt/providers/deepgram_ws.js" defer></script>
-  <script src="js/stt/providers/assemblyai_ws.js" defer></script>
   <!-- メインアプリ -->
   <script src="js/app.js" defer></script>
 </body>
