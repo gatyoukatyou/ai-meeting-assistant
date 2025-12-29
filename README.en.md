@@ -2,9 +2,14 @@
 
 [🇯🇵 日本語](README.md) | 🇺🇸 English
 
+[![Version](https://img.shields.io/badge/version-v0.9.1-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v0.9.1)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 A lightweight, browser-based meeting assistant that records audio, transcribes speech, and generates summaries, opinions, ideas, and minutes using AI.
 
 **🚀 Try it now**: https://gatyoukatyou.github.io/ai-meeting-assistant/
+
+> ⚠️ **Important**: This app is **free**, but AI service fees (Gemini, OpenAI, etc.) are billed separately by each provider. Recording meetings requires **consent from all participants**.
 
 ## Features
 
@@ -14,6 +19,7 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - 💰 **Cost tracking** – See estimated usage costs in real-time
 - 📥 **Export to Markdown** – Save meeting content and AI responses as a file
 - 🔒 **Secure storage** – API keys are encrypted and stored locally only
+- 🎨 **Theme switcher** – Choose from 6 accent color themes (v0.9.1+)
 
 ## Security
 
@@ -234,9 +240,10 @@ MIT License – Free to use and modify
 
 ## Version
 
-v0.9.0 – PWA & Mobile Optimization
+**v0.9.1** – Security Enhancements & Theme Switcher (2024-12-28)
 
-See [CHANGELOG.md](docs/CHANGELOG.md) for update history.
+- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v0.9.1)
+- [Change Log](docs/CHANGELOG.md)
 
 ## Support
 

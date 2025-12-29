@@ -2,9 +2,14 @@
 
 🇯🇵 日本語 | [🇺🇸 English](README.en.md)
 
+[![Version](https://img.shields.io/badge/version-v0.9.1-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v0.9.1)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+
 会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行うWebアプリです。
 
 **🚀 今すぐ使う**: https://gatyoukatyou.github.io/ai-meeting-assistant/
+
+> ⚠️ **重要**: このアプリは**無料**ですが、AIサービス（Gemini, OpenAI等）の利用料は各社から別途請求されます。会議の録音には**参加者全員の同意**が必要です。
 
 ## できること
 
@@ -14,6 +19,7 @@
 - 💰 **料金がわかる** - 今どのくらいお金がかかっているか見えます
 - 📥 **記録を保存できる** - 会議の内容とAIの回答をファイルにできます
 - 🔒 **安全** - あなたのAPIキーは暗号化して、あなたのパソコンだけに保存されます
+- 🎨 **テーマ切替** - 6種類のアクセントカラーから好みを選べます（v0.9.1〜）
 
 ## 安全性について
 
@@ -229,9 +235,10 @@ MIT License - 自由に使ってOKです
 
 ## バージョン
 
-v0.9.0 - PWA化・スマホ最適化版
+**v0.9.1** - セキュリティ強化・テーマ機能追加（2024-12-28）
 
-変更履歴: [CHANGELOG.md](docs/CHANGELOG.md)
+- [最新リリース](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v0.9.1)
+- [変更履歴](docs/CHANGELOG.md)
 
 ## 困ったときは
 
