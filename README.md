@@ -45,9 +45,26 @@
 - パソコンとブラウザ（Chrome か Edge がおすすめ）
 - マイク（話すため）
 - 文字起こし用のAPIキー（下記のどれか1つが必要）
-  - Gemini API **または** OpenAI API
+  - OpenAI API **または** Deepgram API **または** AssemblyAI API
 - AI回答用のAPIキー（任意。より賢い回答が欲しい場合）
   - Gemini / Claude / OpenAI / Groq から選べます
+
+## 対応プロバイダー
+
+### 文字起こし（STT）
+| プロバイダー | タイプ | 特徴 |
+|-------------|--------|------|
+| OpenAI Whisper | チャンク送信 | 安定、疑似リアルタイム |
+| Deepgram | WebSocket | 真のリアルタイム、低遅延 |
+| AssemblyAI | WebSocket | 真のリアルタイム、高精度 |
+
+### AI回答（LLM）
+| プロバイダー | モデル |
+|-------------|--------|
+| Google Gemini | gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-pro |
+| Anthropic Claude | claude-sonnet-4, claude-3.5-sonnet |
+| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo |
+| Groq | llama-3.3-70b, llama-3.1-70b, llama-3.1-8b |
 
 ## 使い方
 
@@ -94,15 +111,17 @@
 ### 2. APIキーを設定する
 
 1. 初めて開くと説明が出るので、「設定を開始する」をクリック
-2. 文字起こし用のAPIキーを入力（Gemini か OpenAI のどちらか）
-3. もっと賢いAI回答が欲しければ、他のAIのキーも入力
+2. 文字起こし用のAPIキーを入力（OpenAI, Deepgram, AssemblyAI のいずれか）
+3. もっと賢いAI回答が欲しければ、LLM用のAPIキーも入力
 4. 「保存」をクリック
 
 **APIキーはここで取得できます:**
 - [Google AI Studio](https://aistudio.google.com/apikey) - Gemini
 - [Anthropic Console](https://console.anthropic.com/) - Claude
-- [OpenAI Platform](https://platform.openai.com/api-keys) - GPT-4
+- [OpenAI Platform](https://platform.openai.com/api-keys) - GPT-4 / Whisper
 - [Groq Console](https://console.groq.com/keys) - Groq
+- [Deepgram Console](https://console.deepgram.com/) - Deepgram
+- [AssemblyAI Dashboard](https://www.assemblyai.com/app) - AssemblyAI
 
 ### 3. 📱 スマホでホーム画面に追加（任意だが推奨）
 
@@ -126,9 +145,10 @@
 
 ### 4. 会議を録音する
 
-1. 文字起こしに使うAI（Gemini か OpenAI）を選ぶ
+1. 文字起こしに使うプロバイダーを選ぶ（OpenAI / Deepgram / AssemblyAI）
 2. 何秒ごとに文字起こしするか選ぶ（5秒/10秒/15秒/30秒/60秒/2分）
    - **スマホでは5秒または10秒がおすすめ**（リアルタイム性重視）
+   - **Deepgram/AssemblyAIはリアルタイム**（インターバル設定不要）
 3. 「🎤 録音開始」をクリック
 4. マイクの使用を許可する
 5. 話すと自動で文字になります
