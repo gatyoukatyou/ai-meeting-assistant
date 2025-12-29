@@ -99,6 +99,87 @@
       font-size: 1.25rem;
     }
 
+    /* 改善① ヘッダーアイコン群の役割明確化 */
+    .header-icon-group {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+    }
+
+    /* 🌙 テーマトグル：控えめに */
+    #themeToggleBtn {
+      font-size: 1.1rem;
+      opacity: 0.75;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    #themeToggleBtn:hover {
+      opacity: 1;
+      background: var(--border);
+    }
+
+    /* ⚙️ 設定：クリック可能感を強く */
+    .header-settings-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.25rem;
+      padding: 0.375rem 0.625rem;
+      font-size: 0.8rem;
+      color: var(--text);
+      background: var(--border-light);
+      border-radius: 0.375rem;
+      text-decoration: none;
+      transition: background 0.15s, box-shadow 0.15s;
+      border: 1px solid var(--border);
+    }
+    .header-settings-link:hover {
+      background: var(--border);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .header-settings-link .settings-icon {
+      font-size: 1rem;
+    }
+
+    /* 言語切替：ドロップダウン感を明示 */
+    #languageSwitcher {
+      color: var(--text-secondary);
+      border-color: var(--border);
+      background: var(--card-bg);
+      cursor: pointer;
+    }
+    #languageSwitcher:hover {
+      border-color: var(--text-secondary);
+    }
+
+    /* 改善④ 文字サイズ階調 */
+    .setting-hint,
+    .interval-hint,
+    .cost-item-label {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+    /* 数値・金額を太字に */
+    #transcriptCostTotal,
+    #llmCostTotal,
+    #totalCost,
+    .cost-item span:last-child {
+      font-weight: 600;
+    }
+    /* コストセクションタイトル */
+    .cost-section-title {
+      font-weight: 600;
+      color: var(--text);
+      font-size: 0.75rem;
+    }
+
+    /* 改善⑤ エクスポートボタンの主張を抑える */
+    .details-export-btn {
+      opacity: 0.6;
+      transition: opacity 0.15s, background 0.15s;
+    }
+    .details-export-btn:hover {
+      opacity: 1;
+    }
+
     .header-main {
       display: flex;
       align-items: center;
@@ -108,9 +189,18 @@
 
     .record-btn-main {
       flex: 1;
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
+      padding: 0.875rem 1.75rem;
+      font-size: 1.0625rem;
       font-weight: 600;
+      box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+      transition: all 0.2s;
+    }
+    .record-btn-main:hover:not(:disabled) {
+      transform: translateY(-1px);
+      box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+    }
+    .record-btn-main.btn-danger {
+      box-shadow: 0 4px 12px rgba(220, 38, 38, 0.3);
     }
 
     .header-details {
@@ -434,7 +524,7 @@
 
     .panel-header {
       padding: 1.125rem 1.25rem;
-      border-bottom: 1px solid var(--border);
+      border-bottom: 2px solid var(--primary);
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -442,7 +532,7 @@
     }
 
     .panel-title {
-      font-size: 1rem;
+      font-size: 1.0625rem;
       font-weight: 600;
       display: flex;
       align-items: center;
@@ -1738,13 +1828,13 @@
   <header class="header">
     <div class="header-top">
       <h1><img src="icon-192.png" alt="" class="header-icon"> <span data-i18n="app.title">AI参加会議</span></h1>
-      <div style="display: flex; align-items: center; gap: 0.5rem;">
+      <div class="header-icon-group">
         <select id="languageSwitcher" class="model-select" style="min-width: 90px; padding: 0.375rem 0.5rem; font-size: 0.8rem;">
           <option value="ja">🇯🇵 日本語</option>
           <option value="en">🇺🇸 English</option>
         </select>
         <button type="button" class="btn btn-ghost header-settings-btn" id="themeToggleBtn" title="ダークモードに切替">🌙</button>
-        <a href="config.html" class="btn btn-ghost header-settings-btn" data-i18n-title="common.settings">⚙️</a>
+        <a href="config.html" class="header-settings-link" data-i18n-title="common.settings"><span class="settings-icon">⚙️</span><span data-i18n="common.settings">設定</span></a>
       </div>
     </div>
 
