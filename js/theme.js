@@ -1,24 +1,34 @@
-// js/theme.js - Color theme management (accent colors + display mode)
+// js/theme.js - Theme management (display mode + accent colors)
+// Handles Light/Dark mode toggle and accent color palettes
 (function () {
   'use strict';
 
-  // ========== Display Theme (Light/Dark/Auto) ==========
+  // ========== Display Theme (Light/Dark - Manual only, no auto) ==========
   var DISPLAY_THEME_KEY = 'display_theme';
-  var DEFAULT_DISPLAY_THEME = 'auto';
+  var DEFAULT_DISPLAY_THEME = 'light';
 
-  function getSystemPrefersDark() {
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-
-  function getSavedDisplayTheme() {
+  /**
+   * Get current theme from storage
+   * @returns {'light'|'dark'}
+   */
+  function getTheme() {
     try {
-      return localStorage.getItem(DISPLAY_THEME_KEY) || DEFAULT_DISPLAY_THEME;
+      var saved = localStorage.getItem(DISPLAY_THEME_KEY);
+      // Only accept 'light' or 'dark', fallback to default
+      if (saved === 'light' || saved === 'dark') {
+        return saved;
+      }
+      return DEFAULT_DISPLAY_THEME;
     } catch (e) {
       return DEFAULT_DISPLAY_THEME;
     }
   }
 
-  function saveDisplayTheme(theme) {
+  /**
+   * Save theme to storage
+   * @param {'light'|'dark'} theme
+   */
+  function saveTheme(theme) {
     try {
       localStorage.setItem(DISPLAY_THEME_KEY, theme);
     } catch (e) {
@@ -26,51 +36,122 @@
     }
   }
 
-  function getEffectiveDisplayTheme(savedTheme) {
-    if (savedTheme === 'auto') {
-      return getSystemPrefersDark() ? 'dark' : 'light';
-    }
-    return savedTheme;
-  }
+  /**
+   * Apply theme to document
+   * @param {'light'|'dark'} theme
+   */
+  function applyTheme(theme) {
+    // Ensure only valid values
+    var validTheme = (theme === 'dark') ? 'dark' : 'light';
+    document.documentElement.setAttribute('data-display-theme', validTheme);
 
-  function applyDisplayTheme(theme) {
-    var effective = getEffectiveDisplayTheme(theme);
-    document.documentElement.setAttribute('data-display-theme', effective);
     // Update theme-color meta for mobile browsers
     var metaTheme = document.querySelector('meta[name="theme-color"]');
     if (metaTheme) {
-      // Use darker color for dark mode
-      var bgColor = effective === 'dark' ? '#0f172a' : '#f9fafb';
+      var bgColor = validTheme === 'dark' ? '#0f172a' : '#f9fafb';
       metaTheme.setAttribute('content', bgColor);
+    }
+
+    // Update toggle button icon if it exists
+    syncThemeToggleUI(validTheme);
+  }
+
+  /**
+   * Set theme: save and apply
+   * @param {'light'|'dark'} theme
+   */
+  function setTheme(theme) {
+    var validTheme = (theme === 'dark') ? 'dark' : 'light';
+    saveTheme(validTheme);
+    applyTheme(validTheme);
+  }
+
+  /**
+   * Toggle between light and dark
+   */
+  function toggleTheme() {
+    var current = getTheme();
+    var next = (current === 'dark') ? 'light' : 'dark';
+    setTheme(next);
+  }
+
+  /**
+   * Initialize theme on page load
+   */
+  function initTheme() {
+    var theme = getTheme();
+    applyTheme(theme);
+  }
+
+  /**
+   * Sync toggle button UI with current theme
+   * @param {'light'|'dark'} theme
+   */
+  function syncThemeToggleUI(theme) {
+    // Update toggle button (index.html)
+    var toggleBtn = document.getElementById('themeToggleBtn');
+    if (toggleBtn) {
+      // Show sun for dark mode (click to switch to light), moon for light mode
+      toggleBtn.textContent = (theme === 'dark') ? '☀️' : '🌙';
+      toggleBtn.setAttribute('title', theme === 'dark' ? 'ライトモードに切替' : 'ダークモードに切替');
+    }
+
+    // Update select element (config.html)
+    var selectEl = document.getElementById('displayTheme');
+    if (selectEl && selectEl.value !== theme) {
+      selectEl.value = theme;
     }
   }
 
-  function applySavedDisplayTheme() {
-    applyDisplayTheme(getSavedDisplayTheme());
+  /**
+   * Bind toggle button (for index.html)
+   * @param {HTMLElement} btnEl
+   */
+  function bindThemeToggle(btnEl) {
+    if (!btnEl) return;
+
+    // Set initial state
+    var theme = getTheme();
+    syncThemeToggleUI(theme);
+
+    // Add click handler
+    btnEl.addEventListener('click', function(e) {
+      e.preventDefault();
+      toggleTheme();
+    });
   }
 
+  /**
+   * Bind select element (for config.html)
+   * @param {HTMLElement} selectEl
+   */
   function bindDisplayThemeSelect(selectEl) {
     if (!selectEl) return;
-    var saved = getSavedDisplayTheme();
-    selectEl.value = saved;
-    applyDisplayTheme(saved);
 
+    // Set initial value
+    var theme = getTheme();
+    selectEl.value = theme;
+    applyTheme(theme);
+
+    // Add change handler
     selectEl.addEventListener('change', function(e) {
-      var value = e.target.value;
-      applyDisplayTheme(value);
-      saveDisplayTheme(value);
+      setTheme(e.target.value);
     });
   }
 
-  // Listen for OS theme changes (for auto mode)
-  if (window.matchMedia) {
-    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
-      var saved = getSavedDisplayTheme();
-      if (saved === 'auto') {
-        applyDisplayTheme('auto');
+  // Storage event listener for cross-tab synchronization
+  window.addEventListener('storage', function(e) {
+    if (e.key === DISPLAY_THEME_KEY) {
+      var newTheme = e.newValue;
+      if (newTheme === 'light' || newTheme === 'dark') {
+        applyTheme(newTheme);
       }
-    });
-  }
+    }
+    // Also sync accent color changes
+    if (e.key === STORAGE_KEY) {
+      applyColorPalette(e.newValue || DEFAULT_COLOR_THEME);
+    }
+  });
 
   // ========== Color Palette (Accent Colors) ==========
   var colorPalettes = {
@@ -119,39 +200,33 @@
   };
 
   var STORAGE_KEY = 'color_theme';
-  var DEFAULT_THEME = 'indigo'; // Match current default
+  var DEFAULT_COLOR_THEME = 'indigo';
 
   function applyColorPalette(paletteName) {
     var p = colorPalettes[paletteName];
     if (!p) {
-      p = colorPalettes[DEFAULT_THEME];
+      p = colorPalettes[DEFAULT_COLOR_THEME];
     }
 
     var root = document.documentElement;
-    // Set accent variables
     root.style.setProperty('--accent', p.accent);
     root.style.setProperty('--accent-hover', p.accentHover);
     root.style.setProperty('--accent-light', p.accentLight);
     root.style.setProperty('--accent-muted', p.accentMuted);
-    // Also update --primary for backward compatibility with existing CSS
+    // Also update --primary for backward compatibility
     root.style.setProperty('--primary', p.accent);
     root.style.setProperty('--primary-hover', p.accentHover);
-    // Update theme-color meta tag
-    var metaTheme = document.querySelector('meta[name="theme-color"]');
-    if (metaTheme) {
-      metaTheme.setAttribute('content', p.accent);
-    }
   }
 
-  function getSavedTheme() {
+  function getSavedColorTheme() {
     try {
-      return localStorage.getItem(STORAGE_KEY) || DEFAULT_THEME;
+      return localStorage.getItem(STORAGE_KEY) || DEFAULT_COLOR_THEME;
     } catch (e) {
-      return DEFAULT_THEME;
+      return DEFAULT_COLOR_THEME;
     }
   }
 
-  function saveTheme(themeName) {
+  function saveColorTheme(themeName) {
     try {
       localStorage.setItem(STORAGE_KEY, themeName);
     } catch (e) {
@@ -159,20 +234,20 @@
     }
   }
 
-  function applySavedTheme() {
-    applyColorPalette(getSavedTheme());
+  function applySavedColorTheme() {
+    applyColorPalette(getSavedColorTheme());
   }
 
   function bindThemeSelect(selectEl) {
     if (!selectEl) return;
-    var saved = getSavedTheme();
+    var saved = getSavedColorTheme();
     selectEl.value = saved;
     applyColorPalette(saved);
 
     selectEl.addEventListener('change', function(e) {
       var value = e.target.value;
       applyColorPalette(value);
-      saveTheme(value);
+      saveColorTheme(value);
     });
   }
 
@@ -182,21 +257,27 @@
 
   // Expose API
   window.AIMeetingTheme = {
+    // Display theme (light/dark)
+    getTheme: getTheme,
+    setTheme: setTheme,
+    toggleTheme: toggleTheme,
+    applyTheme: applyTheme,
+    initTheme: initTheme,
+    bindThemeToggle: bindThemeToggle,
+    bindDisplayThemeSelect: bindDisplayThemeSelect,
     // Color palette (accent colors)
     colorPalettes: colorPalettes,
     applyColorPalette: applyColorPalette,
-    applySavedTheme: applySavedTheme,
+    applySavedTheme: applySavedColorTheme,
     bindThemeSelect: bindThemeSelect,
-    getSavedTheme: getSavedTheme,
+    getSavedTheme: getSavedColorTheme,
     getPaletteNames: getPaletteNames,
-    // Display theme (light/dark/auto)
-    applyDisplayTheme: applyDisplayTheme,
-    applySavedDisplayTheme: applySavedDisplayTheme,
-    bindDisplayThemeSelect: bindDisplayThemeSelect,
-    getSavedDisplayTheme: getSavedDisplayTheme
+    // Legacy aliases (for backward compatibility)
+    applySavedDisplayTheme: initTheme,
+    getSavedDisplayTheme: getTheme
   };
 
   // Auto-apply on load (before DOMContentLoaded for faster paint)
-  applySavedDisplayTheme();
-  applySavedTheme();
+  initTheme();
+  applySavedColorTheme();
 })();

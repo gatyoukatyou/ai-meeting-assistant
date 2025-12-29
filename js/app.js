@@ -367,6 +367,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   // i18n初期化（言語切り替えに必要）
   await I18n.init();
 
+  // テーマトグルボタンの初期化
+  if (window.AIMeetingTheme && document.getElementById('themeToggleBtn')) {
+    window.AIMeetingTheme.bindThemeToggle(document.getElementById('themeToggleBtn'));
+  }
+
   // セキュリティオプション：ブラウザを閉じたらクリア
   if (SecureStorage.getOption('clearOnClose', false)) {
     // sessionStorageにフラグがなければ、新しいセッション
