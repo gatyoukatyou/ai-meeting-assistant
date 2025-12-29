@@ -120,8 +120,8 @@
     "backToMain": "Back to main screen",
     "security": {
       "title": "API Key Security",
-      "description": "API keys are encrypted within this app and stored in browser local storage. They are never sent to external servers.",
-      "encrypted": "Encrypted local storage (never stored as plain text)",
+      "description": "API keys are obfuscated within this app and stored in browser local storage. They are never sent to external servers.",
+      "encrypted": "Obfuscated local storage (never stored as plain text)",
       "httpsOnly": "Only sent via HTTPS during API calls",
       "isolated": "Inaccessible from other websites",
       "exportable": "Import/export settings supported"
@@ -204,7 +204,7 @@
       "export": "Export",
       "import": "Import",
       "clearAll": "Delete All",
-      "hint": "Export files are encrypted. Can be used for migrating to other devices."
+      "hint": "Export files are password-protected. Can be used for migrating to other devices."
     },
     "validation": {
       "valid": "Valid",
@@ -334,7 +334,7 @@
       "description": "AI participates in your meetings in real-time, providing transcription, summaries, opinions, and ideas.",
       "feature1": "High-precision voice transcription (OpenAI Whisper)",
       "feature2": "Support for multiple AI models",
-      "feature3": "API keys encrypted and stored locally",
+      "feature3": "API keys obfuscated and stored locally",
       "feature4": "Real-time display of estimated usage costs",
       "terms": "By starting, you agree to the Terms of Service and Privacy Policy.",
       "skipButton": "Configure later",

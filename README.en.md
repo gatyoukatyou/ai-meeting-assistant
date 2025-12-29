@@ -9,36 +9,44 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 
 **🚀 Try it now**: https://gatyoukatyou.github.io/ai-meeting-assistant/
 
-> ⚠️ **Important**: This app is **free**, but AI service fees (Gemini, OpenAI, etc.) are billed separately by each provider. Recording meetings requires **consent from all participants**.
+> ⚠️ **Important**: This app is **free**, but AI service fees (Gemini, OpenAI, etc.) are billed separately by each provider. **Get consent from all participants** before recording or transcribing meetings.
 
 ## Features
 
 - 🎤 **Real-time transcription** – Speech is automatically converted to text
 - 💬 **AI assistance** – Ask for summaries, opinions, ideas, or custom questions
-- 🤖 **Multiple AI providers** – Choose from Gemini, Claude, GPT-4, or Groq
-- 💰 **Cost tracking** – See estimated usage costs in real-time
+- 🤖 **Multiple AI providers** – Choose from multiple AI providers (BYOK: Bring Your Own Key)
+- 💰 **Cost estimates** – View estimated costs (actual charges may vary by provider)
 - 📥 **Export to Markdown** – Save meeting content and AI responses as a file
-- 🔒 **Secure storage** – API keys are encrypted and stored locally only
+- 🔒 **Local storage** – API keys are stored only in your browser (obfuscated)
 - 🎨 **Theme switcher** – Choose from 6 accent color themes
 
 ## Security
 
-This app protects your API keys:
+### ⚠️ Important Disclaimers
 
-- ✅ Keys are **encrypted** and stored only in your browser
-- ✅ **Never sent** to external servers
+- This app's protection is **not perfect**
+- API key security **cannot be guaranteed** on shared or public PCs
+- Malware or browser extensions may still access your keys
+- **Manually delete** keys when done, or **enable auto-delete**
+
+### Protection Features
+
+- ✅ Keys are **obfuscated** (XOR + device-specific key) and stored only in your browser
+- ✅ **Never sent** to external servers (direct API calls only)
 - ✅ Optional **auto-delete** when browser closes (for shared PCs)
-- ✅ **Backup/restore** functionality for transferring to other devices
+- ✅ **Backup/restore** functionality with password protection (XOR)
 
 See [Security Details](docs/SECURITY.md) for more information.
 
-### Important Security Notes
+### Important Security Rules
 
 - **Never enter your API key on unofficial URLs**
   - Official: https://gatyoukatyou.github.io/ai-meeting-assistant/
   - Fake sites or modified copies may steal your keys
 - **On shared PCs, enable "Delete on browser close"**
   - Settings > Security Settings
+- **Manually delete keys when finished** (recommended)
 
 ## Requirements
 
@@ -79,6 +87,8 @@ Just visit: 👉 **https://gatyoukatyou.github.io/ai-meeting-assistant/**
 
 <details>
 <summary><b>Local development (for developers)</b></summary>
+
+> ⚠️ **Note**: Even when running locally, transcription and AI features require **internet connection** for API calls.
 
 1. Clone or download this repository
 2. Navigate to the project folder
@@ -148,7 +158,8 @@ During or after the meeting, you can ask the AI:
 - **Ideas** – Get suggestions
 - **Custom question** – Ask anything
 
-**Tip:** Select specific text before asking to get responses about just that section.
+**💡 Specification: Text Selection**
+Select specific text before asking to get responses about just that section. Useful when you want to ask about a specific part of a long meeting.
 
 ### 6. Export Your Notes
 
@@ -161,7 +172,7 @@ To transfer settings to another device:
 **Export:**
 1. Go to Settings → "Export"
 2. Set a password
-3. Download the encrypted file
+3. Download the password-protected file
 
 **Import:**
 1. Go to Settings → "Import"
@@ -181,13 +192,16 @@ This app is **free to use**, but the AI services have their own usage-based pric
 ## FAQ
 
 **Q: Is internet required?**
-A: Yes. Transcription (OpenAI Whisper / Deepgram) and AI features (Gemini / Claude / OpenAI / Groq) require internet connections. This app uses BYOK (Bring Your Own Key) model – API costs are usage-based and billed directly by each provider. Offline mode is not supported.
+A: Yes. Transcription (OpenAI Whisper / Deepgram) and AI features (Gemini / Claude / OpenAI / Groq) require internet connections. This app uses BYOK (Bring Your Own Key) model – you bring your own API keys and pay each provider directly based on usage. The local version also requires internet (only the UI runs locally). Offline mode is not supported.
 
 **Q: What if I don't set up LLM keys?**
 A: Transcription will still work. AI features (summary, opinions, ideas) will be unavailable.
 
 **Q: What about privacy?**
 A: Audio and transcripts are sent only to your selected providers. Nothing is sent to the app developer.
+
+**Q: Is it dangerous if my API key leaks?**
+A: Yes. Others could use your key and charges would appear on your account. This app obfuscates keys in browser storage, but protection is not perfect. On shared PCs, enable "auto-delete" and manually delete keys when done.
 
 **Q: What if I get an error?**
 A: Check that your API keys are correct and that you have available credits with the provider.
