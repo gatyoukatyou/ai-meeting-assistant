@@ -56,6 +56,7 @@
       "transcriptApi": "文字起こしAPI",
       "audioLanguage": "音声言語",
       "sendInterval": "送信間隔",
+      "intervalHint": "リアルタイムストリーミング",
       "langJa": "日本語",
       "langEn": "English",
       "langAuto": "Auto（自動検出）"
@@ -184,6 +185,13 @@
         "gpt4Turbo": "gpt-4-turbo（互換用）",
         "llama33": "llama-3.3-70b（推奨）",
         "llama31_8b": "llama-3.1-8b（低コスト）"
+      },
+      "customModelWarning": "⚠️ カスタムモデル: 未検証のため、APIの仕様変更で動作しない場合があります",
+      "customModelPlaceholder": {
+        "gemini": "カスタムモデル（例: gemini-2.0-flash-exp）",
+        "claude": "カスタムモデル（例: claude-opus-4-20250514）",
+        "openai": "カスタムモデル（例: gpt-4o-2024-08-06）",
+        "groq": "カスタムモデル（例: llama-3.3-70b-versatile）"
       }
     },
     "options": {
@@ -195,7 +203,8 @@
       "costAlertEnabled": "上限の80%で警告を表示"
     },
     "theme": {
-      "title": "カラーテーマ",
+      "title": "外観",
+      "displayLabel": "表示テーマ",
       "label": "アクセントカラー"
     },
     "backup": {
@@ -358,6 +367,9 @@
     "en": "English"
   },
   "theme": {
+    "auto": "自動（OS設定に従う）",
+    "light": "ライト",
+    "dark": "ダーク",
     "sky": "スカイブルー",
     "indigo": "インディゴ",
     "emerald": "エメラルド",

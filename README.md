@@ -2,7 +2,7 @@
 
 🇯🇵 日本語 | [🇺🇸 English](README.en.md)
 
-[![Version](https://img.shields.io/badge/version-v1.0.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.0)
+[![Version](https://img.shields.io/badge/version-v1.0.1-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.1)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行うWebアプリです。
@@ -19,7 +19,8 @@
 - 💰 **コスト目安がわかる** - 推定コストを表示（実請求額は各プロバイダーの課金仕様により前後します）
 - 📥 **記録を保存できる** - 会議の内容とAIの回答をファイルにできます
 - 🔒 **ローカル保存** - APIキーはあなたのブラウザ内にのみ保存（難読化処理あり）
-- 🎨 **テーマ切替** - 6種類のアクセントカラーから好みを選べます
+- 🎨 **テーマ切替** - ダークモード対応、6種類のアクセントカラーから好みを選べます
+- ⚡ **カスタムモデル** - 各LLMプロバイダーで任意のモデル名を指定可能（新モデルをすぐに試せる）
 
 ## 安全性について
 
@@ -263,9 +264,13 @@ MIT License - 自由に使ってOKです
 
 ## バージョン
 
-**v1.0.0** - 初回公開（2024-12-29）
+**v1.0.1** - UX改善（2024-12-29）
 
-- [最新リリース](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.0)
+- ダークモード対応
+- カスタムモデル入力機能
+- Deepgram UI整合
+
+- [最新リリース](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.1)
 - [変更履歴](docs/CHANGELOG.md)
 
 ## 困ったときは

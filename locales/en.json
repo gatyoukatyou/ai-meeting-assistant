@@ -56,6 +56,7 @@
       "transcriptApi": "Transcription API",
       "audioLanguage": "Audio Language",
       "sendInterval": "Send Interval",
+      "intervalHint": "Real-time streaming",
       "langJa": "Japanese",
       "langEn": "English",
       "langAuto": "Auto (detect)"
@@ -185,6 +186,13 @@
         "gpt4Turbo": "gpt-4-turbo (Legacy)",
         "llama33": "llama-3.3-70b (Recommended)",
         "llama31_8b": "llama-3.1-8b (Low cost)"
+      },
+      "customModelWarning": "⚠️ Custom model: Not verified, may not work due to API changes",
+      "customModelPlaceholder": {
+        "gemini": "Custom model (e.g. gemini-2.0-flash-exp)",
+        "claude": "Custom model (e.g. claude-opus-4-20250514)",
+        "openai": "Custom model (e.g. gpt-4o-2024-08-06)",
+        "groq": "Custom model (e.g. llama-3.3-70b-versatile)"
       }
     },
     "options": {
@@ -196,7 +204,8 @@
       "costAlertEnabled": "Show warning at 80% of limit"
     },
     "theme": {
-      "title": "Color Theme",
+      "title": "Appearance",
+      "displayLabel": "Display theme",
       "label": "Accent color"
     },
     "backup": {
@@ -359,6 +368,9 @@
     "en": "English"
   },
   "theme": {
+    "auto": "Auto (OS setting)",
+    "light": "Light",
+    "dark": "Dark",
     "sky": "Sky",
     "indigo": "Indigo",
     "emerald": "Emerald",

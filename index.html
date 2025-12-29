@@ -37,6 +37,26 @@
       --accent-border-green: #dcfce7;
     }
 
+    /* Dark mode variables */
+    [data-display-theme="dark"] {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border: #334155;
+      --border-light: #1e293b;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-lg: 0 4px 6px -1px rgba(0,0,0,0.4);
+      --accent-blue: #1e3a5f;
+      --accent-green: #14532d;
+      --accent-border-blue: #1e40af;
+      --accent-border-green: #166534;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -1760,7 +1780,7 @@
             <option value="auto">🌐 Auto（自動検出）</option>
           </select>
         </div>
-        <div class="details-row">
+        <div class="details-row" id="intervalRow">
           <label class="details-label" data-i18n="app.details.sendInterval">送信間隔</label>
           <select id="transcriptInterval" class="model-select">
             <option value="5">5秒</option>
@@ -1770,6 +1790,7 @@
             <option value="60">60秒</option>
             <option value="120">2分</option>
           </select>
+          <span class="interval-hint" id="intervalHint" style="display: none; font-size: 0.75rem; color: var(--text-secondary); margin-left: 0.5rem;" data-i18n="app.details.intervalHint">リアルタイム</span>
         </div>
         <div class="details-row">
           <button class="btn btn-secondary details-export-btn" id="openExportBtn" data-i18n-title="common.export"><span data-i18n="common.export">📥 出力</span></button>

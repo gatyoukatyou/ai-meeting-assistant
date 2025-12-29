@@ -85,6 +85,35 @@ const ALLOWED_STT_MODELS = new Set([
 let currentSTTProvider = null;
 let pcmStreamProcessor = null;
 
+// =====================================
+// STTプロバイダUIの更新
+// =====================================
+// Streaming系（Deepgram）では送信間隔設定を無効化し、ヒントを表示
+function updateSTTProviderUI(providerId) {
+  var intervalSelect = document.getElementById('transcriptInterval');
+  var intervalHint = document.getElementById('intervalHint');
+
+  if (!intervalSelect) return;
+
+  var isStreaming = STREAMING_PROVIDERS.has(providerId);
+
+  if (isStreaming) {
+    // ストリーミング系: 送信間隔を無効化、ヒント表示
+    intervalSelect.disabled = true;
+    intervalSelect.style.opacity = '0.5';
+    if (intervalHint) {
+      intervalHint.style.display = 'inline';
+    }
+  } else {
+    // チャンク系: 送信間隔を有効化、ヒント非表示
+    intervalSelect.disabled = false;
+    intervalSelect.style.opacity = '1';
+    if (intervalHint) {
+      intervalHint.style.display = 'none';
+    }
+  }
+}
+
 // コスト管理（詳細版）
 let costs = {
   transcript: {
@@ -397,6 +426,14 @@ document.addEventListener('DOMContentLoaded', async function() {
       transcriptProviderSelect.value = savedProvider;
       console.log('[Init] STT provider restored:', savedProvider);
     }
+    // 初期表示時にUIを更新
+    updateSTTProviderUI(transcriptProviderSelect.value);
+    // プロバイダ変更時にUIを更新
+    transcriptProviderSelect.addEventListener('change', function() {
+      updateSTTProviderUI(transcriptProviderSelect.value);
+      SecureStorage.setOption('sttProvider', transcriptProviderSelect.value);
+      console.log('[Settings] STT provider changed to:', transcriptProviderSelect.value);
+    });
   }
     sttLanguageSelect.value = savedLanguage;
     console.log('[Init] STT language restored:', savedLanguage);
@@ -1637,14 +1674,14 @@ function getAvailableLlm() {
   if (priority !== 'auto') {
     // 指定されたプロバイダーを優先
     if (SecureStorage.getApiKey(priority)) {
-      return { provider: priority, model: SecureStorage.getModel(priority) || getDefaultModel(priority) };
+      return { provider: priority, model: SecureStorage.getEffectiveModel(priority, getDefaultModel(priority)) };
     }
   }
 
   // 自動選択：設定されているAPIキーを優先順位で選択
   for (const p of providers) {
     if (SecureStorage.getApiKey(p)) {
-      return { provider: p, model: SecureStorage.getModel(p) || getDefaultModel(p) };
+      return { provider: p, model: SecureStorage.getEffectiveModel(p, getDefaultModel(p)) };
     }
   }
 
@@ -1907,7 +1944,8 @@ function disableAIButtons(disabled) {
 
 // LLM呼び出し（フォールバック付き）
 async function callLLM(provider, prompt) {
-  var model = SecureStorage.getModel(provider) || getDefaultModel(provider);
+  // カスタムモデル > プリセット > デフォルトの優先順位
+  var model = SecureStorage.getEffectiveModel(provider, getDefaultModel(provider));
 
   try {
     return await callLLMOnce(provider, model, prompt);

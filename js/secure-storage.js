@@ -74,6 +74,28 @@ const SecureStorage = {
     return localStorage.getItem(`_m_${provider}`);
   },
 
+  // カスタムモデルを保存（ユーザー入力の任意モデル名）
+  setCustomModel: function(provider, model) {
+    if (!model || model.trim() === '') {
+      localStorage.removeItem(`_mc_${provider}`);
+      return;
+    }
+    localStorage.setItem(`_mc_${provider}`, model.trim());
+  },
+
+  getCustomModel: function(provider) {
+    return localStorage.getItem(`_mc_${provider}`) || '';
+  },
+
+  // 実効モデルを取得（カスタム > プリセット > デフォルト）
+  getEffectiveModel: function(provider, defaultModel) {
+    var custom = this.getCustomModel(provider);
+    if (custom) return custom;
+    var preset = this.getModel(provider);
+    if (preset) return preset;
+    return defaultModel || '';
+  },
+
   // オプションを保存
   setOption: function(key, value) {
     localStorage.setItem(`_opt_${key}`, JSON.stringify(value));
@@ -88,10 +110,10 @@ const SecureStorage = {
   exportAll: function(exportPassword) {
     const data = {
       // LLM用APIキー
-      gemini: { key: this.getApiKey('gemini'), model: this.getModel('gemini') },
-      claude: { key: this.getApiKey('claude'), model: this.getModel('claude') },
-      openai_llm: { key: this.getApiKey('openai_llm'), model: this.getModel('openai_llm') },
-      groq: { key: this.getApiKey('groq'), model: this.getModel('groq') },
+      gemini: { key: this.getApiKey('gemini'), model: this.getModel('gemini'), customModel: this.getCustomModel('gemini') },
+      claude: { key: this.getApiKey('claude'), model: this.getModel('claude'), customModel: this.getCustomModel('claude') },
+      openai_llm: { key: this.getApiKey('openai_llm'), model: this.getModel('openai_llm'), customModel: this.getCustomModel('openai_llm') },
+      groq: { key: this.getApiKey('groq'), model: this.getModel('groq'), customModel: this.getCustomModel('groq') },
       // STT用APIキー
       openai: { key: this.getApiKey('openai'), model: this.getModel('openai') },
       deepgram: { key: this.getApiKey('deepgram'), model: this.getModel('deepgram') },
@@ -141,12 +163,16 @@ const SecureStorage = {
       // LLM用APIキー
       if (data.gemini && data.gemini.key) this.setApiKey('gemini', data.gemini.key);
       if (data.gemini && data.gemini.model) this.setModel('gemini', data.gemini.model);
+      if (data.gemini && data.gemini.customModel) this.setCustomModel('gemini', data.gemini.customModel);
       if (data.claude && data.claude.key) this.setApiKey('claude', data.claude.key);
       if (data.claude && data.claude.model) this.setModel('claude', data.claude.model);
+      if (data.claude && data.claude.customModel) this.setCustomModel('claude', data.claude.customModel);
       if (data.openai_llm && data.openai_llm.key) this.setApiKey('openai_llm', data.openai_llm.key);
       if (data.openai_llm && data.openai_llm.model) this.setModel('openai_llm', data.openai_llm.model);
+      if (data.openai_llm && data.openai_llm.customModel) this.setCustomModel('openai_llm', data.openai_llm.customModel);
       if (data.groq && data.groq.key) this.setApiKey('groq', data.groq.key);
       if (data.groq && data.groq.model) this.setModel('groq', data.groq.model);
+      if (data.groq && data.groq.customModel) this.setCustomModel('groq', data.groq.customModel);
       // STT用APIキー
       if (data.openai && data.openai.key) this.setApiKey('openai', data.openai.key);
       if (data.openai && data.openai.model) this.setModel('openai', data.openai.model);
@@ -178,6 +204,7 @@ const SecureStorage = {
     ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'].forEach(p => {
       localStorage.removeItem(`_ak_${p}`);
       localStorage.removeItem(`_m_${p}`);
+      localStorage.removeItem(`_mc_${p}`);
     });
     localStorage.removeItem('_opt_clearOnClose');
     localStorage.removeItem('_opt_costAlertEnabled');

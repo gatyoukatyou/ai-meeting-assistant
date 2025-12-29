@@ -36,6 +36,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // テーマ選択の初期化
   if (window.AIMeetingTheme) {
+    window.AIMeetingTheme.bindDisplayThemeSelect(document.getElementById('displayTheme'));
     window.AIMeetingTheme.bindThemeSelect(document.getElementById('colorTheme'));
   }
 
@@ -168,19 +169,25 @@ function loadSavedSettings() {
   llmProviders.forEach(p => {
     const key = SecureStorage.getApiKey(p);
     const model = SecureStorage.getModel(p);
+    const customModel = SecureStorage.getCustomModel(p);
     const keyEl = document.getElementById(`${p}ApiKey`);
     const modelEl = document.getElementById(`${p}Model`);
+    const customModelEl = document.getElementById(`${p}CustomModel`);
     if (keyEl && key) keyEl.value = key;
     if (modelEl && model) modelEl.value = model;
+    if (customModelEl && customModel) customModelEl.value = customModel;
   });
 
   // OpenAI LLM用（STTとは別）
   const openaiLlmKey = SecureStorage.getApiKey('openai_llm');
   const openaiLlmModel = SecureStorage.getModel('openai_llm');
+  const openaiLlmCustomModel = SecureStorage.getCustomModel('openai_llm');
   const openaiLlmKeyEl = document.getElementById('openaiLlmApiKey');
   const openaiLlmModelEl = document.getElementById('openaiLlmModel');
+  const openaiLlmCustomModelEl = document.getElementById('openaiLlmCustomModel');
   if (openaiLlmKeyEl && openaiLlmKey) openaiLlmKeyEl.value = openaiLlmKey;
   if (openaiLlmModelEl && openaiLlmModel) openaiLlmModelEl.value = openaiLlmModel;
+  if (openaiLlmCustomModelEl && openaiLlmCustomModel) openaiLlmCustomModelEl.value = openaiLlmCustomModel;
 
   // STT用APIキー
   // OpenAI
@@ -230,15 +237,19 @@ async function saveSettings() {
   llmProviders.forEach(p => {
     const keyEl = document.getElementById(`${p}ApiKey`);
     const modelEl = document.getElementById(`${p}Model`);
+    const customModelEl = document.getElementById(`${p}CustomModel`);
     if (keyEl) SecureStorage.setApiKey(p, keyEl.value.trim());
     if (modelEl) SecureStorage.setModel(p, modelEl.value);
+    if (customModelEl) SecureStorage.setCustomModel(p, customModelEl.value.trim());
   });
 
   // OpenAI LLM用（STTとは別）
   const openaiLlmKeyEl = document.getElementById('openaiLlmApiKey');
   const openaiLlmModelEl = document.getElementById('openaiLlmModel');
+  const openaiLlmCustomModelEl = document.getElementById('openaiLlmCustomModel');
   if (openaiLlmKeyEl) SecureStorage.setApiKey('openai_llm', openaiLlmKeyEl.value.trim());
   if (openaiLlmModelEl) SecureStorage.setModel('openai_llm', openaiLlmModelEl.value);
+  if (openaiLlmCustomModelEl) SecureStorage.setCustomModel('openai_llm', openaiLlmCustomModelEl.value.trim());
 
   // STT用APIキーを保存
   // OpenAI

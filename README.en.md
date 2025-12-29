@@ -2,7 +2,7 @@
 
 [🇯🇵 日本語](README.md) | 🇺🇸 English
 
-[![Version](https://img.shields.io/badge/version-v1.0.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.0)
+[![Version](https://img.shields.io/badge/version-v1.0.1-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.1)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A lightweight, browser-based meeting assistant that records audio, transcribes speech, and generates summaries, opinions, ideas, and minutes using AI.
@@ -19,7 +19,8 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - 💰 **Cost estimates** – View estimated costs (actual charges may vary by provider)
 - 📥 **Export to Markdown** – Save meeting content and AI responses as a file
 - 🔒 **Local storage** – API keys are stored only in your browser (obfuscated)
-- 🎨 **Theme switcher** – Choose from 6 accent color themes
+- 🎨 **Theme switcher** – Dark mode support, 6 accent color themes
+- ⚡ **Custom models** – Specify any model name for each LLM provider (try new models immediately)
 
 ## Security
 
@@ -252,9 +253,13 @@ MIT License – Free to use and modify
 
 ## Version
 
-**v1.0.0** – Initial Release (2024-12-29)
+**v1.0.1** – UX Improvements (2024-12-29)
 
-- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.0)
+- Dark mode support
+- Custom model input feature
+- Deepgram UI alignment
+
+- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.1)
 - [Change Log](docs/CHANGELOG.md)
 
 ## Support

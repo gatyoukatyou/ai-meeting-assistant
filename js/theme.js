@@ -1,7 +1,78 @@
-// js/theme.js - Color theme management
+// js/theme.js - Color theme management (accent colors + display mode)
 (function () {
   'use strict';
 
+  // ========== Display Theme (Light/Dark/Auto) ==========
+  var DISPLAY_THEME_KEY = 'display_theme';
+  var DEFAULT_DISPLAY_THEME = 'auto';
+
+  function getSystemPrefersDark() {
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+  }
+
+  function getSavedDisplayTheme() {
+    try {
+      return localStorage.getItem(DISPLAY_THEME_KEY) || DEFAULT_DISPLAY_THEME;
+    } catch (e) {
+      return DEFAULT_DISPLAY_THEME;
+    }
+  }
+
+  function saveDisplayTheme(theme) {
+    try {
+      localStorage.setItem(DISPLAY_THEME_KEY, theme);
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
+  function getEffectiveDisplayTheme(savedTheme) {
+    if (savedTheme === 'auto') {
+      return getSystemPrefersDark() ? 'dark' : 'light';
+    }
+    return savedTheme;
+  }
+
+  function applyDisplayTheme(theme) {
+    var effective = getEffectiveDisplayTheme(theme);
+    document.documentElement.setAttribute('data-display-theme', effective);
+    // Update theme-color meta for mobile browsers
+    var metaTheme = document.querySelector('meta[name="theme-color"]');
+    if (metaTheme) {
+      // Use darker color for dark mode
+      var bgColor = effective === 'dark' ? '#0f172a' : '#f9fafb';
+      metaTheme.setAttribute('content', bgColor);
+    }
+  }
+
+  function applySavedDisplayTheme() {
+    applyDisplayTheme(getSavedDisplayTheme());
+  }
+
+  function bindDisplayThemeSelect(selectEl) {
+    if (!selectEl) return;
+    var saved = getSavedDisplayTheme();
+    selectEl.value = saved;
+    applyDisplayTheme(saved);
+
+    selectEl.addEventListener('change', function(e) {
+      var value = e.target.value;
+      applyDisplayTheme(value);
+      saveDisplayTheme(value);
+    });
+  }
+
+  // Listen for OS theme changes (for auto mode)
+  if (window.matchMedia) {
+    window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function() {
+      var saved = getSavedDisplayTheme();
+      if (saved === 'auto') {
+        applyDisplayTheme('auto');
+      }
+    });
+  }
+
+  // ========== Color Palette (Accent Colors) ==========
   var colorPalettes = {
     sky: {
       nameKey: 'theme.sky',
@@ -111,14 +182,21 @@
 
   // Expose API
   window.AIMeetingTheme = {
+    // Color palette (accent colors)
     colorPalettes: colorPalettes,
     applyColorPalette: applyColorPalette,
     applySavedTheme: applySavedTheme,
     bindThemeSelect: bindThemeSelect,
     getSavedTheme: getSavedTheme,
-    getPaletteNames: getPaletteNames
+    getPaletteNames: getPaletteNames,
+    // Display theme (light/dark/auto)
+    applyDisplayTheme: applyDisplayTheme,
+    applySavedDisplayTheme: applySavedDisplayTheme,
+    bindDisplayThemeSelect: bindDisplayThemeSelect,
+    getSavedDisplayTheme: getSavedDisplayTheme
   };
 
   // Auto-apply on load (before DOMContentLoaded for faster paint)
+  applySavedDisplayTheme();
   applySavedTheme();
 })();

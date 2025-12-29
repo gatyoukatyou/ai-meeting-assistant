@@ -28,6 +28,26 @@
       --accent-border-green: #dcfce7;
     }
 
+    /* Dark mode variables */
+    [data-display-theme="dark"] {
+      --bg: #0f172a;
+      --card-bg: #1e293b;
+      --text: #f1f5f9;
+      --text-secondary: #94a3b8;
+      --border: #334155;
+      --border-light: #1e293b;
+      --shadow: 0 1px 2px rgba(0,0,0,0.3);
+      --shadow-lg: 0 4px 6px -1px rgba(0,0,0,0.4);
+      --accent-blue: #1e3a5f;
+      --accent-green: #14532d;
+      --accent-border-blue: #1e40af;
+      --accent-border-green: #166534;
+      --danger: #ef4444;
+      --danger-hover: #dc2626;
+      --success: #10b981;
+      --warning: #f59e0b;
+    }
+
     * {
       margin: 0;
       padding: 0;
@@ -554,6 +574,12 @@
               <option value="gemini-1.5-pro-latest">gemini-1.5-pro</option>
             </select>
           </div>
+          <div class="setting-row" style="margin-top: 0.5rem;">
+            <input type="text" class="setting-input" id="geminiCustomModel" data-i18n-placeholder="config.llm.customModelPlaceholder.gemini" placeholder="Custom model (e.g. gemini-2.0-flash-exp)" style="font-size: 0.8rem;">
+          </div>
+          <div class="setting-hint custom-model-warning" style="color: var(--warning); font-size: 0.7rem;" data-i18n="config.llm.customModelWarning">
+            ⚠️ Custom model: Not verified, may not work due to API changes
+          </div>
           <div class="api-actions">
             <button type="button" class="api-action-btn btn-validate" data-validate="gemini" data-i18n="config.llm.validate">Validate</button>
             <button type="button" class="api-action-btn btn-clear" data-clear="gemini" data-i18n="config.llm.clear">Clear</button>
@@ -574,6 +600,12 @@
               <option value="claude-sonnet-4-20250514">claude-sonnet-4</option>
               <option value="claude-3-5-sonnet-20241022">claude-3.5-sonnet</option>
             </select>
+          </div>
+          <div class="setting-row" style="margin-top: 0.5rem;">
+            <input type="text" class="setting-input" id="claudeCustomModel" data-i18n-placeholder="config.llm.customModelPlaceholder.claude" placeholder="Custom model (e.g. claude-opus-4-20250514)" style="font-size: 0.8rem;">
+          </div>
+          <div class="setting-hint custom-model-warning" style="color: var(--warning); font-size: 0.7rem;" data-i18n="config.llm.customModelWarning">
+            ⚠️ Custom model: Not verified, may not work due to API changes
           </div>
           <div class="api-actions">
             <button type="button" class="api-action-btn btn-validate" data-validate="claude" data-i18n="config.llm.validate">Validate</button>
@@ -597,6 +629,12 @@
               <option value="gpt-4-turbo-2024-04-09" data-i18n="config.llm.models.gpt4Turbo">gpt-4-turbo (Legacy)</option>
             </select>
           </div>
+          <div class="setting-row" style="margin-top: 0.5rem;">
+            <input type="text" class="setting-input" id="openaiLlmCustomModel" data-i18n-placeholder="config.llm.customModelPlaceholder.openai" placeholder="Custom model (e.g. gpt-4o-2024-08-06)" style="font-size: 0.8rem;">
+          </div>
+          <div class="setting-hint custom-model-warning" style="color: var(--warning); font-size: 0.7rem;" data-i18n="config.llm.customModelWarning">
+            ⚠️ Custom model: Not verified, may not work due to API changes
+          </div>
           <div class="api-actions">
             <button type="button" class="api-action-btn btn-validate" data-validate="openai_llm" data-i18n="config.llm.validate">Validate</button>
             <button type="button" class="api-action-btn btn-clear" data-clear="openai_llm" data-i18n="config.llm.clear">Clear</button>
@@ -617,6 +655,12 @@
               <option value="llama-3.3-70b-versatile" data-i18n="config.llm.models.llama33">llama-3.3-70b (Recommended)</option>
               <option value="llama-3.1-8b-instant" data-i18n="config.llm.models.llama31_8b">llama-3.1-8b (Low cost)</option>
             </select>
+          </div>
+          <div class="setting-row" style="margin-top: 0.5rem;">
+            <input type="text" class="setting-input" id="groqCustomModel" data-i18n-placeholder="config.llm.customModelPlaceholder.groq" placeholder="Custom model (e.g. llama-3.3-70b-versatile)" style="font-size: 0.8rem;">
+          </div>
+          <div class="setting-hint custom-model-warning" style="color: var(--warning); font-size: 0.7rem;" data-i18n="config.llm.customModelWarning">
+            ⚠️ Custom model: Not verified, may not work due to API changes
           </div>
           <div class="api-actions">
             <button type="button" class="api-action-btn btn-validate" data-validate="groq" data-i18n="config.llm.validate">Validate</button>
@@ -671,7 +715,15 @@
       </div>
 
       <div class="security-options" style="background: #faf5ff; border-color: #e9d5ff;">
-        <div class="security-options-title" style="color: #7c3aed;">🎨 <span data-i18n="config.theme.title">Color Theme</span></div>
+        <div class="security-options-title" style="color: #7c3aed;">🎨 <span data-i18n="config.theme.title">Appearance</span></div>
+        <div class="setting-group" style="margin-bottom: 0.75rem;">
+          <label class="setting-label" style="font-size: 0.8rem;" data-i18n="config.theme.displayLabel">Display theme</label>
+          <select class="setting-input" id="displayTheme" style="max-width: 200px;">
+            <option value="auto" data-i18n="theme.auto">Auto (OS setting)</option>
+            <option value="light" data-i18n="theme.light">Light</option>
+            <option value="dark" data-i18n="theme.dark">Dark</option>
+          </select>
+        </div>
         <div class="setting-group" style="margin-bottom: 0;">
           <label class="setting-label" style="font-size: 0.8rem;" data-i18n="config.theme.label">Accent color</label>
           <select class="setting-input" id="colorTheme" style="max-width: 200px;">
