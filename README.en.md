@@ -2,7 +2,7 @@
 
 [🇯🇵 日本語](README.md) | 🇺🇸 English
 
-[![Version](https://img.shields.io/badge/version-v0.9.1-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v0.9.1)
+[![Version](https://img.shields.io/badge/version-v1.0.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A lightweight, browser-based meeting assistant that records audio, transcribes speech, and generates summaries, opinions, ideas, and minutes using AI.
@@ -19,7 +19,7 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - 💰 **Cost tracking** – See estimated usage costs in real-time
 - 📥 **Export to Markdown** – Save meeting content and AI responses as a file
 - 🔒 **Secure storage** – API keys are encrypted and stored locally only
-- 🎨 **Theme switcher** – Choose from 6 accent color themes (v0.9.1+)
+- 🎨 **Theme switcher** – Choose from 6 accent color themes
 
 ## Security
 
@@ -183,7 +183,7 @@ This app is **free to use**, but the AI services have their own usage-based pric
 ## FAQ
 
 **Q: Is internet required?**
-A: Yes. Transcription and AI features require API connections. Offline mode is not supported.
+A: Yes. Transcription (OpenAI Whisper / Deepgram / AssemblyAI) and AI features (Gemini / Claude / OpenAI / Groq) require internet connections. This app uses BYOK (Bring Your Own Key) model – API costs are usage-based and billed directly by each provider. Offline mode is not supported.
 
 **Q: What if I don't set up LLM keys?**
 A: Transcription will still work. AI features (summary, opinions, ideas) will be unavailable.
@@ -240,9 +240,9 @@ MIT License – Free to use and modify
 
 ## Version
 
-**v0.9.1** – Security Enhancements & Theme Switcher (2024-12-28)
+**v1.0.0** – Initial Release (2024-12-29)
 
-- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v0.9.1)
+- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.0)
 - [Change Log](docs/CHANGELOG.md)
 
 ## Support

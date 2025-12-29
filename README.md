@@ -2,7 +2,7 @@
 
 🇯🇵 日本語 | [🇺🇸 English](README.en.md)
 
-[![Version](https://img.shields.io/badge/version-v0.9.1-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v0.9.1)
+[![Version](https://img.shields.io/badge/version-v1.0.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行うWebアプリです。
@@ -19,7 +19,7 @@
 - 💰 **料金がわかる** - 今どのくらいお金がかかっているか見えます
 - 📥 **記録を保存できる** - 会議の内容とAIの回答をファイルにできます
 - 🔒 **安全** - あなたのAPIキーは暗号化して、あなたのパソコンだけに保存されます
-- 🎨 **テーマ切替** - 6種類のアクセントカラーから好みを選べます（v0.9.1〜）
+- 🎨 **テーマ切替** - 6種類のアクセントカラーから好みを選べます
 
 ## 安全性について
 
@@ -195,7 +195,7 @@ A: いいえ。あなたのブラウザで処理され、AIサービスに送ら
 A: 機能は全く同じです。オンライン版（GitHub Pages）は簡単に使えるので推奨しています。ローカル版は完全オフラインで使いたい開発者向けです。
 
 **Q: インターネット接続は必要ですか？**
-A: はい。文字起こしとAI回答のためにGemini/OpenAI APIへの接続が必要です。完全オフラインでは動作しません。
+A: はい。文字起こし（OpenAI Whisper / Deepgram / AssemblyAI）とAI回答（Gemini / Claude / OpenAI / Groq）のためにインターネット接続が必要です。このアプリはBYOK（Bring Your Own Key）方式で、各AIサービスのAPI料金は従量課金で自己負担となります。完全オフラインでは動作しません。
 
 **Q: APIキーって何ですか？**
 A: AIサービスを使うための「パスワード」のようなものです。各サービスのサイトで無料で作れます。
@@ -255,9 +255,9 @@ MIT License - 自由に使ってOKです
 
 ## バージョン
 
-**v0.9.1** - セキュリティ強化・テーマ機能追加（2024-12-28）
+**v1.0.0** - 初回公開（2024-12-29）
 
-- [最新リリース](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v0.9.1)
+- [最新リリース](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.0)
 - [変更履歴](docs/CHANGELOG.md)
 
 ## 困ったときは
