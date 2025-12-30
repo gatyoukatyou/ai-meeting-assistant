@@ -78,82 +78,205 @@
       box-shadow: 0 1px 2px rgba(0,0,0,0.03);
     }
 
-    .header-top {
+    /* ========== 新ヘッダー2段レイアウト ========== */
+    .header-row-1 {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 0.75rem;
+      width: 100%;
+      padding-bottom: 0.75rem;
+      border-bottom: 1px solid var(--border);
     }
 
-    .header h1 {
-      font-size: 1.25rem;
-      font-weight: 600;
+    .header-brand {
       display: flex;
       align-items: center;
       gap: 0.5rem;
+    }
+
+    .header-brand h1 {
+      font-size: 1.25rem;
+      font-weight: 600;
+      margin: 0;
       color: var(--text);
     }
 
-    .header-settings-btn {
-      padding: 0.5rem;
-      font-size: 1.25rem;
+    .header-brand .header-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
     }
 
-    /* 改善① ヘッダーアイコン群の役割明確化 */
-    .header-icon-group {
+    .header-preferences {
       display: flex;
       align-items: center;
-      gap: 0.375rem;
+      gap: 0.5rem;
     }
 
-    /* 🌙 テーマトグル：控えめに */
-    #themeToggleBtn {
-      font-size: 1.1rem;
-      opacity: 0.75;
-      transition: opacity 0.15s, background 0.15s;
+    .header-preferences .lang-select {
+      min-width: 110px;
+      font-size: 0.85rem;
+      padding: 0.375rem 0.5rem;
     }
-    #themeToggleBtn:hover {
+
+    .header-preferences .theme-toggle {
+      font-size: 1.1rem;
+      padding: 0.375rem;
+      opacity: 0.7;
+      transition: opacity 0.2s;
+      background: transparent;
+      border: none;
+      cursor: pointer;
+    }
+
+    .header-preferences .theme-toggle:hover {
+      opacity: 1;
+    }
+
+    .settings-link {
+      display: flex;
+      align-items: center;
+      padding: 0.375rem;
+      border-radius: 0.375rem;
+      opacity: 0.7;
+      transition: opacity 0.2s, background 0.2s;
+      text-decoration: none;
+      font-size: 1.1rem;
+    }
+
+    .settings-link:hover {
       opacity: 1;
       background: var(--border);
     }
 
-    /* ⚙️ 設定：クリック可能感を強く */
-    /* 設定リンク：PCのみ表示、モバイルは非表示 */
-    .header-settings-link {
-      display: none;
+    /* Row 2: 操作ツールバー */
+    .header-row-2 {
+      display: flex;
       align-items: center;
-      gap: 0.25rem;
-      padding: 0.375rem 0.625rem;
-      font-size: 0.8rem;
-      color: var(--text);
-      background: var(--border-light);
-      border-radius: 0.375rem;
-      text-decoration: none;
-      transition: background 0.15s, box-shadow 0.15s;
-      border: 1px solid var(--border);
-    }
-    @media (min-width: 768px) {
-      .header-settings-link {
-        display: inline-flex;
-      }
-    }
-    .header-settings-link:hover {
-      background: var(--border);
-      box-shadow: 0 2px 4px rgba(0,0,0,0.08);
-    }
-    .header-settings-link .settings-icon {
-      font-size: 1rem;
+      gap: 1rem;
+      width: 100%;
+      padding-top: 0.75rem;
     }
 
-    /* 言語切替：ドロップダウン感を明示 */
-    #languageSwitcher {
-      color: var(--text-secondary);
-      border-color: var(--border);
-      background: var(--card-bg);
-      cursor: pointer;
+    .header-record {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex-shrink: 0;
     }
-    #languageSwitcher:hover {
-      border-color: var(--text-secondary);
+
+    .header-record .record-btn {
+      padding: 0.625rem 1.25rem;
+      font-size: 0.9rem;
+      border-radius: 1.5rem;
+      font-weight: 600;
+    }
+
+    .header-record .status-badge {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.8rem;
+      border-radius: 1rem;
+      background: var(--bg-secondary, #f1f5f9);
+      color: var(--text-secondary);
+      border: 1px solid var(--border);
+    }
+
+    .header-stt-controls {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .header-stt-controls .model-select {
+      min-width: 100px;
+      max-width: 140px;
+    }
+
+    .header-stt-controls .interval-hint {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      background: var(--accent-light, #e0f2fe);
+      color: var(--accent, #0ea5e9);
+      border-radius: 1rem;
+      font-size: 0.75rem;
+      white-space: nowrap;
+    }
+
+    .header-export {
+      flex-shrink: 0;
+    }
+
+    .header-export .export-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.5rem 1rem;
+    }
+
+    /* モバイル対応（767px以下） */
+    @media (max-width: 767px) {
+      .header-row-1 {
+        padding-bottom: 0.5rem;
+      }
+
+      .header-brand h1 {
+        font-size: 1rem;
+      }
+
+      .header-brand .header-icon {
+        width: 28px;
+        height: 28px;
+      }
+
+      .header-preferences .lang-select {
+        min-width: 90px;
+        font-size: 0.8rem;
+      }
+
+      .header-row-2 {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .header-record {
+        width: 100%;
+        justify-content: center;
+      }
+
+      .header-stt-controls {
+        width: 100%;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+
+      .header-export {
+        width: 100%;
+      }
+
+      .header-export .export-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    /* 狭いPC幅対応（768px-1024px） */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .header-stt-controls .model-select {
+        min-width: 80px;
+        max-width: 110px;
+        font-size: 0.8rem;
+      }
+
+      .header-export .export-btn-text {
+        display: none;
+      }
+
+      .header-export .export-btn {
+        padding: 0.5rem 0.75rem;
+      }
     }
 
     /* 改善④ 文字サイズ階調 */
@@ -163,20 +286,6 @@
       color: var(--text-secondary);
     }
 
-    /* Real-time バッジ（PC横並び対応） */
-    .interval-hint {
-      display: inline-flex;
-      align-items: center;
-      padding: 0.25rem 0.5rem;
-      margin-left: 0.5rem;
-      background: var(--accent-light, #e0f2fe);
-      color: var(--accent, #0ea5e9);
-      border-radius: 1rem;
-      font-size: 0.65rem;
-      font-weight: 500;
-      white-space: nowrap;
-      flex-shrink: 0;
-    }
     /* 数値・金額を太字に */
     #transcriptCostTotal,
     #llmCostTotal,
@@ -184,281 +293,12 @@
     .cost-item span:last-child {
       font-weight: 600;
     }
+
     /* コストセクションタイトル */
     .cost-section-title {
       font-weight: 600;
       color: var(--text);
       font-size: 0.75rem;
-    }
-
-    /* 改善⑤ エクスポートボタンの主張を抑える */
-    .details-export-btn {
-      opacity: 0.6;
-      transition: opacity 0.15s, background 0.15s;
-    }
-    .details-export-btn:hover {
-      opacity: 1;
-    }
-
-    .header-main {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .record-btn-main {
-      flex: 1;
-      padding: 0.875rem 1.75rem;
-      font-size: 1.0625rem;
-      font-weight: 600;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.18);
-      transition: all 0.2s;
-    }
-    .record-btn-main:hover:not(:disabled) {
-      transform: translateY(-1px);
-      box-shadow: 0 6px 16px rgba(0, 0, 0, 0.24);
-    }
-    .record-btn-main.btn-danger {
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
-    }
-
-    .header-details {
-      border-top: 1px solid var(--border);
-      padding-top: 0.75rem;
-    }
-
-    .details-toggle {
-      width: 100%;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 0.5rem 0.75rem;
-      font-size: 0.875rem;
-      color: var(--text-secondary);
-    }
-
-    .details-toggle-icon {
-      transition: transform 0.2s;
-    }
-
-    .details-toggle.active .details-toggle-icon {
-      transform: rotate(180deg);
-    }
-
-    .details-panel {
-      display: none;
-      padding: 0.75rem 0;
-    }
-
-    .details-panel.show {
-      display: block;
-    }
-
-    .details-row {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-      margin-bottom: 0.75rem;
-    }
-
-    .details-row:last-child {
-      margin-bottom: 0;
-    }
-
-    .details-label {
-      font-size: 0.8rem;
-      color: var(--text-secondary);
-      min-width: 100px;
-    }
-
-    .details-row .model-select {
-      flex: 1;
-    }
-
-    .details-export-btn {
-      width: 100%;
-    }
-
-    /* PC表示（768px以上）では折りたたみなしで全表示 */
-    @media (min-width: 768px) {
-      .header {
-        padding: 1rem 1.5rem;
-        position: relative;
-        display: flex;
-        flex-wrap: wrap;
-        align-items: center;
-        gap: 1rem;
-      }
-
-      .header-top {
-        margin-bottom: 0;
-        flex: 0 0 auto;
-        gap: 1rem;
-      }
-
-      /* PC版ロボットアイコン */
-      .header-icon {
-        width: 36px;
-        height: 36px;
-        border-radius: 8px;
-        object-fit: contain;
-      }
-
-      .header-settings-btn {
-        display: none;
-      }
-
-      .header-details {
-        flex: 1;
-        min-width: 0;
-        border-top: none;
-        padding-top: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.75rem;
-        overflow: hidden;
-      }
-
-      .details-toggle {
-        display: none;
-      }
-
-      .details-panel {
-        display: flex !important;
-        align-items: center;
-        gap: 0.75rem;
-        padding: 0;
-        flex-wrap: nowrap;
-        min-width: 0;
-        overflow: hidden;
-      }
-
-      .details-row {
-        margin-bottom: 0;
-        min-width: 0;
-      }
-
-      .details-label {
-        display: none;
-      }
-
-      .details-row .model-select {
-        min-width: 140px;
-      }
-
-      /* Exportボタン：右端に寄せて折返し防止 */
-      .details-row--export {
-        margin-left: auto;
-      }
-
-      .details-export-btn {
-        width: auto;
-        height: auto;
-        padding: 0.5rem 1rem;
-        align-self: center;
-        white-space: nowrap;
-      }
-
-      .header-main {
-        position: static;
-        transform: none;
-        margin-bottom: 0;
-      }
-
-      /* カフ風デザイン：録音ボタン＋ステータス */
-      .cuff-container {
-        display: flex;
-        align-items: center;
-        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-        border: 2px solid var(--border);
-        border-radius: 2rem;
-        padding: 0.25rem;
-        box-shadow: inset 0 2px 4px rgba(0,0,0,0.06), 0 2px 8px rgba(0,0,0,0.08);
-      }
-
-      .cuff-container .status-badge {
-        border: none;
-        background: transparent;
-        padding: 0.5rem 1rem;
-        font-size: 0.8rem;
-        min-width: 90px;
-        text-align: center;
-      }
-
-      .cuff-container .status-badge.status-ready {
-        color: var(--text-secondary);
-      }
-
-      .cuff-container .status-badge.status-recording {
-        color: var(--danger);
-        background: transparent;
-        animation: none;
-      }
-
-      .cuff-container .record-btn-main {
-        flex: 0 0 auto;
-        border-radius: 1.5rem;
-        padding: 0.625rem 1.25rem;
-        font-size: 0.9rem;
-        min-width: 120px;
-      }
-
-      .record-btn-main {
-        flex: 0 0 auto;
-      }
-    }
-
-    /* 大きい設定ボタン：モバイルのみ表示、PCでは非表示 */
-    .header-settings-link-pc {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.375rem;
-      padding: 0.75rem 1.5rem;
-      background: var(--primary);
-      color: white;
-      border-radius: 0.5rem;
-      font-size: 1rem;
-      font-weight: 600;
-      text-decoration: none;
-      transition: background 0.15s, transform 0.1s;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
-      margin-left: 0;
-    }
-    .header-settings-link-pc:hover {
-      background: var(--primary-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    @media (min-width: 768px) {
-      .header-settings-link-pc {
-        display: none;
-      }
-    }
-
-    /* 狭いPC幅（768px-1024px）では省略表示 */
-    @media (min-width: 768px) and (max-width: 1024px) {
-      .interval-hint {
-        /* テキストを短縮、またはアイコンのみ */
-        max-width: 80px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .details-export-btn span {
-        /* Exportテキストを非表示、📥のみ */
-        font-size: 0;
-      }
-
-      .details-export-btn span::before {
-        content: '📥';
-        font-size: 1rem;
-      }
-
-      .details-export-btn {
-        padding: 0.5rem 0.75rem;
-      }
     }
 
     .header-controls {
@@ -1882,66 +1722,57 @@
 </head>
 <body>
   <header class="header">
-    <div class="header-top">
-      <h1><img src="icon-192.png" alt="" class="header-icon"> <span data-i18n="app.title">AI参加会議</span></h1>
-      <div class="header-icon-group">
-        <select id="languageSwitcher" class="model-select" style="min-width: 90px; padding: 0.375rem 0.5rem; font-size: 0.8rem;">
+    <!-- Row 1: ブランド + 設定 -->
+    <div class="header-row-1">
+      <div class="header-brand">
+        <img src="icon-192.png" alt="" class="header-icon">
+        <h1 data-i18n="app.title">AI参加会議</h1>
+      </div>
+      <div class="header-preferences">
+        <button type="button" class="theme-toggle" id="themeToggleBtn" title="ダークモードに切替">🌙</button>
+        <select id="languageSwitcher" class="model-select lang-select">
           <option value="ja">🇯🇵 Japanese</option>
           <option value="en">🇺🇸 English</option>
         </select>
-        <button type="button" class="btn btn-ghost header-settings-btn" id="themeToggleBtn" title="ダークモードに切替">🌙</button>
-        <a href="config.html" class="header-settings-link" data-i18n-title="common.settings"><span class="settings-icon">⚙️</span><span data-i18n="common.settings">設定</span></a>
+        <a href="config.html" class="settings-link" data-i18n-title="common.settings">⚙️</a>
       </div>
     </div>
 
-    <!-- メイン操作エリア（スマホで目立つ、PCではカフ風） -->
-    <div class="header-main">
-      <!-- PC版：カフ風コンテナ -->
-      <div class="cuff-container">
-        <span class="status-badge status-ready" id="statusBadge"><span data-i18n="app.recording.statusReady">⏸ 待機中</span></span>
-        <button type="button" class="btn btn-primary record-btn-main" id="recordBtn"><span data-i18n="app.recording.start">🎤 録音開始</span></button>
+    <!-- Row 2: 操作ツールバー -->
+    <div class="header-row-2">
+      <div class="header-record">
+        <button type="button" class="btn btn-primary record-btn" id="recordBtn">
+          <span data-i18n="app.recording.start">🎤 録音開始</span>
+        </button>
+        <span class="status-badge status-ready" id="statusBadge">
+          <span data-i18n="app.recording.statusReady">待機中</span>
+        </span>
       </div>
-      <!-- PC版：設定ボタン（録音ボタンの右に配置） -->
-      <a href="config.html" class="header-settings-link-pc">⚙️ <span data-i18n="common.settings">設定</span></a>
-    </div>
-
-    <!-- 詳細設定（スマホでは折りたたみ） -->
-    <div class="header-details">
-      <button class="btn btn-ghost details-toggle" id="detailsToggle">
-        <span class="details-toggle-text" data-i18n="app.header.detailSettings">詳細設定</span>
-        <span class="details-toggle-icon">▼</span>
-      </button>
-      <div class="details-panel" id="detailsPanel">
-        <div class="details-row">
-          <label class="details-label" data-i18n="app.details.transcriptApi">文字起こしAPI</label>
-          <select id="transcriptProvider" class="model-select" title="文字起こしAPI（STT専用）">
-            <option value="openai_stt" selected>🎤 OpenAI Whisper</option>
-            <option value="deepgram_realtime">⚡ Deepgram</option>
-          </select>
-        </div>
-        <div class="details-row">
-          <label class="details-label" data-i18n="app.details.audioLanguage">音声言語</label>
-          <select id="sttLanguage" class="model-select" title="音声の言語（Whisper用）">
-            <option value="ja" selected>🇯🇵 日本語</option>
-            <option value="en">🇺🇸 English</option>
-            <option value="auto">🌐 Auto（自動検出）</option>
-          </select>
-        </div>
-        <div class="details-row" id="intervalRow">
-          <label class="details-label" data-i18n="app.details.sendInterval">送信間隔</label>
-          <select id="transcriptInterval" class="model-select">
-            <option value="5">5秒</option>
-            <option value="10">10秒</option>
-            <option value="15" selected>15秒</option>
-            <option value="30">30秒</option>
-            <option value="60">60秒</option>
-            <option value="120">2分</option>
-          </select>
-          <span class="interval-hint" id="intervalHint" style="display: none;" data-i18n="app.details.intervalHint">リアルタイム</span>
-        </div>
-        <div class="details-row details-row--export">
-          <button class="btn btn-secondary details-export-btn" id="openExportBtn" data-i18n-title="common.export"><span data-i18n="common.export">📥 出力</span></button>
-        </div>
+      <div class="header-stt-controls">
+        <select id="transcriptProvider" class="model-select" title="STTプロバイダー">
+          <option value="openai_stt" selected>🎤 Whisper</option>
+          <option value="deepgram_realtime">⚡ Deepgram</option>
+        </select>
+        <select id="sttLanguage" class="model-select" title="音声言語">
+          <option value="ja" selected>🇯🇵 日本語</option>
+          <option value="en">🇺🇸 English</option>
+          <option value="auto">🌐 Auto</option>
+        </select>
+        <select id="transcriptInterval" class="model-select" title="送信間隔">
+          <option value="5">5秒</option>
+          <option value="10">10秒</option>
+          <option value="15" selected>15秒</option>
+          <option value="30">30秒</option>
+          <option value="60">60秒</option>
+          <option value="120">2分</option>
+        </select>
+        <span class="interval-hint" id="intervalHint" style="display: none;">⚡</span>
+      </div>
+      <div class="header-export">
+        <button class="btn btn-secondary export-btn" id="openExportBtn" title="エクスポート">
+          <span>📥</span>
+          <span class="export-btn-text" data-i18n="common.export">Export</span>
+        </button>
       </div>
     </div>
   </header>

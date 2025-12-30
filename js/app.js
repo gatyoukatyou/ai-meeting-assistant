@@ -626,16 +626,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     skipWelcomeBtn.addEventListener('click', closeWelcomeModal);
   }
 
-  // 詳細設定の折りたたみパネル（スマホ向け）
-  const detailsToggle = document.getElementById('detailsToggle');
-  const detailsPanel = document.getElementById('detailsPanel');
-  if (detailsToggle && detailsPanel) {
-    detailsToggle.addEventListener('click', () => {
-      detailsToggle.classList.toggle('active');
-      detailsPanel.classList.toggle('show');
-    });
-  }
-
   // Phase 2: フローティング停止ボタン（スマホ用）
   const floatingStopBtn = document.getElementById('floatingStopBtn');
   if (floatingStopBtn) {
