@@ -118,8 +118,9 @@
     }
 
     /* ⚙️ 設定：クリック可能感を強く */
+    /* 設定リンク：PCのみ表示、モバイルは非表示 */
     .header-settings-link {
-      display: inline-flex;
+      display: none;
       align-items: center;
       gap: 0.25rem;
       padding: 0.375rem 0.625rem;
@@ -130,6 +131,11 @@
       text-decoration: none;
       transition: background 0.15s, box-shadow 0.15s;
       border: 1px solid var(--border);
+    }
+    @media (min-width: 768px) {
+      .header-settings-link {
+        display: inline-flex;
+      }
     }
     .header-settings-link:hover {
       background: var(--border);
@@ -376,32 +382,31 @@
       }
     }
 
-    /* PC版設定ボタン（録音ボタンの右に配置） */
+    /* 大きい設定ボタン：モバイルのみ表示、PCでは非表示 */
     .header-settings-link-pc {
-      display: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.75rem 1.5rem;
+      background: var(--primary);
+      color: white;
+      border-radius: 0.5rem;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: background 0.15s, transform 0.1s;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      margin-left: 0;
+    }
+    .header-settings-link-pc:hover {
+      background: var(--primary-hover);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     }
 
     @media (min-width: 768px) {
       .header-settings-link-pc {
-        display: inline-flex;
-        align-items: center;
-        gap: 0.375rem;
-        padding: 0.75rem 1.5rem;
-        background: var(--primary);
-        color: white;
-        border-radius: 0.5rem;
-        font-size: 1rem;
-        font-weight: 600;
-        text-decoration: none;
-        transition: background 0.15s, transform 0.1s;
-        box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
-        margin-left: 1rem;
-      }
-
-      .header-settings-link-pc:hover {
-        background: var(--primary-hover);
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        display: none;
       }
     }
 
