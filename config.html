@@ -263,6 +263,34 @@
       min-width: 140px;
     }
 
+    /* モバイルレスポンシブ（縦長画面対応） */
+    @media (max-width: 480px) {
+      .setting-row {
+        flex-wrap: wrap;
+      }
+
+      .setting-row .setting-input {
+        width: 100%;
+        flex: none;
+      }
+
+      .setting-row .model-select {
+        width: 100%;
+        min-width: unset;
+        margin-top: 0.5rem;
+      }
+
+      .api-actions {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      .api-action-btn {
+        flex: 1;
+        min-width: 80px;
+      }
+    }
+
     .setting-hint {
       font-size: 0.75rem;
       color: var(--text-secondary);
