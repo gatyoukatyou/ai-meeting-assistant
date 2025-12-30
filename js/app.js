@@ -102,7 +102,7 @@ function updateSTTProviderUI(providerId) {
     intervalSelect.disabled = true;
     intervalSelect.style.opacity = '0.5';
     if (intervalHint) {
-      intervalHint.style.display = 'inline';
+      intervalHint.style.display = 'inline-flex';
     }
   } else {
     // チャンク系: 送信間隔を有効化、ヒント非表示

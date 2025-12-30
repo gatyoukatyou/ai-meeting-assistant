@@ -158,10 +158,24 @@
 
     /* 改善④ 文字サイズ階調 */
     .setting-hint,
-    .interval-hint,
     .cost-item-label {
       font-size: 0.7rem;
       color: var(--text-secondary);
+    }
+
+    /* Real-time バッジ（PC横並び対応） */
+    .interval-hint {
+      display: inline-flex;
+      align-items: center;
+      padding: 0.25rem 0.5rem;
+      margin-left: 0.5rem;
+      background: var(--accent-light, #e0f2fe);
+      color: var(--accent, #0ea5e9);
+      border-radius: 1rem;
+      font-size: 0.65rem;
+      font-weight: 500;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
     /* 数値・金額を太字に */
     #transcriptCostTotal,
@@ -280,6 +294,7 @@
       .header-top {
         margin-bottom: 0;
         flex: 0 0 auto;
+        gap: 1rem;
       }
 
       /* PC版ロボットアイコン */
@@ -296,11 +311,13 @@
 
       .header-details {
         flex: 1;
+        min-width: 0;
         border-top: none;
         padding-top: 0;
         display: flex;
         align-items: center;
         gap: 0.75rem;
+        overflow: hidden;
       }
 
       .details-toggle {
@@ -312,10 +329,14 @@
         align-items: center;
         gap: 0.75rem;
         padding: 0;
+        flex-wrap: nowrap;
+        min-width: 0;
+        overflow: hidden;
       }
 
       .details-row {
         margin-bottom: 0;
+        min-width: 0;
       }
 
       .details-label {
@@ -326,11 +347,17 @@
         min-width: 140px;
       }
 
+      /* Exportボタン：右端に寄せて折返し防止 */
+      .details-row--export {
+        margin-left: auto;
+      }
+
       .details-export-btn {
         width: auto;
         height: auto;
         padding: 0.5rem 1rem;
         align-self: center;
+        white-space: nowrap;
       }
 
       .header-main {
@@ -407,6 +434,30 @@
     @media (min-width: 768px) {
       .header-settings-link-pc {
         display: none;
+      }
+    }
+
+    /* 狭いPC幅（768px-1024px）では省略表示 */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      .interval-hint {
+        /* テキストを短縮、またはアイコンのみ */
+        max-width: 80px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+
+      .details-export-btn span {
+        /* Exportテキストを非表示、📥のみ */
+        font-size: 0;
+      }
+
+      .details-export-btn span::before {
+        content: '📥';
+        font-size: 1rem;
+      }
+
+      .details-export-btn {
+        padding: 0.5rem 0.75rem;
       }
     }
 
@@ -1886,9 +1937,9 @@
             <option value="60">60秒</option>
             <option value="120">2分</option>
           </select>
-          <span class="interval-hint" id="intervalHint" style="display: none; font-size: 0.75rem; color: var(--text-secondary); margin-left: 0.5rem;" data-i18n="app.details.intervalHint">リアルタイム</span>
+          <span class="interval-hint" id="intervalHint" style="display: none;" data-i18n="app.details.intervalHint">リアルタイム</span>
         </div>
-        <div class="details-row">
+        <div class="details-row details-row--export">
           <button class="btn btn-secondary details-export-btn" id="openExportBtn" data-i18n-title="common.export"><span data-i18n="common.export">📥 出力</span></button>
         </div>
       </div>
