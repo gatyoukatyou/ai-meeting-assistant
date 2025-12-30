@@ -1,179 +1,95 @@
-# セキュリティについて
+# セキュリティ / Security
 
-最終更新日: 2024年12月29日
-
-このページでは、AI参加会議アプリがあなたのAPIキーをどうやって守っているかを説明します。
-
-## ⚠️ 免責事項（最初に読んでください）
-
-**このアプリの保護機能は完璧ではありません。**
-
-- ⚠️ **共有PC・公共PCではAPIキーの安全性を保証できません**
-- ⚠️ マルウェアやブラウザ拡張機能による漏洩リスクは防げません
-- ⚠️ 保護は「難読化」であり、強力な暗号化ではありません
-- ⚠️ APIキーの管理は、最終的にあなた自身の責任です
-- ⚠️ 重要なAPIキーには、プロバイダー側で使用金額の上限を設定してください
-
-**推奨:**
-- 使い終わったら**手動で削除**してください
-- 共有PCでは「ブラウザを閉じたら削除」を**必ずON**にしてください
-- 心配な場合は使用を控えてください
-
-## このアプリの動作
-
-**このアプリは、あなたのパソコンの中だけで動きます。**
-
-- ✅ 設定はあなたのブラウザの中だけに保存されます
-- ✅ APIキーは外部のサーバーに送信しません（AIサービスへの直接通信のみ）
-- ✅ このアプリの作者には、あなたのデータは一切届きません
-
-## APIキーはどうやって守られていますか？
-
-### 1. 難読化して保存
-
-APIキーは、そのまま保存されるのではなく、**難読化**されて保存されます。
-
-**技術的な詳細:**
-- XOR演算 + Base64エンコーディングを使用
-- 端末固有のキー（User-Agent + タイムスタンプ + 乱数）で難読化
-- **注意:** これは「強力な暗号化」ではなく「読みにくくする処理」です
-
-**例えるなら:**
-- そのまま保存 = メモをそのまま机に置く
-- 難読化して保存 = メモを独自の文字で書き直して保管する（専門家には解読可能）
-
-ブラウザの保存場所を見ても、すぐには読めませんが、技術者には解読可能です。
-
-### 2. 端末固有のキー
-
-難読化には、あなたのパソコンとブラウザ環境から生成したキーを使います。
-
-**つまり:**
-- 他のパソコンでは（そのままでは）開けません
-- 同じパソコンでも、別のブラウザでは（そのままでは）開けません
-- **注意:** 専門知識があれば解読は技術的に可能です
-
-### 3. ローカルストレージに保存
-
-ブラウザには「ローカルストレージ」という、そのパソコン専用の保存場所があります。
-
-**特徴:**
-- 他のWebサイトからは見えません
-- あなたのパソコンから外に出ません
-- ブラウザの設定から自分で削除できます
-
-## 安全のための機能
-
-### 自動削除オプション
-
-「ブラウザを閉じたらAPIキーを自動削除」をONにすると：
-
-- ブラウザを完全に閉じた時に、APIキーが自動で消えます
-- **こんな時に便利:**
-  - 会社の共用パソコンを使う時
-  - 家族でパソコンを共有している時
-  - ネットカフェなど公共の場所で使う時
-
-**注意:** タブを閉じただけでは消えません。ブラウザ全体を閉じる必要があります。
-
-### APIキーの確認
-
-設定を保存する前に、APIキーが本当に使えるかチェックします。
-
-- Gemini: Google のサーバーに聞いて確認
-- OpenAI: OpenAI のサーバーに聞いて確認
-- Groq: Groq のサーバーに聞いて確認
-- Claude: 最初に使う時に確認
-
-間違ったキーを保存してしまうことを防ぎます。
-
-### バックアップ機能
-
-別のパソコンに移る時や、万が一のバックアップに：
-
-**エクスポート（保存）:**
-1. 設定画面で「エクスポート」ボタンを押す
-2. パスワードを決める
-3. ファイルがダウンロードされる
-
-**インポート（読み込み）:**
-1. 設定画面で「インポート」ボタンを押す
-2. 保存したファイルを選ぶ
-3. パスワードを入力
-
-**技術的な注意:**
-- エクスポートファイルはパスワード付きXORで保護されています
-- これは「強力な暗号化」ではありません。パスワードが弱い場合は解読される可能性があります
-- バックアップファイルは安全な場所に保管してください
-
-**パスワードを忘れたら:** 復元できません。パスワードは忘れないようにメモしてください。
-
-## データはどこに行きますか？
-
-```
-[あなたがAPIキーを入力]
-    ↓
-[難読化されて保存（あなたのブラウザ内）]
-    ↓
-[録音ボタンを押す]
-    ↓
-[音声が STT サービス（OpenAI Whisper / Deepgram）に送られる]
-    ↓
-[文字起こしの結果が返ってくる]
-    ↓
-[AIに質問する（任意）]
-    ↓
-[テキストが LLM サービス（Gemini / Claude / OpenAI / Groq）に送られる]
-    ↓
-[AIの回答が返ってくる]
-```
-
-**重要:**
-- APIキーがインターネットを通るのは、AIサービスを使う時だけ
-- 通信は「HTTPS」という暗号化された方法で行われます
-- このアプリの作者には何も送られません
-
-## 保護の範囲と限界
-
-| 脅威 | 保護状況 | 詳細 |
-|------|----------|------|
-| 他のWebサイトから見られる | ✅ 対応 | ブラウザが自動的にブロックします |
-| 保存場所を直接見られる | ⚠️ 部分的 | 難読化されていますが、技術者には解読可能 |
-| 通信を盗聴される | ✅ 対応 | HTTPS暗号化で守られています |
-| アプリの作者に送られる | ✅ 対応 | そもそも送信しません |
-| 共用パソコンで使われる | ⚠️ 部分的 | 自動削除オプションで軽減（完全ではない） |
-| マルウェア・悪意ある拡張機能 | ❌ 非対応 | ブラウザ内のデータにはアクセス可能 |
-| 物理的なアクセス | ❌ 非対応 | PC自体へのアクセスがあれば解読可能 |
-
-## 気をつけること
-
-### 普通に使う人
-
-1. **共用パソコンでは自動削除をONに**してください
-2. **APIキーは定期的に変更**することをおすすめします
-3. **バックアップのパスワードは強力なもの**にしてください
-   - 例: 良い → `MyDog2024!Summer`
-   - 例: 悪い → `1234` や `password`
-
-### こんな時は使わないでください
-
-- 信頼できないパソコン（ウイルスがいるかも）
-- 公共の Wi-Fi で重要な会議を録音する時
-- セキュリティソフトが入っていないパソコン
-
-## セキュリティ問題の報告
-
-セキュリティ上の問題を見つけた場合は、以下の方法で報告してください：
-
-### 一般的な問題（公開可能）
-GitHubの[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で報告してください。
-
-### 深刻な脆弱性（非公開で報告したい場合）
-GitHubの[Security Advisories](https://github.com/gatyoukatyou/ai-meeting-assistant/security/advisories/new)から非公開で報告できます。
-
-報告いただいた問題は、できる限り早く対応します（個人開発のため、対応に時間がかかる場合があります）。
+最終更新日 / Last Updated: 2024-12-29
 
 ---
 
-**わからないことがあれば:**
-難しい言葉や、わからないことがあれば、遠慮なく[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で質問してください。
+## 日本語（Japanese）
+
+### 免責事項（最初にお読みください）
+
+**このアプリの保護機能は完璧ではありません。**
+
+- 共有PC・公共PCではAPIキーの安全性を保証できません
+- マルウェアやブラウザ拡張機能による漏洩リスクは防げません
+- 保護は「難読化」であり、強力な暗号化ではありません
+- APIキーの管理は、最終的にユーザー自身の責任です
+- 重要なAPIキーには、プロバイダー側で使用金額の上限を設定してください
+
+### 基本方針
+本アプリは、セキュリティリスクを最小化する設計を採用しています。
+
+### クライアントサイド設計
+- 会議音声や文字起こしデータはサーバーに保存されません
+- 処理の大部分はブラウザ内で完結します
+
+### APIキーの扱い
+- APIキーはローカルストレージに難読化して保存されます
+- 開発者のサーバーに送信されることはありません
+- HTTPS通信のみを使用します
+
+### 保護の範囲と限界
+
+| 脅威 | 保護状況 | 詳細 |
+|------|----------|------|
+| 他のWebサイトからのアクセス | ✅ 対応 | ブラウザが自動的にブロック |
+| 保存場所を直接閲覧 | ⚠️ 部分的 | 難読化されているが解読可能 |
+| 通信の盗聴 | ✅ 対応 | HTTPS暗号化で保護 |
+| 共用パソコンでの使用 | ⚠️ 部分的 | 自動削除オプションで軽減 |
+| マルウェア・悪意ある拡張機能 | ❌ 非対応 | ブラウザ内データにアクセス可能 |
+
+### ユーザーへの推奨事項
+- 信頼できる端末・ネットワークで利用してください
+- 共用PCでは「ブラウザを閉じたら削除」をONにしてください
+- APIキーは定期的にローテーションしてください
+- 不要になったAPIキーは無効化してください
+
+### セキュリティ問題の報告
+- 一般的な問題: [GitHub Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)
+- 深刻な脆弱性: [Security Advisories](https://github.com/gatyoukatyou/ai-meeting-assistant/security/advisories/new)
+
+---
+
+## English
+
+### Disclaimer (Please Read First)
+
+**The protection features of this application are not perfect.**
+
+- API key security cannot be guaranteed on shared or public PCs
+- Leakage risks from malware or browser extensions cannot be prevented
+- Protection uses obfuscation, not strong encryption
+- API key management is ultimately the user's responsibility
+- Set spending limits with your API provider for important keys
+
+### Security Principles
+The Application is designed to minimize security risks.
+
+### Client-Side Architecture
+- Meeting audio and transcripts are not stored on servers
+- Most processing occurs entirely within the user's browser
+
+### Handling of API Keys
+- API keys are obfuscated and stored in browser local storage
+- They are never transmitted to developer-controlled servers
+- All communication uses HTTPS
+
+### Protection Scope and Limitations
+
+| Threat | Protection | Details |
+|--------|------------|---------|
+| Access from other websites | ✅ Protected | Blocked automatically by browser |
+| Direct storage inspection | ⚠️ Partial | Obfuscated but decodable |
+| Network eavesdropping | ✅ Protected | HTTPS encryption |
+| Shared computer usage | ⚠️ Partial | Mitigated by auto-delete option |
+| Malware / malicious extensions | ❌ Not protected | Can access browser data |
+
+### Recommendations for Users
+- Use the Application on trusted devices and networks
+- Enable "Delete on browser close" on shared PCs
+- Rotate API keys regularly
+- Revoke unused or compromised API keys promptly
+
+### Reporting Security Issues
+- General issues: [GitHub Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)
+- Serious vulnerabilities: [Security Advisories](https://github.com/gatyoukatyou/ai-meeting-assistant/security/advisories/new)

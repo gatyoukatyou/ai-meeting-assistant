@@ -1,107 +1,75 @@
-# プライバシーポリシー
+# プライバシーポリシー / Privacy Policy
 
-最終更新日: 2024年12月29日
-
-## はじめに
-
-「AI参加会議」（このアプリ）は、あなたのプライバシーを大切にします。このページでは、どんな情報を集めるか、どう使うかを説明します。
-
-## 一番大事なこと：このアプリは情報を集めません
-
-このアプリは、以下の情報を**集めません**：
-
-- ❌ あなたの名前やメールアドレス
-- ❌ 会議で話した内容
-- ❌ 文字起こしした内容
-- ❌ APIキー
-- ❌ どのくらい使ったかという記録
-- ❌ Cookie（よくあるWebサイトの追跡機能）
-
-**つまり:** このアプリの作者には、あなたのことは何もわかりません。
-
-## あなたのパソコンに保存されるもの
-
-以下の情報は、**あなたのブラウザだけ**に保存されます：
-
-| 何を | なぜ | 保護 |
-|------|------|--------|
-| APIキー | AIサービスを使うため | ✅ 難読化されている |
-| 使うAIの設定 | 次回も同じ設定で使えるように | ❌ |
-| 料金上限の設定 | 使いすぎを防ぐため | ❌ |
-| 初めて開いたか | 説明を1回だけ表示するため | ❌ |
-
-**大事なポイント:**
-- これらはあなたのパソコンだけにあります
-- インターネットには送られません
-- ブラウザの設定から消せます
-- 設定画面の「全削除」ボタンで一度に消せます
-
-## 外部のサービスと通信するのはいつ？
-
-あなたが操作した時だけ、以下のサービスと通信します：
-
-### AIサービスへの通信
-
-| サービス | いつ通信する | 何を送る |
-|----------|------------|---------|
-| Google Gemini | 録音ボタンを押した時、AIに質問した時 | 音声、質問の文章 |
-| OpenAI | 録音ボタンを押した時、AIに質問した時 | 音声、質問の文章 |
-| Claude | AIに質問した時 | 質問の文章 |
-| Groq | AIに質問した時 | 質問の文章 |
-
-**どう守られているか:**
-- すべて暗号化通信（HTTPS）で送られます
-- あなたがボタンを押した時だけ送られます
-- 各サービスの使い方のルールに従って処理されます
-
-**各サービスのルール（英語）:**
-- [Google のルール](https://policies.google.com/privacy)
-- [OpenAI のルール](https://openai.com/policies/privacy-policy)
-- [Anthropic（Claude）のルール](https://www.anthropic.com/privacy)
-- [Groq のルール](https://groq.com/privacy-policy/)
-
-## データはいつまで残りますか？
-
-### 会議の内容（文字起こし、AI回答）
-
-- ブラウザを閉じると**消えます**
-- 保存したい場合は「エクスポート」ボタンで保存してください
-
-### 設定（APIキー、選んだAI）
-
-- 自分で消すまで**残ります**
-- 「自動削除オプション」をONにすると、ブラウザを閉じた時に消えます
-
-## 安全対策
-
-このアプリは、こうやってあなたを守っています：
-
-1. **難読化** - APIキーは難読化して保存します（平文では保存しません）
-2. **外に出さない** - データは外部サーバーに送りません
-3. **暗号化通信** - AIサービスとの通信はHTTPSで暗号化されています
-4. **ブロック** - 他のWebサイトからはデータを見られません（ブラウザが自動的にブロック）
-
-## あなたの権利
-
-あなたには、こんな権利があります：
-
-- **見る権利** - ブラウザの設定で保存されているデータを見られます
-- **消す権利** - 設定画面からすべて消せます
-- **持ち出す権利** - 設定をファイルにして保存できます
-
-## 子どもについて
-
-このアプリは、13歳未満のお子さんを対象にしていません。13歳未満の方は、保護者の方の許可を得てから使ってください。
-
-## このルールが変わる時
-
-このルールは、必要に応じて変わることがあります。大きく変わる時は、このページでお知らせします。
-
-## 質問がある時は
-
-このルールについて質問がある時は、GitHubの[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で聞いてください。
+最終更新日 / Last Updated: 2024-12-29
 
 ---
 
-**補足:**
-このアプリはオープンソース（中身が見える）ソフトウェアです。プログラムの中身は[GitHub](https://github.com/gatyoukatyou/ai-meeting-assistant)で見られます。本当に情報を送っていないか、確かめることができます。
+## 日本語（Japanese）
+
+### はじめに
+「AI参加会議」は、ユーザーのプライバシーを最重要視しています。
+
+### 収集しない情報
+本アプリは、以下の情報を収集しません。
+
+- 氏名、メールアドレスなどの個人情報
+- 会議音声
+- 文字起こし内容
+- 利用ログや行動履歴
+
+### 技術的に必要な情報
+本アプリの利用には、以下が必要です。
+
+- 対応ブラウザ（Chrome / Edge 推奨）
+- マイク
+- ユーザー自身が取得したAIサービスのAPIキー
+
+### データの保存場所
+APIキーや設定情報は、ユーザーのブラウザのローカルストレージにのみ保存されます。
+開発者が管理するサーバーには一切送信されません。
+
+### 外部サービス
+本アプリは、ユーザーが指定した外部AIサービスと直接通信します。
+各サービスのプライバシーポリシーは、それぞれの提供元をご確認ください。
+
+- [Google のプライバシーポリシー](https://policies.google.com/privacy)
+- [OpenAI のプライバシーポリシー](https://openai.com/policies/privacy-policy)
+- [Anthropic（Claude）のプライバシーポリシー](https://www.anthropic.com/privacy)
+- [Groq のプライバシーポリシー](https://groq.com/privacy-policy/)
+- [Deepgram のプライバシーポリシー](https://deepgram.com/privacy)
+
+---
+
+## English
+
+### Introduction
+AI Meeting Assistant places the highest priority on user privacy.
+
+### Information We Do Not Collect
+The Application does not collect:
+
+- Personal information such as names or email addresses
+- Meeting audio
+- Transcripts
+- Usage logs or behavioral data
+
+### Required Technical Information
+To use the Application, the following are required:
+
+- A supported browser (Chrome or Edge recommended)
+- A microphone
+- API keys obtained by the user for supported AI services
+
+### Data Storage
+API keys and settings are stored only in the user's browser local storage.
+They are never transmitted to or stored on servers operated by the developer.
+
+### Third-Party Services
+The Application communicates directly with third-party AI services selected by the user.
+Please refer to each provider's privacy policy for details on their data handling practices.
+
+- [Google Privacy Policy](https://policies.google.com/privacy)
+- [OpenAI Privacy Policy](https://openai.com/policies/privacy-policy)
+- [Anthropic (Claude) Privacy Policy](https://www.anthropic.com/privacy)
+- [Groq Privacy Policy](https://groq.com/privacy-policy/)
+- [Deepgram Privacy Policy](https://deepgram.com/privacy)

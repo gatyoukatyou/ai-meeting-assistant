@@ -1,153 +1,73 @@
-# 利用規約
+# 利用規約 / Terms of Service
 
-最終更新日: 2024年12月20日
-
-## はじめに
-
-この「利用規約」は、「AI参加会議」（このアプリ）を使う時のルールを説明するものです。
-
-**このアプリを使うと、このルールに同意したことになります。**
-
-## このアプリでできること
-
-### 機能
-
-- 会議の音声を文字にする（OpenAI Whisper / Deepgram）
-- AIに会議内容を要約してもらう（Gemini / Claude / OpenAI / Groq）
-- AIに意見や分析をしてもらう
-- AIにアイデアを出してもらう
-- 会議の記録をファイルに保存する
-
-### 必要なもの
-
-- 対応しているブラウザ（Chrome か Edge がおすすめ）
-- マイク（音声を入力するため）
-- AIサービスのAPIキー（自分で取得する必要があります）
-
-## 使う条件
-
-### APIキーについて
-
-このアプリを使うには、以下のどれかのAPIキーが必要です：
-
-- Google Gemini API キー
-- OpenAI API キー
-- Anthropic Claude API キー
-- Groq API キー
-
-**大事なこと:**
-- APIキーは、あなた自身が各サービスのルールに同意して取得してください
-- このアプリの作者は、APIキーを提供しません
-
-### お金について
-
-**このアプリ自体は無料です。**
-
-このアプリは**BYOK（Bring Your Own Key）方式**です。AIサービスを使うには、あなた自身がAPIキーを用意する必要があります。
-
-- AIサービスの料金は**従量課金**で、使った分だけ請求されます
-- 料金は、各AIサービスから直接請求されます（このアプリからではありません）
-- 画面に表示される金額は目安です
-- 実際の請求額とは違う場合があります
-
-### 年齢について
-
-- このアプリは、13歳以上の方を対象にしています
-- 13歳未満の方は、保護者の許可と見守りのもとで使ってください
-
-## あなたの責任
-
-### APIキーの管理
-
-- APIキーは、あなた自身で管理してください
-- APIキーが漏れて問題が起きても、このアプリの作者は責任を負いません
-- 他の人に教えないでください
-
-### 正しく使ってください
-
-このアプリを、以下の目的で使わないでください：
-
-- 法律に違反すること
-- 他の人のプライバシーを侵害すること
-- 著作権を侵害すること
-- AIサービスのルールに違反すること
-- このアプリを壊すような行為
-
-### 録音する時は
-
-**会議を録音する時は、必ず参加者全員に伝えて、了承を得てください。**
-
-無断で録音すると、法律に違反する場合があります。
-
-## 権利について
-
-### このアプリのライセンス
-
-このアプリは「MITライセンス」というルールで提供されています。
-
-**つまり:**
-- 自由に使ってOK
-- コピーしてOK
-- 改造してOK
-- 配布してOK
-
-詳しくは [LICENSE](../LICENSE) ファイルを見てください。
-
-### あなたが作ったもの
-
-このアプリで処理した会議の内容や、文字起こしデータ、AIの回答の著作権は、それぞれの持ち主のものです。
-
-**大事なこと:** このアプリは、これらのデータを集めたり保存したりしません。
-
-## 保証について
-
-### このアプリは「そのまま」提供されます
-
-このアプリの作者は、以下のことを保証しません：
-
-- いつでも使えること
-- エラーがないこと
-- 文字起こしが正確なこと
-- AIの回答が正しいこと
-- あなたの目的に合っていること
-
-### 責任について
-
-法律で許される範囲で、このアプリの作者は以下について責任を負いません：
-
-- このアプリを使って起きた問題
-- AIサービスの料金
-- データが消えたこと
-- 他の人に不正にアクセスされたこと
-- その他、直接的・間接的な損害
-
-### 外部のサービスについて
-
-このアプリは、外部のAIサービス（Gemini、OpenAI など）と連携しています。
-
-これらのサービスが使えるか、品質がどうか、安全かについて、このアプリの作者は責任を負いません。
-
-## プライバシーについて
-
-個人情報の扱いについては、[プライバシーポリシー](PRIVACY.md)を見てください。
-
-## このルールが変わる時
-
-このルールは、必要に応じて変わることがあります。
-
-大きく変わる時は、このページでお知らせします。
-
-変わった後もこのアプリを使い続けると、新しいルールに同意したことになります。
-
-## 法律について
-
-このルールは、日本の法律に従います。
-
-## 質問がある時は
-
-このルールについて質問がある時は、GitHubの[Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)で聞いてください。
+最終更新日 / Last Updated: 2024-12-29
 
 ---
 
-**わかりにくい言葉があったら:**
-難しい言葉や、わからないことがあれば、遠慮なく質問してください。できるだけわかりやすく説明します。
+## 日本語（Japanese）
+
+### はじめに
+本利用規約は、「AI参加会議」（以下「本アプリ」）の利用条件を定めるものです。
+本アプリを利用した時点で、本規約に同意したものとみなされます。
+
+### サービスの性質
+本アプリは、ブラウザ上で動作するクライアントサイド中心のアプリケーションです。
+開発者は、ユーザーの会議内容や文字起こし結果を収集・保存・送信しません。
+
+### APIキー（BYOK）について
+本アプリは BYOK（Bring Your Own Key）方式を採用しています。
+ユーザーは自己責任で取得した以下のAPIキーを使用します。
+
+- OpenAI API
+- Anthropic Claude API
+- Google Gemini API
+- Groq API
+- Deepgram API
+- その他対応するAIサービス
+
+APIキーはブラウザのローカルストレージに保存され、開発者のサーバーには送信されません。
+
+### 免責事項
+本アプリは「現状有姿」で提供されます。
+開発者は、本アプリの正確性、完全性、特定目的への適合性について、いかなる保証も行いません。
+
+本アプリの利用により生じたいかなる損害についても、開発者は責任を負いません。
+
+### 規約の変更
+本規約は予告なく変更されることがあります。
+変更後も利用を継続した場合、変更に同意したものとみなされます。
+
+---
+
+## English
+
+### Introduction
+These Terms of Service govern the use of "AI Meeting Assistant" (the "Application").
+By using the Application, you agree to be bound by these terms.
+
+### Nature of the Service
+The Application operates primarily as a client-side, browser-based tool.
+The developer does not collect, store, or transmit meeting audio, transcripts, or content.
+
+### API Keys (BYOK)
+The Application uses a Bring Your Own Key (BYOK) model.
+Users must provide their own API keys for supported AI services, such as:
+
+- OpenAI API
+- Anthropic Claude API
+- Google Gemini API
+- Groq API
+- Deepgram API
+- Other supported AI services
+
+API keys are stored only in the user's browser local storage and are never sent to the developer's servers.
+
+### Disclaimer
+The Application is provided "as is," without warranties of any kind.
+The developer makes no guarantees regarding accuracy, completeness, or fitness for a particular purpose.
+
+The developer shall not be liable for any damages arising from the use of the Application.
+
+### Changes to the Terms
+These terms may be updated without prior notice.
+Continued use of the Application constitutes acceptance of the updated terms.
