@@ -370,6 +370,8 @@
     "auto": "自動（OS設定に従う）",
     "light": "ライト",
     "dark": "ダーク",
+    "switchToLight": "ライトモードに切替",
+    "switchToDark": "ダークモードに切替",
     "sky": "スカイブルー",
     "indigo": "インディゴ",
     "emerald": "エメラルド",

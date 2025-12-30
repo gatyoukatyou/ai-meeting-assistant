@@ -93,7 +93,11 @@
     if (toggleBtn) {
       // Show sun for dark mode (click to switch to light), moon for light mode
       toggleBtn.textContent = (theme === 'dark') ? '☀️' : '🌙';
-      toggleBtn.setAttribute('title', theme === 'dark' ? 'ライトモードに切替' : 'ダークモードに切替');
+      // Use i18n for title if available
+      var titleKey = (theme === 'dark') ? 'theme.switchToLight' : 'theme.switchToDark';
+      var fallback = (theme === 'dark') ? 'Switch to light mode' : 'Switch to dark mode';
+      var title = (window.I18n && window.I18n.t) ? window.I18n.t(titleKey) : fallback;
+      toggleBtn.setAttribute('title', title);
     }
 
     // Update select element (config.html)
