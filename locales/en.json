@@ -256,6 +256,16 @@
       "copyFallback": "Popup blocked. Please copy from the preview",
       "selectItems": "Please select items to export"
     },
+    "history": {
+      "saved": "Saved to history",
+      "failed": "History operation failed: {message}",
+      "deleted": "History entry deleted",
+      "cleared": "All history deleted",
+      "success": "Downloaded from history",
+      "shared": "Share sheet opened. Select 'Save to Files' to save",
+      "openedInNewTab": "Opened in new tab. Long-press or use share button to save",
+      "copyFallback": "Popup blocked. Please copy from the preview"
+    },
     "llm": {
       "notConfigured": "LLM API key not set. Please register an API key in settings."
     },
@@ -339,6 +349,23 @@
       "costOutputTokens": "Output Tokens",
       "costDisclaimer": "These amounts are estimates. Actual charges may differ."
     }
+  },
+  "history": {
+    "open": "History",
+    "titleLabel": "Meeting title",
+    "titlePlaceholder": "e.g., Sales Weekly (2026-01-06)",
+    "modalTitle": "Meeting History",
+    "modalDescription": "Up to 5 recent meetings are stored locally. Older entries are removed automatically.",
+    "empty": "No saved meetings yet. Stop a recording to auto-save.",
+    "clearAll": "Delete all history",
+    "clearConfirm": "Delete all saved meetings? This action cannot be undone.",
+    "download": "Download",
+    "delete": "Delete",
+    "defaultTitle": "Meeting on {date}",
+    "recordSavedAt": "Saved",
+    "recordDuration": "Duration",
+    "notSupported": "History is not available in this browser.",
+    "missingRecord": "Record not found"
   },
   "modal": {
     "welcome": {
