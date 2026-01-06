@@ -149,6 +149,61 @@
       background: var(--border);
     }
 
+    .quick-settings-btn {
+      display: flex;
+      align-items: center;
+      padding: 0.375rem;
+      border-radius: 0.375rem;
+      opacity: 0.7;
+      transition: opacity 0.2s, background 0.2s;
+      font-size: 1.1rem;
+      background: none;
+      border: none;
+      cursor: pointer;
+    }
+
+    .quick-settings-btn:hover {
+      opacity: 1;
+      background: var(--border);
+    }
+
+    /* LLM設定モーダル */
+    .llm-provider-tabs {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .llm-provider-tab {
+      padding: 0.5rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      background: var(--card-bg);
+      cursor: pointer;
+      font-size: 0.875rem;
+      transition: all 0.2s;
+    }
+
+    .llm-provider-tab:hover {
+      border-color: var(--primary);
+      background: var(--accent-blue);
+    }
+
+    .llm-provider-tab.active {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: white;
+    }
+
+    .llm-key-hint {
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+    }
+
+    .llm-key-hint a {
+      color: var(--primary);
+    }
+
     /* Row 2: 操作ツールバー */
     .header-row-2 {
       display: flex;
@@ -1734,7 +1789,8 @@
           <option value="ja">🇯🇵 Japanese</option>
           <option value="en">🇺🇸 English</option>
         </select>
-        <a href="config.html" class="settings-link" data-i18n-title="common.settings">⚙️</a>
+        <button type="button" class="quick-settings-btn" id="openLLMSettingsBtn" data-i18n-title="llmModal.title" title="LLM設定">⚡</button>
+        <button type="button" class="settings-link" id="openFullSettingsBtn" data-i18n-title="header.fullSettings" title="全設定">⚙️</button>
       </div>
     </div>
 
@@ -2093,7 +2149,7 @@
     </div>
   </div>
 
-  <!-- 履歴モーダル -->
+<!-- 履歴モーダル -->
   <div class="modal-overlay" id="historyModal">
     <div class="modal" style="max-width:700px;">
       <div class="modal-header">
@@ -2107,6 +2163,45 @@
       <div class="modal-footer" style="justify-content:space-between;">
         <button class="btn btn-ghost" id="clearHistoryBtn">🧹 <span data-i18n="history.clearAll">履歴を全て削除</span></button>
         <button class="btn btn-secondary" id="closeHistoryModalFooterBtn" data-i18n="common.close">閉じる</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LLM設定モーダル -->
+  <div class="modal-overlay" id="llmSettingsModal">
+    <div class="modal" style="max-width: 450px;">
+      <div class="modal-header">
+        <h2>⚡ <span data-i18n="llmModal.title">LLM設定</span></h2>
+        <button class="modal-close" id="closeLLMModalBtn">×</button>
+      </div>
+      <div class="modal-body">
+        <div class="setting-group">
+          <label class="setting-label" data-i18n="llmModal.selectProvider">プロバイダーを選択</label>
+          <div class="llm-provider-tabs">
+            <button type="button" class="llm-provider-tab active" data-provider="gemini">Gemini</button>
+            <button type="button" class="llm-provider-tab" data-provider="claude">Claude</button>
+            <button type="button" class="llm-provider-tab" data-provider="openai_llm">OpenAI</button>
+            <button type="button" class="llm-provider-tab" data-provider="groq">Groq</button>
+          </div>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" data-i18n="llmModal.apiKey">APIキー</label>
+          <input type="password" class="setting-input" id="llmModalApiKey" placeholder="APIキーを入力">
+          <div class="setting-hint llm-key-hint" id="llmKeyHint"></div>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" data-i18n="llmModal.model">モデル</label>
+          <select class="setting-input model-select" id="llmModalModel"></select>
+        </div>
+        <div class="setting-group" style="margin-top: 1rem; padding: 0.75rem; background: var(--accent-blue); border-radius: 0.5rem; border: 1px solid var(--accent-border-blue);">
+          <div style="font-size: 0.8rem; color: var(--text-secondary);" data-i18n="llmModal.hint">
+            💡 録音中でもLLM設定を変更できます。次回のAI呼び出しから新しい設定が適用されます。
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="closeLLMModalFooterBtn" data-i18n="common.cancel">キャンセル</button>
+        <button class="btn btn-primary" id="saveLLMModalBtn">💾 <span data-i18n="common.save">保存</span></button>
       </div>
     </div>
   </div>

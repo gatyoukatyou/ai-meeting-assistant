@@ -695,6 +695,43 @@ document.addEventListener('DOMContentLoaded', async function() {
     skipWelcomeBtn.addEventListener('click', closeWelcomeModal);
   }
 
+  // LLM設定モーダル
+  const openLLMSettingsBtn = document.getElementById('openLLMSettingsBtn');
+  if (openLLMSettingsBtn) {
+    openLLMSettingsBtn.addEventListener('click', openLLMSettingsModal);
+  }
+
+  const closeLLMModalBtn = document.getElementById('closeLLMModalBtn');
+  if (closeLLMModalBtn) {
+    closeLLMModalBtn.addEventListener('click', closeLLMSettingsModal);
+  }
+
+  const closeLLMModalFooterBtn = document.getElementById('closeLLMModalFooterBtn');
+  if (closeLLMModalFooterBtn) {
+    closeLLMModalFooterBtn.addEventListener('click', closeLLMSettingsModal);
+  }
+
+  const saveLLMModalBtn = document.getElementById('saveLLMModalBtn');
+  if (saveLLMModalBtn) {
+    saveLLMModalBtn.addEventListener('click', saveLLMSettings);
+  }
+
+  // LLMプロバイダータブ切り替え
+  document.querySelectorAll('.llm-provider-tab').forEach(tab => {
+    tab.addEventListener('click', () => {
+      const providerId = tab.dataset.provider;
+      if (providerId) {
+        switchLLMProvider(providerId);
+      }
+    });
+  });
+
+  // フル設定ポップアップ
+  const openFullSettingsBtn = document.getElementById('openFullSettingsBtn');
+  if (openFullSettingsBtn) {
+    openFullSettingsBtn.addEventListener('click', openFullSettings);
+  }
+
   // Phase 2: フローティング停止ボタン（スマホ用）
   const floatingStopBtn = document.getElementById('floatingStopBtn');
   if (floatingStopBtn) {
@@ -2644,6 +2681,119 @@ function closeExportModal() {
 
 function closeWelcomeModal() {
   document.getElementById('welcomeModal').classList.remove('active');
+}
+
+// =====================================
+// LLM設定モーダル
+// =====================================
+const LLM_PROVIDERS = {
+  gemini: {
+    name: 'Gemini',
+    models: [
+      { value: 'gemini-2.0-flash-exp', label: 'gemini-2.0-flash (推奨)' },
+      { value: 'gemini-1.5-flash-latest', label: 'gemini-1.5-flash' },
+      { value: 'gemini-1.5-pro-latest', label: 'gemini-1.5-pro' }
+    ],
+    hint: '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>でAPIキーを取得'
+  },
+  claude: {
+    name: 'Claude',
+    models: [
+      { value: 'claude-sonnet-4-20250514', label: 'claude-sonnet-4' },
+      { value: 'claude-3-5-sonnet-20241022', label: 'claude-3.5-sonnet' }
+    ],
+    hint: '<a href="https://console.anthropic.com/" target="_blank" rel="noopener">Anthropic Console</a>でAPIキーを取得'
+  },
+  openai_llm: {
+    name: 'OpenAI',
+    models: [
+      { value: 'gpt-4o', label: 'gpt-4o (推奨)' },
+      { value: 'gpt-4o-mini', label: 'gpt-4o-mini (低コスト)' },
+      { value: 'gpt-4-turbo-2024-04-09', label: 'gpt-4-turbo' }
+    ],
+    hint: '<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a>でAPIキーを取得'
+  },
+  groq: {
+    name: 'Groq',
+    models: [
+      { value: 'llama-3.3-70b-versatile', label: 'llama-3.3-70b (推奨)' },
+      { value: 'llama-3.1-8b-instant', label: 'llama-3.1-8b (低コスト)' }
+    ],
+    hint: '<a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a>でAPIキーを取得'
+  }
+};
+
+let currentLLMProvider = 'gemini';
+
+function openLLMSettingsModal() {
+  const modal = document.getElementById('llmSettingsModal');
+  modal.classList.add('active');
+
+  // 最初のプロバイダー（Gemini）をロード
+  switchLLMProvider('gemini');
+}
+
+function closeLLMSettingsModal() {
+  document.getElementById('llmSettingsModal').classList.remove('active');
+}
+
+function switchLLMProvider(providerId) {
+  currentLLMProvider = providerId;
+  const provider = LLM_PROVIDERS[providerId];
+
+  // タブのアクティブ状態を更新
+  document.querySelectorAll('.llm-provider-tab').forEach(tab => {
+    tab.classList.toggle('active', tab.dataset.provider === providerId);
+  });
+
+  // APIキーをロード
+  const apiKeyInput = document.getElementById('llmModalApiKey');
+  const savedKey = SecureStorage.getApiKey(providerId);
+  apiKeyInput.value = savedKey || '';
+  apiKeyInput.placeholder = provider.name + ' APIキー';
+
+  // ヒントを更新
+  const hintEl = document.getElementById('llmKeyHint');
+  hintEl.innerHTML = provider.hint;
+
+  // モデル選択肢を更新
+  const modelSelect = document.getElementById('llmModalModel');
+  modelSelect.innerHTML = '';
+  provider.models.forEach(model => {
+    const option = document.createElement('option');
+    option.value = model.value;
+    option.textContent = model.label;
+    modelSelect.appendChild(option);
+  });
+
+  // 保存されているモデルを選択
+  const savedModel = SecureStorage.getModel(providerId);
+  if (savedModel) {
+    modelSelect.value = savedModel;
+  }
+}
+
+function saveLLMSettings() {
+  const provider = currentLLMProvider;
+  const apiKey = document.getElementById('llmModalApiKey').value.trim();
+  const model = document.getElementById('llmModalModel').value;
+
+  // APIキーとモデルを保存
+  SecureStorage.setApiKey(provider, apiKey);
+  SecureStorage.setModel(provider, model);
+
+  // トースト通知
+  showToast(t('llmModal.saved') || 'LLM設定を保存しました', 'success');
+
+  closeLLMSettingsModal();
+}
+
+function openFullSettings() {
+  window.open(
+    'config.html',
+    'settings',
+    'width=650,height=850,scrollbars=yes,resizable=yes'
+  );
 }
 
 function generateExportMarkdown(options = null) {
