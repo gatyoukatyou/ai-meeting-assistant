@@ -2686,7 +2686,18 @@ function generateExportMarkdown(options = null) {
   return md;
 }
 
-function downloadExport() {
+// iOS WebKit検出（Safari, Chrome, その他iOS上の全ブラウザが対象）
+// iOS上のすべてのブラウザはWebKitを使用し、同様のdownload属性制限がある
+function isIOSWebKit() {
+  const ua = navigator.userAgent;
+  // iPhone/iPad/iPod
+  if (/iPhone|iPad|iPod/.test(ua)) return true;
+  // iPadOS（MacっぽいUA）: maxTouchPoints > 1 かつ Macintosh
+  if (navigator.maxTouchPoints > 1 && /Macintosh/.test(ua)) return true;
+  return false;
+}
+
+async function downloadExport() {
   const options = getExportOptions();
 
   // 何も選択されていない場合は警告
@@ -2697,13 +2708,53 @@ function downloadExport() {
   }
 
   const md = generateExportMarkdown(options);
-  const blob = new Blob([md], { type: 'text/markdown' });
+  const fileName = `meeting-${new Date().toISOString().split('T')[0]}.md`;
+
+  // 1) Web Share API（ファイル共有）が可能なら最優先（iOS Safari等）
+  try {
+    const file = new File([md], fileName, { type: 'text/markdown;charset=utf-8' });
+    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: fileName });
+      closeExportModal();
+      showToast(t('toast.export.shared'), 'success');
+      return;
+    }
+  } catch (e) {
+    // ユーザーキャンセル（AbortError）は正常系、何もしない
+    if (e?.name === 'AbortError') {
+      return;
+    }
+    console.warn('[Export] Web Share failed, falling back:', e);
+  }
+
+  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
+
+  // 2) iOS WebKit系 → 新規タブで開く（download属性が効かないため）
+  if (isIOSWebKit()) {
+    const opened = window.open(url, '_blank');
+    if (opened) {
+      closeExportModal();
+      showToast(t('toast.export.openedInNewTab'), 'info');
+    } else {
+      // ポップアップブロック等 → コピー機能へ誘導
+      showToast(t('toast.export.copyFallback'), 'warning');
+    }
+    // Safari系で読み込み前にURLが無効化される問題を防ぐため遅延revoke
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return;
+  }
+
+  // 3) 従来方式（強化版：append + click + revoke遅延）
   const a = document.createElement('a');
   a.href = url;
-  a.download = `meeting-${new Date().toISOString().split('T')[0]}.md`;
+  a.download = fileName;
+  a.style.display = 'none';
+  document.body.appendChild(a);
   a.click();
-  URL.revokeObjectURL(url);
+  document.body.removeChild(a);
+  // Safari系で読み込み前にURLが無効化される問題を防ぐため遅延revoke
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
 
   closeExportModal();
   showToast(t('toast.export.success'), 'success');

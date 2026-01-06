@@ -251,6 +251,9 @@
     },
     "export": {
       "success": "Exported successfully",
+      "shared": "Share sheet opened. Select 'Save to Files' to save",
+      "openedInNewTab": "Opened in new tab. Long-press or use share button to save",
+      "copyFallback": "Popup blocked. Please copy from the preview",
       "selectItems": "Please select items to export"
     },
     "llm": {
