@@ -2686,8 +2686,9 @@ function generateExportMarkdown(options = null) {
   return md;
 }
 
-// iOS/iPadOS Safari検出（UA + 機能検出の組み合わせ）
-function isIOSSafari() {
+// iOS WebKit検出（Safari, Chrome, その他iOS上の全ブラウザが対象）
+// iOS上のすべてのブラウザはWebKitを使用し、同様のdownload属性制限がある
+function isIOSWebKit() {
   const ua = navigator.userAgent;
   // iPhone/iPad/iPod
   if (/iPhone|iPad|iPod/.test(ua)) return true;
@@ -2729,8 +2730,8 @@ async function downloadExport() {
   const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
   const url = URL.createObjectURL(blob);
 
-  // 2) iOS/Safari系 → 新規タブで開く（download属性が効かないため）
-  if (isIOSSafari()) {
+  // 2) iOS WebKit系 → 新規タブで開く（download属性が効かないため）
+  if (isIOSWebKit()) {
     const opened = window.open(url, '_blank');
     if (opened) {
       closeExportModal();
