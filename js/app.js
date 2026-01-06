@@ -23,6 +23,8 @@ let recordingStartTime = null;
 let meetingModeTimerId = null;
 
 const MEETING_TITLE_STORAGE_KEY = '_meetingTitle';
+const MEETING_CONTEXT_STORAGE_KEY = '_meetingContext';
+let meetingContext = { goal: '', reference: '' };
 
 // Q&A送信ガード（Issue #2, #3対応）
 let isSubmittingQA = false;
@@ -657,6 +659,31 @@ document.addEventListener('DOMContentLoaded', async function() {
     historyList.addEventListener('click', handleHistoryListAction);
   }
 
+  const openContextModalBtn = document.getElementById('openContextModalBtn');
+  if (openContextModalBtn) {
+    openContextModalBtn.addEventListener('click', openContextModal);
+  }
+
+  const closeContextModalBtn = document.getElementById('closeContextModalBtn');
+  if (closeContextModalBtn) {
+    closeContextModalBtn.addEventListener('click', closeContextModal);
+  }
+
+  const cancelContextBtn = document.getElementById('cancelContextBtn');
+  if (cancelContextBtn) {
+    cancelContextBtn.addEventListener('click', closeContextModal);
+  }
+
+  const saveContextBtn = document.getElementById('saveContextBtn');
+  if (saveContextBtn) {
+    saveContextBtn.addEventListener('click', saveContextFromModal);
+  }
+
+  const clearContextBtn = document.getElementById('clearContextBtn');
+  if (clearContextBtn) {
+    clearContextBtn.addEventListener('click', clearContextData);
+  }
+
   // ウェルカムモーダルの閉じるボタン
   const closeWelcomeModalBtn = document.getElementById('closeWelcomeModalBtn');
   if (closeWelcomeModalBtn) {
@@ -706,6 +733,8 @@ document.addEventListener('DOMContentLoaded', async function() {
   // LLMインジケーターの更新
   updateLLMIndicator();
   updateLLMButtonsState();
+
+  initializeMeetingContextUI();
 
   // 言語変更時の再レンダリング
   window.addEventListener('languagechange', function() {
@@ -3037,6 +3066,117 @@ function truncateText(text, limit = 160) {
 function sanitizeFileName(name) {
   if (!name) return 'meeting';
   return name.replace(/[<>:"/\\|?*\n\r]+/g, '').trim() || 'meeting';
+}
+
+// =====================================
+// 会議コンテキスト入力
+// =====================================
+function initializeMeetingContextUI() {
+  loadMeetingContextFromStorage();
+  updateContextIndicators();
+}
+
+function openContextModal() {
+  const modal = document.getElementById('contextModal');
+  if (!modal) return;
+  const goalInput = document.getElementById('contextGoalInput');
+  const referenceInput = document.getElementById('contextReferenceInput');
+  if (goalInput) {
+    goalInput.value = meetingContext.goal || '';
+  }
+  if (referenceInput) {
+    referenceInput.value = meetingContext.reference || '';
+  }
+  modal.classList.add('active');
+}
+
+function closeContextModal() {
+  const modal = document.getElementById('contextModal');
+  if (!modal) return;
+  modal.classList.remove('active');
+}
+
+function saveContextFromModal() {
+  const goalInput = document.getElementById('contextGoalInput');
+  const referenceInput = document.getElementById('contextReferenceInput');
+  const goal = goalInput ? goalInput.value.trim() : '';
+  const reference = referenceInput ? referenceInput.value.trim() : '';
+
+  meetingContext = { goal, reference };
+  persistMeetingContext();
+  updateContextIndicators();
+  closeContextModal();
+  showToast(t('context.toastSaved') || '会議情報を保存しました', 'success');
+}
+
+function clearContextData() {
+  meetingContext = { goal: '', reference: '' };
+  persistMeetingContext();
+  const goalInput = document.getElementById('contextGoalInput');
+  const referenceInput = document.getElementById('contextReferenceInput');
+  if (goalInput) goalInput.value = '';
+  if (referenceInput) referenceInput.value = '';
+  updateContextIndicators();
+  showToast(t('context.toastCleared') || '会議情報を削除しました', 'info');
+}
+
+function loadMeetingContextFromStorage() {
+  const saved = localStorage.getItem(MEETING_CONTEXT_STORAGE_KEY);
+  if (!saved) {
+    meetingContext = { goal: '', reference: '' };
+    return;
+  }
+  try {
+    const parsed = JSON.parse(saved);
+    meetingContext = {
+      goal: typeof parsed.goal === 'string' ? parsed.goal : '',
+      reference: typeof parsed.reference === 'string' ? parsed.reference : ''
+    };
+  } catch (err) {
+    console.warn('[Context] Failed to parse stored meeting context', err);
+    meetingContext = { goal: '', reference: '' };
+  }
+}
+
+function persistMeetingContext() {
+  if (hasMeetingContext()) {
+    localStorage.setItem(MEETING_CONTEXT_STORAGE_KEY, JSON.stringify(meetingContext));
+  } else {
+    localStorage.removeItem(MEETING_CONTEXT_STORAGE_KEY);
+  }
+}
+
+function hasMeetingContext() {
+  return Boolean(
+    (meetingContext.goal && meetingContext.goal.trim()) ||
+    (meetingContext.reference && meetingContext.reference.trim())
+  );
+}
+
+function updateContextIndicators() {
+  const badge = document.getElementById('contextStatusBadge');
+  if (!badge) return;
+
+  if (hasMeetingContext()) {
+    badge.style.display = 'inline-flex';
+    badge.title = getContextPreviewText();
+  } else {
+    badge.style.display = 'none';
+    badge.removeAttribute('title');
+  }
+}
+
+function getContextPreviewText(limit = 160) {
+  const snippets = [];
+  if (meetingContext.goal && meetingContext.goal.trim()) {
+    snippets.push(meetingContext.goal.trim());
+  }
+  if (meetingContext.reference && meetingContext.reference.trim()) {
+    snippets.push(meetingContext.reference.trim());
+  }
+  const combined = snippets.join('\n').trim();
+  if (combined.length <= limit) return combined;
+  return combined.slice(0, limit) + '…';
 }
 
 // =====================================
