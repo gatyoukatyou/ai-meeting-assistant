@@ -408,5 +408,19 @@
     "violet": "バイオレット",
     "slate": "スレート",
     "coral": "コーラル"
+  },
+  "context": {
+    "trigger": "会議情報を入力",
+    "saved": "会議情報あり",
+    "modalTitle": "会議情報",
+    "modalDescription": "会議の目的や参考資料を入力しておくと、AIがより適切な回答を生成できます。",
+    "goalLabel": "会議の目的・ゴール",
+    "goalPlaceholder": "例: 新機能の要件定義を決定する",
+    "referenceLabel": "参考資料・背景情報",
+    "referencePlaceholder": "例: 前回の会議で議論した内容、関連ドキュメントへのリンクなど",
+    "clear": "クリア",
+    "save": "保存",
+    "toastSaved": "会議情報を保存しました",
+    "toastCleared": "会議情報をクリアしました"
   }
 }

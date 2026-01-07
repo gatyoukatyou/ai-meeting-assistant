@@ -409,5 +409,19 @@
     "violet": "Violet",
     "slate": "Slate",
     "coral": "Coral"
+  },
+  "context": {
+    "trigger": "Add meeting info",
+    "saved": "Meeting info set",
+    "modalTitle": "Meeting Information",
+    "modalDescription": "Adding meeting goals and reference materials helps AI generate more relevant responses.",
+    "goalLabel": "Meeting Goal",
+    "goalPlaceholder": "e.g., Finalize requirements for new feature",
+    "referenceLabel": "Reference Materials / Background",
+    "referencePlaceholder": "e.g., Topics from previous meeting, links to related documents",
+    "clear": "Clear",
+    "save": "Save",
+    "toastSaved": "Meeting information saved",
+    "toastCleared": "Meeting information cleared"
   }
 }
