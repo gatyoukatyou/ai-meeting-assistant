@@ -2,7 +2,7 @@
 
 [🇯🇵 日本語](README.md) | 🇺🇸 English
 
-[![Version](https://img.shields.io/badge/version-v1.0.1-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.1)
+[![Version](https://img.shields.io/badge/version-v1.1.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.1.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A lightweight, browser-based meeting assistant that records audio, transcribes speech, and generates summaries, opinions, ideas, and minutes using AI.
@@ -21,6 +21,9 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - 🔒 **Local storage** – API keys are stored only in your browser (obfuscated)
 - 🎨 **Theme switcher** – Dark mode support, 6 accent color themes
 - ⚡ **Custom models** – Specify any model name for each LLM provider (try new models immediately)
+- 🗂️ **Meeting history** – Auto-save past meeting records (up to 5), access later
+- 📝 **Meeting context** – Set meeting goals and background info to improve AI responses
+- ⚡ **Switch LLM while recording** – Change AI provider/model without stopping transcription
 
 ## Security
 

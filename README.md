@@ -2,7 +2,7 @@
 
 🇯🇵 日本語 | [🇺🇸 English](README.en.md)
 
-[![Version](https://img.shields.io/badge/version-v1.0.1-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.0.1)
+[![Version](https://img.shields.io/badge/version-v1.1.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.1.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行うWebアプリです。
@@ -21,6 +21,9 @@
 - 🔒 **ローカル保存** - APIキーはあなたのブラウザ内にのみ保存（難読化処理あり）
 - 🎨 **テーマ切替** - ダークモード対応、6種類のアクセントカラーから好みを選べます
 - ⚡ **カスタムモデル** - 各LLMプロバイダーで任意のモデル名を指定可能（新モデルをすぐに試せる）
+- 🗂️ **会議履歴** - 過去の会議記録を自動保存（最大5件）、後から参照可能
+- 📝 **会議コンテキスト** - 会議の目的・背景情報を事前に設定し、AIの回答精度を向上
+- ⚡ **録音中のLLM変更** - 録音を中断せずにAIプロバイダー/モデルを切り替え可能
 
 ## 安全性について
 
