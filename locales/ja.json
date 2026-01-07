@@ -379,6 +379,18 @@
       "startButton": "設定を開始する"
     }
   },
+  "llmModal": {
+    "title": "LLM設定",
+    "selectProvider": "プロバイダーを選択",
+    "apiKey": "APIキー",
+    "model": "モデル",
+    "hint": "💡 録音中でもLLM設定を変更できます。次回のAI呼び出しから新しい設定が適用されます。",
+    "saved": "LLM設定を保存しました"
+  },
+  "header": {
+    "llmSettings": "LLM設定",
+    "fullSettings": "全設定"
+  },
   "footer": {
     "terms": "利用規約",
     "privacy": "プライバシーポリシー",

@@ -380,6 +380,18 @@
       "startButton": "Start Configuration"
     }
   },
+  "llmModal": {
+    "title": "LLM Settings",
+    "selectProvider": "Select Provider",
+    "apiKey": "API Key",
+    "model": "Model",
+    "hint": "💡 You can change LLM settings while recording. The new settings will apply from the next AI call.",
+    "saved": "LLM settings saved"
+  },
+  "header": {
+    "llmSettings": "LLM Settings",
+    "fullSettings": "All Settings"
+  },
   "footer": {
     "terms": "Terms of Service",
     "privacy": "Privacy Policy",
