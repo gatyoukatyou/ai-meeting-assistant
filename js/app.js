@@ -22,6 +22,8 @@ let isMeetingMode = false;
 let recordingStartTime = null;
 let meetingModeTimerId = null;
 
+const MEETING_TITLE_STORAGE_KEY = '_meetingTitle';
+
 // Q&A送信ガード（Issue #2, #3対応）
 let isSubmittingQA = false;
 let lastQAQuestion = '';
@@ -613,6 +615,46 @@ document.addEventListener('DOMContentLoaded', async function() {
   const downloadExportBtn = document.getElementById('downloadExportBtn');
   if (downloadExportBtn) {
     downloadExportBtn.addEventListener('click', downloadExport);
+  }
+
+  const meetingTitleInput = document.getElementById('meetingTitleInput');
+  if (meetingTitleInput) {
+    const savedTitle = localStorage.getItem(MEETING_TITLE_STORAGE_KEY) || '';
+    if (savedTitle) {
+      meetingTitleInput.value = savedTitle;
+    }
+    meetingTitleInput.addEventListener('input', (event) => {
+      localStorage.setItem(MEETING_TITLE_STORAGE_KEY, event.target.value || '');
+    });
+  }
+
+  const openHistoryBtn = document.getElementById('openHistoryBtn');
+  if (openHistoryBtn) {
+    openHistoryBtn.addEventListener('click', () => {
+      openHistoryModal().catch(err => console.error('[History] modal open failed', err));
+    });
+  }
+
+  const closeHistoryModalBtn = document.getElementById('closeHistoryModalBtn');
+  if (closeHistoryModalBtn) {
+    closeHistoryModalBtn.addEventListener('click', closeHistoryModal);
+  }
+
+  const closeHistoryModalFooterBtn = document.getElementById('closeHistoryModalFooterBtn');
+  if (closeHistoryModalFooterBtn) {
+    closeHistoryModalFooterBtn.addEventListener('click', closeHistoryModal);
+  }
+
+  const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+  if (clearHistoryBtn) {
+    clearHistoryBtn.addEventListener('click', () => {
+      clearHistoryRecords().catch(err => console.error('[History] clear failed', err));
+    });
+  }
+
+  const historyList = document.getElementById('historyList');
+  if (historyList) {
+    historyList.addEventListener('click', handleHistoryListAction);
   }
 
   // ウェルカムモーダルの閉じるボタン
@@ -1266,6 +1308,7 @@ async function stopRecording() {
 
   // クリーンアップ処理を呼び出し
   await cleanupRecording();
+  await saveHistorySnapshot();
 
   updateUI();
   showToast(t('toast.recording.stopped'), 'info');
@@ -2697,6 +2740,54 @@ function isIOSWebKit() {
   return false;
 }
 
+async function downloadMarkdownFile(md, fileName, toastNamespace = 'toast.export') {
+  if (!md) return false;
+  const targetFileName = fileName || `meeting-${new Date().toISOString().split('T')[0]}.md`;
+  const mime = 'text/markdown;charset=utf-8';
+
+  if (navigator.share && navigator.canShare && typeof File !== 'undefined') {
+    try {
+      const file = new File([md], targetFileName, { type: mime });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: targetFileName });
+        showToast(t(`${toastNamespace}.shared`), 'success');
+        return true;
+      }
+    } catch (e) {
+      if (e?.name === 'AbortError') {
+        return false;
+      }
+      console.warn('[Export] Web Share failed, falling back:', e);
+    }
+  }
+
+  const blob = new Blob([md], { type: mime });
+  const url = URL.createObjectURL(blob);
+
+  if (isIOSWebKit()) {
+    const opened = window.open(url, '_blank');
+    if (opened) {
+      showToast(t(`${toastNamespace}.openedInNewTab`), 'info');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return true;
+    }
+    showToast(t(`${toastNamespace}.copyFallback`), 'warning');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return false;
+  }
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = targetFileName;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  showToast(t(`${toastNamespace}.success`), 'success');
+  return true;
+}
+
 async function downloadExport() {
   const options = getExportOptions();
 
@@ -2709,55 +2800,243 @@ async function downloadExport() {
 
   const md = generateExportMarkdown(options);
   const fileName = `meeting-${new Date().toISOString().split('T')[0]}.md`;
-
-  // 1) Web Share API（ファイル共有）が可能なら最優先（iOS Safari等）
-  try {
-    const file = new File([md], fileName, { type: 'text/markdown;charset=utf-8' });
-    if (navigator.share && navigator.canShare && navigator.canShare({ files: [file] })) {
-      await navigator.share({ files: [file], title: fileName });
-      closeExportModal();
-      showToast(t('toast.export.shared'), 'success');
-      return;
-    }
-  } catch (e) {
-    // ユーザーキャンセル（AbortError）は正常系、何もしない
-    if (e?.name === 'AbortError') {
-      return;
-    }
-    console.warn('[Export] Web Share failed, falling back:', e);
+  const completed = await downloadMarkdownFile(md, fileName, 'toast.export');
+  if (completed) {
+    closeExportModal();
   }
+}
 
-  const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
+// =====================================
+// 履歴管理
+// =====================================
+function getMeetingTitleValue() {
+  const input = document.getElementById('meetingTitleInput');
+  return input ? input.value.trim() : '';
+}
 
-  // 2) iOS WebKit系 → 新規タブで開く（download属性が効かないため）
-  if (isIOSWebKit()) {
-    const opened = window.open(url, '_blank');
-    if (opened) {
-      closeExportModal();
-      showToast(t('toast.export.openedInNewTab'), 'info');
-    } else {
-      // ポップアップブロック等 → コピー機能へ誘導
-      showToast(t('toast.export.copyFallback'), 'warning');
-    }
-    // Safari系で読み込み前にURLが無効化される問題を防ぐため遅延revoke
-    setTimeout(() => URL.revokeObjectURL(url), 60000);
+function getDefaultMeetingTitle(date = new Date()) {
+  const locale = I18n.getLanguage() === 'ja' ? 'ja-JP' : 'en-US';
+  return t('history.defaultTitle', {
+    date: date.toLocaleString(locale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
+  });
+}
+
+function buildHistoryRecord() {
+  if (typeof HistoryStore === 'undefined') return null;
+  const transcriptText = getFilteredTranscriptText();
+  if (!transcriptText || !transcriptText.trim()) {
+    return null;
+  }
+  const now = new Date();
+  const summaryPreview =
+    (aiResponses.summary.length > 0 && aiResponses.summary[0].content) ||
+    aiResponses.minutes ||
+    transcriptText.split('\n').find(line => line.trim()) ||
+    '';
+
+  return {
+    id: `history_${now.getTime()}_${Math.random().toString(36).substr(2, 6)}`,
+    title: getMeetingTitleValue() || getDefaultMeetingTitle(now),
+    createdAt: now.toISOString(),
+    transcript: transcriptText,
+    durationSec: Math.round(costs.transcript.duration || 0),
+    summaryPreview,
+    exportMarkdown: generateExportMarkdown({
+      minutes: true,
+      summary: true,
+      opinion: true,
+      idea: true,
+      qa: true,
+      transcript: true,
+      cost: true
+    })
+  };
+}
+
+async function saveHistorySnapshot() {
+  if (typeof HistoryStore === 'undefined') {
+    return;
+  }
+  const record = buildHistoryRecord();
+  if (!record) {
+    return;
+  }
+  try {
+    await HistoryStore.save(record);
+    showToast(t('toast.history.saved'), 'success');
+    await refreshHistoryListIfOpen();
+  } catch (err) {
+    console.error('[History] Failed to save record', err);
+    showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
+  }
+}
+
+async function openHistoryModal() {
+  const modal = document.getElementById('historyModal');
+  if (!modal) return;
+  await renderHistoryList();
+  modal.classList.add('active');
+}
+
+function closeHistoryModal() {
+  const modal = document.getElementById('historyModal');
+  if (!modal) return;
+  modal.classList.remove('active');
+}
+
+async function renderHistoryList() {
+  const list = document.getElementById('historyList');
+  if (!list) return;
+
+  list.innerHTML = '';
+
+  if (typeof HistoryStore === 'undefined') {
+    const unsupported = document.createElement('p');
+    unsupported.textContent = t('history.notSupported');
+    list.appendChild(unsupported);
     return;
   }
 
-  // 3) 従来方式（強化版：append + click + revoke遅延）
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = fileName;
-  a.style.display = 'none';
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  // Safari系で読み込み前にURLが無効化される問題を防ぐため遅延revoke
-  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  const records = await HistoryStore.list();
+  if (!records.length) {
+    const empty = document.createElement('p');
+    empty.style.color = 'var(--text-secondary)';
+    empty.textContent = t('history.empty');
+    list.appendChild(empty);
+    return;
+  }
 
-  closeExportModal();
-  showToast(t('toast.export.success'), 'success');
+  records.forEach(record => {
+    const item = document.createElement('div');
+    item.className = 'history-item';
+    item.style.border = '1px solid var(--border)';
+    item.style.borderRadius = '8px';
+    item.style.padding = '0.75rem';
+    item.style.display = 'flex';
+    item.style.justifyContent = 'space-between';
+    item.style.gap = '1rem';
+    item.style.flexWrap = 'wrap';
+
+    const meta = document.createElement('div');
+    meta.style.flex = '1';
+
+    const title = document.createElement('div');
+    title.style.fontWeight = '600';
+    title.style.marginBottom = '0.25rem';
+    title.textContent = record.title || getDefaultMeetingTitle(record.createdAt ? new Date(record.createdAt) : undefined);
+    meta.appendChild(title);
+
+    const details = document.createElement('div');
+    details.style.fontSize = '0.85rem';
+    details.style.color = 'var(--text-secondary)';
+    details.textContent = `${t('history.recordSavedAt')} ${formatHistoryTimestamp(record.createdAt)} ・ ${t('history.recordDuration')} ${formatHistoryDuration(record.durationSec)}`;
+    meta.appendChild(details);
+
+    if (record.summaryPreview) {
+      const preview = document.createElement('p');
+      preview.style.fontSize = '0.9rem';
+      preview.style.marginTop = '0.5rem';
+      preview.style.whiteSpace = 'pre-line';
+      preview.textContent = truncateText(record.summaryPreview);
+      meta.appendChild(preview);
+    }
+
+    const actions = document.createElement('div');
+    actions.style.display = 'flex';
+    actions.style.flexDirection = 'column';
+    actions.style.gap = '0.5rem';
+
+    const downloadBtn = document.createElement('button');
+    downloadBtn.className = 'btn btn-primary btn-sm';
+    downloadBtn.dataset.action = 'download';
+    downloadBtn.dataset.id = record.id;
+    downloadBtn.textContent = `📥 ${t('history.download')}`;
+    actions.appendChild(downloadBtn);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.className = 'btn btn-ghost btn-sm';
+    deleteBtn.dataset.action = 'delete';
+    deleteBtn.dataset.id = record.id;
+    deleteBtn.textContent = `🗑 ${t('history.delete')}`;
+    actions.appendChild(deleteBtn);
+
+    item.appendChild(meta);
+    item.appendChild(actions);
+    list.appendChild(item);
+  });
+}
+
+function handleHistoryListAction(event) {
+  const button = event.target.closest('button[data-action]');
+  if (!button) return;
+  const id = button.dataset.id;
+  const action = button.dataset.action;
+
+  if (action === 'download') {
+    downloadHistoryRecord(id).catch(err => console.error('[History] download failed', err));
+  } else if (action === 'delete') {
+    deleteHistoryRecord(id).catch(err => console.error('[History] delete failed', err));
+  }
+}
+
+async function downloadHistoryRecord(id) {
+  if (!id || typeof HistoryStore === 'undefined') return;
+  const record = await HistoryStore.get(id);
+  if (!record || !record.exportMarkdown) {
+    showToast(t('toast.history.failed', { message: t('history.missingRecord') }), 'error');
+    return;
+  }
+  const safeTitle = sanitizeFileName(record.title || 'meeting');
+  await downloadMarkdownFile(record.exportMarkdown, `${safeTitle}.md`, 'toast.history');
+}
+
+async function deleteHistoryRecord(id) {
+  if (!id || typeof HistoryStore === 'undefined') return;
+  await HistoryStore.delete(id);
+  showToast(t('toast.history.deleted'), 'info');
+  await renderHistoryList();
+}
+
+async function clearHistoryRecords() {
+  if (typeof HistoryStore === 'undefined') return;
+  if (!confirm(t('history.clearConfirm'))) {
+    return;
+  }
+  await HistoryStore.clear();
+  showToast(t('toast.history.cleared'), 'info');
+  await renderHistoryList();
+}
+
+async function refreshHistoryListIfOpen() {
+  const modal = document.getElementById('historyModal');
+  if (modal && modal.classList.contains('active')) {
+    await renderHistoryList();
+  }
+}
+
+function formatHistoryTimestamp(isoString) {
+  if (!isoString) return '';
+  const date = new Date(isoString);
+  const locale = I18n.getLanguage() === 'ja' ? 'ja-JP' : 'en-US';
+  return date.toLocaleString(locale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function formatHistoryDuration(seconds) {
+  if (!seconds || Number.isNaN(seconds)) return '0m';
+  const mins = Math.max(1, Math.round(seconds / 60));
+  return `${mins}m`;
+}
+
+function truncateText(text, limit = 160) {
+  if (!text) return '';
+  const trimmed = text.trim();
+  if (trimmed.length <= limit) return trimmed;
+  return `${trimmed.slice(0, limit)}…`;
+}
+
+function sanitizeFileName(name) {
+  if (!name) return 'meeting';
+  return name.replace(/[<>:"/\\|?*\n\r]+/g, '').trim() || 'meeting';
 }
 
 // =====================================

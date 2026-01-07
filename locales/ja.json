@@ -255,6 +255,16 @@
       "copyFallback": "ポップアップがブロックされました。プレビューからコピーしてください",
       "selectItems": "エクスポートする項目を選択してください"
     },
+    "history": {
+      "saved": "履歴に保存しました",
+      "failed": "履歴処理に失敗しました: {message}",
+      "deleted": "履歴を削除しました",
+      "cleared": "履歴をすべて削除しました",
+      "success": "履歴からダウンロードしました",
+      "shared": "共有シートを開きました。「ファイルに保存」を選択してください",
+      "openedInNewTab": "新しいタブで開きました。長押しまたは共有ボタンから保存できます",
+      "copyFallback": "ポップアップがブロックされました。プレビューからコピーしてください"
+    },
     "llm": {
       "notConfigured": "LLM APIキーが未設定です。設定画面でAPIキーを登録してください。"
     },
@@ -338,6 +348,23 @@
       "costOutputTokens": "出力トークン",
       "costDisclaimer": "この金額は概算です。実際の請求額とは異なる場合があります。"
     }
+  },
+  "history": {
+    "open": "履歴",
+    "titleLabel": "会議タイトル",
+    "titlePlaceholder": "例: 営業定例 (2026/01/06)",
+    "modalTitle": "会議履歴",
+    "modalDescription": "直近5件の会議が自動保存され、古い履歴から削除されます。",
+    "empty": "まだ保存された会議はありません。録音停止後に自動保存されます。",
+    "clearAll": "履歴を全て削除",
+    "clearConfirm": "保存済みの会議をすべて削除しますか？ この操作は元に戻せません。",
+    "download": "ダウンロード",
+    "delete": "削除",
+    "defaultTitle": "{date}の会議",
+    "recordSavedAt": "保存",
+    "recordDuration": "所要時間",
+    "notSupported": "このブラウザでは履歴機能を利用できません。",
+    "missingRecord": "履歴が見つかりません"
   },
   "modal": {
     "welcome": {

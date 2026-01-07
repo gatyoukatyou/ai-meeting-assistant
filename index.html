@@ -1788,7 +1788,16 @@
     <div class="panel active" id="transcriptPanel">
       <div class="panel-header">
         <span class="panel-title">📝 <span data-i18n="app.panel.transcript">文字起こし</span></span>
-        <button class="btn btn-ghost" id="clearTranscriptBtn" style="font-size: 0.75rem;" data-i18n="common.clear">クリア</button>
+        <div class="panel-actions" style="display:flex; gap:0.5rem;">
+          <button class="btn btn-ghost" id="openHistoryBtn" style="font-size:0.75rem;">🗂️ <span data-i18n="history.open">履歴</span></button>
+          <button class="btn btn-ghost" id="clearTranscriptBtn" style="font-size: 0.75rem;" data-i18n="common.clear">クリア</button>
+        </div>
+      </div>
+      <div class="meeting-title-row" style="display:flex; gap:0.5rem; align-items:center; margin:0.5rem 0;">
+        <label for="meetingTitleInput" class="meeting-title-label" style="font-size:0.9rem; color:var(--text-secondary);">
+          <span data-i18n="history.titleLabel">会議タイトル</span>
+        </label>
+        <input type="text" id="meetingTitleInput" class="input" style="flex:1;" data-i18n-placeholder="history.titlePlaceholder" placeholder="例: 営業定例 (2026/01/06)">
       </div>
       <div class="panel-body" id="transcriptBody">
         <div class="transcript-text" id="transcriptText"><span class="transcript-placeholder" id="transcriptPlaceholder" data-i18n="app.transcript.placeholder">録音を開始すると、ここに文字起こしが表示されます...</span></div>
@@ -2050,6 +2059,24 @@
     </div>
   </div>
 
+  <!-- 履歴モーダル -->
+  <div class="modal-overlay" id="historyModal">
+    <div class="modal" style="max-width:700px;">
+      <div class="modal-header">
+        <h2>🗂️ <span data-i18n="history.modalTitle">会議履歴</span></h2>
+        <button class="modal-close" id="closeHistoryModalBtn">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:0.75rem; font-size:0.9rem; color:var(--text-secondary);" data-i18n="history.modalDescription">最大5件まで自動保存され、古い履歴から削除されます。</p>
+        <div id="historyList" class="history-list" data-i18n-empty="history.empty" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button class="btn btn-ghost" id="clearHistoryBtn">🧹 <span data-i18n="history.clearAll">履歴を全て削除</span></button>
+        <button class="btn btn-secondary" id="closeHistoryModalFooterBtn" data-i18n="common.close">閉じる</button>
+      </div>
+    </div>
+  </div>
+
   <!-- トースト通知コンテナ -->
   <div class="toast-container" id="toastContainer"></div>
 
@@ -2082,6 +2109,7 @@
   <script src="js/i18n.js"></script>
   <script src="js/theme.js"></script>
   <script src="js/secure-storage.js" defer></script>
+  <script src="js/history-store.js" defer></script>
   <!-- STT Provider抽象化レイヤー -->
   <script src="js/audio/pcm_stream.js" defer></script>
   <script src="js/stt/index.js" defer></script>
