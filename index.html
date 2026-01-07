@@ -1747,6 +1747,10 @@
         <span class="status-badge status-ready" id="statusBadge">
           <span data-i18n="app.recording.statusReady">待機中</span>
         </span>
+        <button type="button" class="btn btn-ghost context-btn" id="openContextModalBtn">
+          📝 <span data-i18n="context.trigger">会議情報を入力</span>
+        </button>
+        <div class="context-status" id="contextStatusBadge" style="display:none;" data-i18n="context.saved">会議情報を使用中</div>
       </div>
       <div class="header-stt-controls">
         <select id="transcriptProvider" class="model-select" title="STTプロバイダー">
@@ -1781,6 +1785,36 @@
   <div class="main-tabs">
     <button class="main-tab active" data-main-tab="transcript">📝 <span data-i18n="app.panel.transcript">文字起こし</span></button>
     <button class="main-tab" data-main-tab="ai">💬 <span data-i18n="app.panel.aiResponse">AI回答</span></button>
+  </div>
+
+  <!-- コンテキスト入力モーダル -->
+  <div class="modal-overlay" id="contextModal">
+    <div class="modal" style="max-width:720px;">
+      <div class="modal-header">
+        <h2>📝 <span data-i18n="context.modalTitle">会議情報を設定</span></h2>
+        <button class="modal-close" id="closeContextModalBtn">×</button>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom:0.75rem; color:var(--text-secondary);" data-i18n="context.modalDescription">
+          議題や背景を入力すると、AIが文脈を理解した回答を生成できます。
+        </p>
+        <div class="setting-group">
+          <label class="setting-label" for="contextGoalInput" data-i18n="context.goalLabel">議題・ゴール</label>
+          <textarea id="contextGoalInput" rows="3" class="input" data-i18n-placeholder="context.goalPlaceholder" placeholder="例: 新商品のネーミング決定、想定顧客像の整理"></textarea>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" for="contextReferenceInput" data-i18n="context.referenceLabel">参考テキスト・資料</label>
+          <textarea id="contextReferenceInput" rows="6" class="input" data-i18n-placeholder="context.referencePlaceholder" placeholder="必要に応じて企画書や専門用語リストを貼り付け"></textarea>
+        </div>
+      </div>
+      <div class="modal-footer" style="justify-content:space-between;">
+        <button type="button" class="btn btn-ghost" id="clearContextBtn">🧹 <span data-i18n="context.clear">入力内容を削除</span></button>
+        <div style="display:flex; gap:0.5rem;">
+          <button type="button" class="btn btn-secondary" id="cancelContextBtn" data-i18n="common.cancel">キャンセル</button>
+          <button type="button" class="btn btn-primary" id="saveContextBtn" data-i18n="context.save">設定して閉じる</button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <main class="main-container">
