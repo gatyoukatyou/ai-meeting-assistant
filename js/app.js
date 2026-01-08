@@ -92,6 +92,72 @@ let pcmStreamProcessor = null;
 // 録音モニター（Issue #18: スマホでの録音中断対策）
 let recordingMonitor = null;
 
+// Wake Lock（Issue #18: スリープ抑止）
+let wakeLock = null;
+
+// =====================================
+// Wake Lock ヘルパー（スリープ抑止）
+// =====================================
+
+/**
+ * モバイルデバイスかどうかを判定
+ */
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+}
+
+/**
+ * Wake Lockを取得（録音中のスリープ抑止）
+ */
+async function startWakeLock() {
+  if (!('wakeLock' in navigator)) {
+    console.log('[WakeLock] Not supported in this browser');
+    return false;
+  }
+
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    console.log('[WakeLock] Acquired');
+
+    wakeLock.addEventListener('release', () => {
+      console.log('[WakeLock] Released');
+      wakeLock = null;
+    });
+
+    return true;
+  } catch (e) {
+    console.warn('[WakeLock] Failed to acquire:', e.message);
+    // 取得失敗は静かに諦める（必須機能ではない）
+    return false;
+  }
+}
+
+/**
+ * Wake Lockを解放
+ */
+async function stopWakeLock() {
+  if (wakeLock) {
+    try {
+      await wakeLock.release();
+      console.log('[WakeLock] Manually released');
+    } catch (e) {
+      console.warn('[WakeLock] Release error:', e.message);
+    }
+    wakeLock = null;
+  }
+}
+
+/**
+ * visibilitychange時にWake Lockを再取得
+ */
+async function reacquireWakeLock() {
+  if (document.visibilityState === 'visible' && isRecording && !wakeLock) {
+    console.log('[WakeLock] Reacquiring after visibility change');
+    await startWakeLock();
+  }
+}
+
 // =====================================
 // STTプロバイダUIの更新
 // =====================================
@@ -858,6 +924,9 @@ async function startRecording() {
     isRecording = true;
     updateUI();
 
+    // Wake Lockを取得（Issue #18: スリープ抑止）
+    await startWakeLock();
+
     // 録音モニターを開始（Issue #18: スマホでの録音中断対策）
     startRecordingMonitor();
 
@@ -1243,7 +1312,10 @@ function escapeHtml(text) {
 async function cleanupRecording() {
   console.log('[Cleanup] Starting cleanup...');
 
-  // 0. 録音モニターを停止（Issue #18）
+  // 0. Wake Lockを解放（Issue #18）
+  await stopWakeLock();
+
+  // 0.5. 録音モニターを停止（Issue #18）
   stopRecordingMonitor();
 
   // 1. 停止フラグをオンにする（onstopで最終blobを処理するため）
@@ -1357,9 +1429,16 @@ function startNewMediaRecorder() {
     }
   };
 
-  // timesliceなしで開始（stopするまで1つの完結したファイルになる）
-  mediaRecorder.start();
-  console.log('MediaRecorder started (no timeslice - will create complete file on stop)');
+  // モバイルの場合はtimeslice付きで開始（中断時のデータ損失を最小化）
+  // PCの場合はtimesliceなしで開始（stopするまで1つの完結したファイルになる）
+  if (isMobileDevice()) {
+    const MOBILE_TIMESLICE_MS = 1000; // 1秒ごとにdataavailable
+    mediaRecorder.start(MOBILE_TIMESLICE_MS);
+    console.log(`MediaRecorder started (timeslice=${MOBILE_TIMESLICE_MS}ms for mobile)`);
+  } else {
+    mediaRecorder.start();
+    console.log('MediaRecorder started (no timeslice - will create complete file on stop)');
+  }
 
   // 録音モニターの参照を更新（Issue #18）
   updateRecordingMonitorReferences();
@@ -1399,6 +1478,7 @@ async function stopRecording() {
 /**
  * 録音モニターを開始
  * バックグラウンド遷移、画面スリープ、着信などによる録音中断を検知
+ * 方針：自動復帰は行わず、安全停止＋データ保全＋再開案内
  */
 function startRecordingMonitor() {
   if (!window.RecordingMonitor) {
@@ -1408,40 +1488,36 @@ function startRecordingMonitor() {
 
   recordingMonitor = new RecordingMonitor();
 
-  // 中断検知時のコールバック
-  recordingMonitor.onInterruption = (reason, canRecover) => {
-    console.log(`[Monitor] Interruption: ${reason}, canRecover: ${canRecover}`);
+  // 中断検知時のコールバック（安全停止＋再開案内）
+  recordingMonitor.onInterruption = (reason, details) => {
+    console.log(`[Monitor] Interruption: ${reason}`, details);
 
-    // バックグラウンドに移行した場合は警告を表示
-    if (reason === 'background') {
-      // バックグラウンドでは表示されないが、復帰時に確認できる
-      console.log('[Monitor] App moved to background while recording');
+    // ストリームが終了した場合（着信などで発生）は安全停止
+    if (reason === 'stream_ended') {
+      console.log('[Monitor] Stream ended - stopping recording safely');
+      // 現在までのデータを回収して安全停止
+      if (recordingMonitor) {
+        recordingMonitor.safeStopMediaRecorder();
+      }
+      showToast(t('toast.recording.interrupted'), 'warning');
     }
 
-    // ストリームが終了した場合（着信などで発生）
-    if (reason === 'stream_ended' || reason === 'audiocontext_suspended') {
-      if (!canRecover) {
-        showToast(t('toast.recording.interrupted'), 'warning');
+    // AudioContext suspended の場合は復帰を試みる（ベストエフォート）
+    if (reason === 'audiocontext_suspended') {
+      console.log('[Monitor] AudioContext suspended - attempting resume');
+      if (recordingMonitor) {
+        recordingMonitor.tryResumeAudioContext();
       }
     }
   };
 
-  // 復帰試行時のコールバック
-  recordingMonitor.onRecoveryAttempt = (reason) => {
-    console.log(`[Monitor] Recovery attempt: ${reason}`);
-  };
-
-  // 復帰成功時のコールバック
-  recordingMonitor.onRecoverySuccess = () => {
-    console.log('[Monitor] Recovery successful');
-    showToast(t('toast.recording.resumed'), 'success');
-  };
-
-  // 復帰失敗時のコールバック
-  recordingMonitor.onRecoveryFailed = (reason) => {
-    console.log(`[Monitor] Recovery failed: ${reason}`);
-    // 復帰不能な場合はユーザーに通知
-    showToast(t('toast.recording.recoveryFailed'), 'error');
+  // 可視性変化時のコールバック（Wake Lock再取得）
+  recordingMonitor.onVisibilityChange = async (isVisible) => {
+    console.log(`[Monitor] Visibility change: ${isVisible ? 'visible' : 'hidden'}`);
+    if (isVisible) {
+      // 復帰時にWake Lockを再取得
+      await reacquireWakeLock();
+    }
   };
 
   // 状態変化時のコールバック（デバッグ用）

@@ -2,7 +2,9 @@
  * Recording Monitor
  *
  * スマホでの画面スリープ・バックグラウンド遷移・着信による
- * 録音中断を検知し、可能な場合は復帰を試みる
+ * 録音中断を検知し、安全に停止してユーザーに再開を促す
+ *
+ * 方針：自動復帰は行わず、中断時は安全停止＋データ保全＋再開案内
  *
  * Issue #18 対応
  */
@@ -15,10 +17,8 @@ class RecordingMonitor {
     this.mediaStream = null;
 
     // コールバック
-    this.onInterruption = null;      // (reason, canRecover) => void
-    this.onRecoveryAttempt = null;   // (reason) => void
-    this.onRecoverySuccess = null;   // () => void
-    this.onRecoveryFailed = null;    // (reason) => void
+    this.onInterruption = null;      // (reason, details) => void
+    this.onVisibilityChange = null;  // (isVisible) => void
     this.onStateChange = null;       // (state) => void
 
     // 状態追跡
@@ -33,7 +33,7 @@ class RecordingMonitor {
     this.eventLog = [];
     this.maxLogEntries = 100;
 
-    // バインドされたハンドラ
+    // バインドされたハンドラ（removeEventListener用に保持）
     this._boundHandlers = {
       visibilityChange: this._handleVisibilityChange.bind(this),
       pageHide: this._handlePageHide.bind(this),
@@ -43,14 +43,19 @@ class RecordingMonitor {
       freeze: this._handleFreeze.bind(this),
       resume: this._handleResume.bind(this)
     };
+
+    // リスナー登録済みフラグ（多重登録防止）
+    this._listenersRegistered = false;
   }
 
   /**
    * 監視を開始
    */
   start(options = {}) {
+    // 多重開始防止（idempotent）
     if (this.isMonitoring) {
-      console.warn('[RecordingMonitor] Already monitoring');
+      console.warn('[RecordingMonitor] Already monitoring, updating references only');
+      this.updateReferences(options);
       return;
     }
 
@@ -58,28 +63,28 @@ class RecordingMonitor {
     this.audioContext = options.audioContext || null;
     this.mediaStream = options.mediaStream || null;
 
-    // イベントリスナーを登録
-    document.addEventListener('visibilitychange', this._boundHandlers.visibilityChange);
-    window.addEventListener('pagehide', this._boundHandlers.pageHide);
-    window.addEventListener('pageshow', this._boundHandlers.pageShow);
-    window.addEventListener('focus', this._boundHandlers.focus);
-    window.addEventListener('blur', this._boundHandlers.blur);
+    // イベントリスナーを登録（多重登録防止）
+    if (!this._listenersRegistered) {
+      document.addEventListener('visibilitychange', this._boundHandlers.visibilityChange);
+      window.addEventListener('pagehide', this._boundHandlers.pageHide);
+      window.addEventListener('pageshow', this._boundHandlers.pageShow);
+      window.addEventListener('focus', this._boundHandlers.focus);
+      window.addEventListener('blur', this._boundHandlers.blur);
 
-    // Page Lifecycle API（Chrome/Edge のみ）
-    if ('onfreeze' in document) {
-      document.addEventListener('freeze', this._boundHandlers.freeze);
-      document.addEventListener('resume', this._boundHandlers.resume);
+      // Page Lifecycle API（Chrome/Edge のみ）
+      if ('onfreeze' in document) {
+        document.addEventListener('freeze', this._boundHandlers.freeze);
+        document.addEventListener('resume', this._boundHandlers.resume);
+      }
+
+      this._listenersRegistered = true;
     }
 
     // MediaStreamTrack の終了を監視
-    if (this.mediaStream) {
-      this._setupStreamMonitoring(this.mediaStream);
-    }
+    this._setupStreamMonitoring();
 
     // AudioContext の状態変化を監視
-    if (this.audioContext) {
-      this._setupAudioContextMonitoring(this.audioContext);
-    }
+    this._setupAudioContextMonitoring();
 
     this.isMonitoring = true;
     this._log('start', 'Monitoring started');
@@ -87,23 +92,34 @@ class RecordingMonitor {
   }
 
   /**
-   * 監視を停止
+   * 監視を停止（必ずリスナーを解除）
    */
   stop() {
-    if (!this.isMonitoring) return;
-
-    // イベントリスナーを解除
-    document.removeEventListener('visibilitychange', this._boundHandlers.visibilityChange);
-    window.removeEventListener('pagehide', this._boundHandlers.pageHide);
-    window.removeEventListener('pageshow', this._boundHandlers.pageShow);
-    window.removeEventListener('focus', this._boundHandlers.focus);
-    window.removeEventListener('blur', this._boundHandlers.blur);
-
-    if ('onfreeze' in document) {
-      document.removeEventListener('freeze', this._boundHandlers.freeze);
-      document.removeEventListener('resume', this._boundHandlers.resume);
+    // 多重停止OK（idempotent）
+    if (!this.isMonitoring && !this._listenersRegistered) {
+      return;
     }
 
+    // イベントリスナーを確実に解除
+    if (this._listenersRegistered) {
+      try {
+        document.removeEventListener('visibilitychange', this._boundHandlers.visibilityChange);
+        window.removeEventListener('pagehide', this._boundHandlers.pageHide);
+        window.removeEventListener('pageshow', this._boundHandlers.pageShow);
+        window.removeEventListener('focus', this._boundHandlers.focus);
+        window.removeEventListener('blur', this._boundHandlers.blur);
+
+        if ('onfreeze' in document) {
+          document.removeEventListener('freeze', this._boundHandlers.freeze);
+          document.removeEventListener('resume', this._boundHandlers.resume);
+        }
+      } catch (e) {
+        console.error('[RecordingMonitor] Error removing listeners:', e);
+      }
+      this._listenersRegistered = false;
+    }
+
+    // 参照をクリア
     this.isMonitoring = false;
     this.mediaRecorder = null;
     this.audioContext = null;
@@ -122,15 +138,11 @@ class RecordingMonitor {
     }
     if (options.audioContext !== undefined) {
       this.audioContext = options.audioContext;
-      if (this.audioContext) {
-        this._setupAudioContextMonitoring(this.audioContext);
-      }
+      this._setupAudioContextMonitoring();
     }
     if (options.mediaStream !== undefined) {
       this.mediaStream = options.mediaStream;
-      if (this.mediaStream) {
-        this._setupStreamMonitoring(this.mediaStream);
-      }
+      this._setupStreamMonitoring();
     }
   }
 
@@ -160,207 +172,242 @@ class RecordingMonitor {
     this.eventLog = [];
   }
 
+  /**
+   * MediaRecorderのデータを安全に回収してから停止
+   * @returns {boolean} 停止操作を行ったか
+   */
+  safeStopMediaRecorder() {
+    try {
+      if (!this.mediaRecorder) return false;
+
+      const state = this.mediaRecorder.state;
+      if (state === 'inactive') return false;
+
+      // 現在までのデータを回収
+      if (typeof this.mediaRecorder.requestData === 'function') {
+        try {
+          this.mediaRecorder.requestData();
+        } catch (e) {
+          console.warn('[RecordingMonitor] requestData failed:', e);
+        }
+      }
+
+      // 停止
+      this.mediaRecorder.stop();
+      console.log('[RecordingMonitor] MediaRecorder safely stopped');
+      return true;
+    } catch (e) {
+      console.error('[RecordingMonitor] safeStopMediaRecorder error:', e);
+      return false;
+    }
+  }
+
+  /**
+   * AudioContextの復帰を試みる（ベストエフォート）
+   * @returns {Promise<boolean>}
+   */
+  async tryResumeAudioContext() {
+    try {
+      if (!this.audioContext) return false;
+      if (this.audioContext.state !== 'suspended') return true;
+
+      await this.audioContext.resume();
+      console.log('[RecordingMonitor] AudioContext resumed');
+      return true;
+    } catch (e) {
+      console.warn('[RecordingMonitor] AudioContext resume failed:', e);
+      return false;
+    }
+  }
+
   // ========================================
-  // イベントハンドラ
+  // イベントハンドラ（すべてtry/catchで保護）
   // ========================================
 
   _handleVisibilityChange() {
-    const state = document.visibilityState;
-    const previousState = this.lastState.visibility;
-    this.lastState.visibility = state;
+    try {
+      const state = document.visibilityState;
+      const previousState = this.lastState.visibility;
+      this.lastState.visibility = state;
 
-    this._log('visibilitychange', { from: previousState, to: state });
-    console.log(`[RecordingMonitor] Visibility: ${previousState} → ${state}`);
+      this._log('visibilitychange', { from: previousState, to: state });
+      console.log(`[RecordingMonitor] Visibility: ${previousState} → ${state}`);
 
-    if (state === 'hidden') {
-      // バックグラウンドに移行
-      this._checkAndNotifyInterruption('background');
-    } else if (state === 'visible' && previousState === 'hidden') {
-      // フォアグラウンドに復帰
-      this._attemptRecovery('foreground_return');
+      if (this.onVisibilityChange) {
+        this.onVisibilityChange(state === 'visible');
+      }
+
+      if (state === 'hidden') {
+        // バックグラウンドに移行
+        this._notifyInterruption('background', { previousState });
+      }
+
+      this._emitStateChange();
+    } catch (e) {
+      console.error('[RecordingMonitor] visibilitychange handler error:', e);
     }
-
-    this._emitStateChange();
   }
 
   _handlePageHide(event) {
-    this._log('pagehide', { persisted: event.persisted });
-    console.log('[RecordingMonitor] Page hide, persisted:', event.persisted);
+    try {
+      this._log('pagehide', { persisted: event.persisted });
+      console.log('[RecordingMonitor] Page hide, persisted:', event.persisted);
 
-    if (!event.persisted) {
-      // ページが破棄される（bfcacheに入らない）
-      this._checkAndNotifyInterruption('page_unload');
+      if (!event.persisted) {
+        this._notifyInterruption('page_unload', { persisted: false });
+      }
+    } catch (e) {
+      console.error('[RecordingMonitor] pagehide handler error:', e);
     }
   }
 
   _handlePageShow(event) {
-    this._log('pageshow', { persisted: event.persisted });
-    console.log('[RecordingMonitor] Page show, persisted:', event.persisted);
+    try {
+      this._log('pageshow', { persisted: event.persisted });
+      console.log('[RecordingMonitor] Page show, persisted:', event.persisted);
 
-    if (event.persisted) {
-      // bfcache から復帰
-      this._attemptRecovery('bfcache_restore');
+      if (event.persisted) {
+        // bfcache から復帰 - 状態確認のみ
+        this._emitStateChange();
+      }
+    } catch (e) {
+      console.error('[RecordingMonitor] pageshow handler error:', e);
     }
   }
 
   _handleFocus() {
-    this._log('focus', {});
-    console.log('[RecordingMonitor] Window focus');
-
-    // フォーカス復帰時に状態をチェック
-    this._attemptRecovery('focus');
+    try {
+      this._log('focus', {});
+      console.log('[RecordingMonitor] Window focus');
+      this._emitStateChange();
+    } catch (e) {
+      console.error('[RecordingMonitor] focus handler error:', e);
+    }
   }
 
   _handleBlur() {
-    this._log('blur', {});
-    console.log('[RecordingMonitor] Window blur');
+    try {
+      this._log('blur', {});
+      console.log('[RecordingMonitor] Window blur');
+    } catch (e) {
+      console.error('[RecordingMonitor] blur handler error:', e);
+    }
   }
 
   _handleFreeze() {
-    this._log('freeze', {});
-    console.log('[RecordingMonitor] Page frozen (lifecycle API)');
-    this._checkAndNotifyInterruption('page_frozen');
+    try {
+      this._log('freeze', {});
+      console.log('[RecordingMonitor] Page frozen (lifecycle API)');
+      this._notifyInterruption('page_frozen', {});
+    } catch (e) {
+      console.error('[RecordingMonitor] freeze handler error:', e);
+    }
   }
 
   _handleResume() {
-    this._log('resume', {});
-    console.log('[RecordingMonitor] Page resumed (lifecycle API)');
-    this._attemptRecovery('page_resume');
+    try {
+      this._log('resume', {});
+      console.log('[RecordingMonitor] Page resumed (lifecycle API)');
+      this._emitStateChange();
+    } catch (e) {
+      console.error('[RecordingMonitor] resume handler error:', e);
+    }
   }
 
   // ========================================
   // ストリーム・AudioContext 監視
   // ========================================
 
-  _setupStreamMonitoring(stream) {
-    const tracks = stream.getTracks();
-    tracks.forEach(track => {
-      track.onended = () => {
-        this._log('track_ended', { kind: track.kind, label: track.label });
-        console.log(`[RecordingMonitor] Track ended: ${track.kind}`);
-        this._checkAndNotifyInterruption('stream_ended');
-      };
+  _setupStreamMonitoring() {
+    try {
+      if (!this.mediaStream) return;
 
-      track.onmute = () => {
-        this._log('track_muted', { kind: track.kind });
-        console.log(`[RecordingMonitor] Track muted: ${track.kind}`);
-      };
+      const tracks = this.mediaStream.getTracks();
+      tracks.forEach(track => {
+        track.onended = () => {
+          try {
+            this._log('track_ended', { kind: track.kind, label: track.label });
+            console.log(`[RecordingMonitor] Track ended: ${track.kind}`);
+            this._notifyInterruption('stream_ended', { kind: track.kind });
+          } catch (e) {
+            console.error('[RecordingMonitor] track.onended error:', e);
+          }
+        };
 
-      track.onunmute = () => {
-        this._log('track_unmuted', { kind: track.kind });
-        console.log(`[RecordingMonitor] Track unmuted: ${track.kind}`);
-      };
-    });
+        track.onmute = () => {
+          try {
+            this._log('track_muted', { kind: track.kind });
+            console.log(`[RecordingMonitor] Track muted: ${track.kind}`);
+          } catch (e) {
+            console.error('[RecordingMonitor] track.onmute error:', e);
+          }
+        };
+
+        track.onunmute = () => {
+          try {
+            this._log('track_unmuted', { kind: track.kind });
+            console.log(`[RecordingMonitor] Track unmuted: ${track.kind}`);
+          } catch (e) {
+            console.error('[RecordingMonitor] track.onunmute error:', e);
+          }
+        };
+      });
+    } catch (e) {
+      console.error('[RecordingMonitor] _setupStreamMonitoring error:', e);
+    }
   }
 
-  _setupAudioContextMonitoring(context) {
-    context.onstatechange = () => {
-      const state = context.state;
-      this._log('audiocontext_statechange', { state });
-      console.log(`[RecordingMonitor] AudioContext state: ${state}`);
+  _setupAudioContextMonitoring() {
+    try {
+      if (!this.audioContext) return;
 
-      if (state === 'suspended') {
-        this._checkAndNotifyInterruption('audiocontext_suspended');
-      } else if (state === 'running') {
-        this._emitStateChange();
-      }
-    };
+      this.audioContext.onstatechange = () => {
+        try {
+          const state = this.audioContext?.state;
+          this._log('audiocontext_statechange', { state });
+          console.log(`[RecordingMonitor] AudioContext state: ${state}`);
+
+          if (state === 'suspended') {
+            this._notifyInterruption('audiocontext_suspended', {});
+          }
+
+          this._emitStateChange();
+        } catch (e) {
+          console.error('[RecordingMonitor] audioContext.onstatechange error:', e);
+        }
+      };
+    } catch (e) {
+      console.error('[RecordingMonitor] _setupAudioContextMonitoring error:', e);
+    }
   }
 
   _isStreamActive() {
-    if (!this.mediaStream) return false;
-    const tracks = this.mediaStream.getTracks();
-    return tracks.length > 0 && tracks.every(t => t.readyState === 'live');
+    try {
+      if (!this.mediaStream) return false;
+      const tracks = this.mediaStream.getTracks();
+      return tracks.length > 0 && tracks.every(t => t.readyState === 'live');
+    } catch (e) {
+      console.error('[RecordingMonitor] _isStreamActive error:', e);
+      return false;
+    }
   }
 
   // ========================================
-  // 中断検知・復帰処理
+  // 中断通知（自動復帰は行わない）
   // ========================================
 
-  _checkAndNotifyInterruption(reason) {
-    const state = this.getState();
-    const canRecover = this._canRecover(reason, state);
+  _notifyInterruption(reason, details = {}) {
+    try {
+      const state = this.getState();
+      this._log('interruption', { reason, details, state });
+      console.log(`[RecordingMonitor] Interruption: ${reason}`, details);
 
-    this._log('interruption', { reason, canRecover, state });
-    console.log(`[RecordingMonitor] Interruption detected: ${reason}, canRecover: ${canRecover}`);
-
-    if (this.onInterruption) {
-      this.onInterruption(reason, canRecover);
-    }
-  }
-
-  _canRecover(reason, state) {
-    // ストリームが終了している場合は復帰困難（再取得が必要）
-    if (!state.streamActive) {
-      return false;
-    }
-
-    // AudioContext が closed の場合は復帰不可
-    if (state.audioContextState === 'closed') {
-      return false;
-    }
-
-    // その他のケースは復帰可能性あり
-    return true;
-  }
-
-  async _attemptRecovery(reason) {
-    this._log('recovery_attempt', { reason });
-    console.log(`[RecordingMonitor] Attempting recovery: ${reason}`);
-
-    if (this.onRecoveryAttempt) {
-      this.onRecoveryAttempt(reason);
-    }
-
-    let success = true;
-    const failures = [];
-
-    // 1. AudioContext の復帰を試みる
-    if (this.audioContext && this.audioContext.state === 'suspended') {
-      try {
-        await this.audioContext.resume();
-        console.log('[RecordingMonitor] AudioContext resumed successfully');
-      } catch (e) {
-        console.error('[RecordingMonitor] Failed to resume AudioContext:', e);
-        failures.push('audiocontext_resume');
-        success = false;
+      if (this.onInterruption) {
+        this.onInterruption(reason, { ...details, state });
       }
+    } catch (e) {
+      console.error('[RecordingMonitor] _notifyInterruption error:', e);
     }
-
-    // 2. ストリームの状態を確認
-    if (!this._isStreamActive()) {
-      console.log('[RecordingMonitor] Stream is not active, cannot auto-recover');
-      failures.push('stream_inactive');
-      success = false;
-    }
-
-    // 3. MediaRecorder の状態を確認
-    if (this.mediaRecorder) {
-      const mrState = this.mediaRecorder.state;
-      if (mrState === 'inactive') {
-        console.log('[RecordingMonitor] MediaRecorder is inactive');
-        // MediaRecorder の再起動は外部で行う必要がある
-        failures.push('mediarecorder_inactive');
-        // これは警告だが、外部で対処可能なので success は変えない
-      }
-    }
-
-    this._log('recovery_result', { success, failures });
-
-    if (success) {
-      console.log('[RecordingMonitor] Recovery successful');
-      if (this.onRecoverySuccess) {
-        this.onRecoverySuccess();
-      }
-    } else {
-      console.log('[RecordingMonitor] Recovery failed:', failures);
-      if (this.onRecoveryFailed) {
-        this.onRecoveryFailed(failures.join(', '));
-      }
-    }
-
-    this._emitStateChange();
-    return success;
   }
 
   // ========================================
@@ -368,22 +415,30 @@ class RecordingMonitor {
   // ========================================
 
   _log(event, data) {
-    const entry = {
-      timestamp: new Date().toISOString(),
-      event,
-      data
-    };
-    this.eventLog.push(entry);
+    try {
+      const entry = {
+        timestamp: new Date().toISOString(),
+        event,
+        data
+      };
+      this.eventLog.push(entry);
 
-    // ログサイズを制限
-    while (this.eventLog.length > this.maxLogEntries) {
-      this.eventLog.shift();
+      // ログサイズを制限
+      while (this.eventLog.length > this.maxLogEntries) {
+        this.eventLog.shift();
+      }
+    } catch (e) {
+      // ログ記録の失敗は無視
     }
   }
 
   _emitStateChange() {
-    if (this.onStateChange) {
-      this.onStateChange(this.getState());
+    try {
+      if (this.onStateChange) {
+        this.onStateChange(this.getState());
+      }
+    } catch (e) {
+      console.error('[RecordingMonitor] _emitStateChange error:', e);
     }
   }
 }
