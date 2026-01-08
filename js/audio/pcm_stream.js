@@ -173,6 +173,46 @@ class PCMStreamProcessor {
   isActive() {
     return this.isProcessing;
   }
+
+  /**
+   * AudioContextの状態を取得
+   */
+  getAudioContextState() {
+    return this.audioContext?.state || null;
+  }
+
+  /**
+   * AudioContextがsuspendedの場合に復帰を試みる
+   * @returns {Promise<boolean>} 復帰に成功した場合true
+   */
+  async resumeAudioContext() {
+    if (!this.audioContext) {
+      console.warn('[PCM] No AudioContext to resume');
+      return false;
+    }
+
+    if (this.audioContext.state === 'suspended') {
+      try {
+        await this.audioContext.resume();
+        console.log('[PCM] AudioContext resumed successfully');
+        return true;
+      } catch (error) {
+        console.error('[PCM] Failed to resume AudioContext:', error);
+        return false;
+      }
+    }
+
+    return this.audioContext.state === 'running';
+  }
+
+  /**
+   * MediaStreamが有効かどうか
+   */
+  isStreamActive() {
+    if (!this.mediaStream) return false;
+    const tracks = this.mediaStream.getTracks();
+    return tracks.length > 0 && tracks.every(t => t.readyState === 'live');
+  }
 }
 
 /**

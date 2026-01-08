@@ -242,7 +242,8 @@
   "toast": {
     "recording": {
       "started": "Recording started ({provider})",
-      "stopped": "Recording stopped"
+      "stopped": "Recording stopped",
+      "interrupted": "Recording interrupted. Content saved. Press record button to continue"
     },
     "copy": {
       "success": "Copied",

@@ -89,6 +89,75 @@ const ALLOWED_STT_MODELS = new Set([
 let currentSTTProvider = null;
 let pcmStreamProcessor = null;
 
+// 録音モニター（Issue #18: スマホでの録音中断対策）
+let recordingMonitor = null;
+
+// Wake Lock（Issue #18: スリープ抑止）
+let wakeLock = null;
+
+// =====================================
+// Wake Lock ヘルパー（スリープ抑止）
+// =====================================
+
+/**
+ * モバイルデバイスかどうかを判定
+ */
+function isMobileDevice() {
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ||
+    (navigator.maxTouchPoints && navigator.maxTouchPoints > 2);
+}
+
+/**
+ * Wake Lockを取得（録音中のスリープ抑止）
+ */
+async function startWakeLock() {
+  if (!('wakeLock' in navigator)) {
+    console.log('[WakeLock] Not supported in this browser');
+    return false;
+  }
+
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    console.log('[WakeLock] Acquired');
+
+    wakeLock.addEventListener('release', () => {
+      console.log('[WakeLock] Released');
+      wakeLock = null;
+    });
+
+    return true;
+  } catch (e) {
+    console.warn('[WakeLock] Failed to acquire:', e.message);
+    // 取得失敗は静かに諦める（必須機能ではない）
+    return false;
+  }
+}
+
+/**
+ * Wake Lockを解放
+ */
+async function stopWakeLock() {
+  if (wakeLock) {
+    try {
+      await wakeLock.release();
+      console.log('[WakeLock] Manually released');
+    } catch (e) {
+      console.warn('[WakeLock] Release error:', e.message);
+    }
+    wakeLock = null;
+  }
+}
+
+/**
+ * visibilitychange時にWake Lockを再取得
+ */
+async function reacquireWakeLock() {
+  if (document.visibilityState === 'visible' && isRecording && !wakeLock) {
+    console.log('[WakeLock] Reacquiring after visibility change');
+    await startWakeLock();
+  }
+}
+
 // =====================================
 // STTプロバイダUIの更新
 // =====================================
@@ -855,6 +924,12 @@ async function startRecording() {
     isRecording = true;
     updateUI();
 
+    // Wake Lockを取得（Issue #18: スリープ抑止）
+    await startWakeLock();
+
+    // 録音モニターを開始（Issue #18: スマホでの録音中断対策）
+    startRecordingMonitor();
+
     const providerName = getProviderDisplayName(provider);
     showToast(t('toast.recording.started', { provider: providerName }), 'success');
 
@@ -1237,6 +1312,12 @@ function escapeHtml(text) {
 async function cleanupRecording() {
   console.log('[Cleanup] Starting cleanup...');
 
+  // 0. Wake Lockを解放（Issue #18）
+  await stopWakeLock();
+
+  // 0.5. 録音モニターを停止（Issue #18）
+  stopRecordingMonitor();
+
   // 1. 停止フラグをオンにする（onstopで最終blobを処理するため）
   isStopping = true;
 
@@ -1348,9 +1429,19 @@ function startNewMediaRecorder() {
     }
   };
 
-  // timesliceなしで開始（stopするまで1つの完結したファイルになる）
-  mediaRecorder.start();
-  console.log('MediaRecorder started (no timeslice - will create complete file on stop)');
+  // モバイルの場合はtimeslice付きで開始（中断時のデータ損失を最小化）
+  // PCの場合はtimesliceなしで開始（stopするまで1つの完結したファイルになる）
+  if (isMobileDevice()) {
+    const MOBILE_TIMESLICE_MS = 1000; // 1秒ごとにdataavailable
+    mediaRecorder.start(MOBILE_TIMESLICE_MS);
+    console.log(`MediaRecorder started (timeslice=${MOBILE_TIMESLICE_MS}ms for mobile)`);
+  } else {
+    mediaRecorder.start();
+    console.log('MediaRecorder started (no timeslice - will create complete file on stop)');
+  }
+
+  // 録音モニターの参照を更新（Issue #18）
+  updateRecordingMonitorReferences();
 }
 
 // 定期的にstop→restart（完結したBlobを生成）
@@ -1378,6 +1469,94 @@ async function stopRecording() {
 
   updateUI();
   showToast(t('toast.recording.stopped'), 'info');
+}
+
+// =====================================
+// 録音モニター（Issue #18: スマホでの録音中断対策）
+// =====================================
+
+/**
+ * 録音モニターを開始
+ * バックグラウンド遷移、画面スリープ、着信などによる録音中断を検知
+ * 方針：自動復帰は行わず、安全停止＋データ保全＋再開案内
+ */
+function startRecordingMonitor() {
+  if (!window.RecordingMonitor) {
+    console.warn('[Monitor] RecordingMonitor class not available');
+    return;
+  }
+
+  recordingMonitor = new RecordingMonitor();
+
+  // 中断検知時のコールバック（安全停止＋再開案内）
+  recordingMonitor.onInterruption = (reason, details) => {
+    console.log(`[Monitor] Interruption: ${reason}`, details);
+
+    // ストリームが終了した場合（着信などで発生）は安全停止
+    if (reason === 'stream_ended') {
+      console.log('[Monitor] Stream ended - stopping recording safely');
+      // 現在までのデータを回収して安全停止
+      if (recordingMonitor) {
+        recordingMonitor.safeStopMediaRecorder();
+      }
+      showToast(t('toast.recording.interrupted'), 'warning');
+    }
+
+    // AudioContext suspended の場合は復帰を試みる（ベストエフォート）
+    if (reason === 'audiocontext_suspended') {
+      console.log('[Monitor] AudioContext suspended - attempting resume');
+      if (recordingMonitor) {
+        recordingMonitor.tryResumeAudioContext();
+      }
+    }
+  };
+
+  // 可視性変化時のコールバック（Wake Lock再取得）
+  recordingMonitor.onVisibilityChange = async (isVisible) => {
+    console.log(`[Monitor] Visibility change: ${isVisible ? 'visible' : 'hidden'}`);
+    if (isVisible) {
+      // 復帰時にWake Lockを再取得
+      await reacquireWakeLock();
+    }
+  };
+
+  // 状態変化時のコールバック（デバッグ用）
+  recordingMonitor.onStateChange = (state) => {
+    console.log('[Monitor] State:', state);
+  };
+
+  // 監視を開始
+  recordingMonitor.start({
+    mediaRecorder: mediaRecorder,
+    audioContext: pcmStreamProcessor?.audioContext || null,
+    mediaStream: currentAudioStream
+  });
+
+  console.log('[Monitor] Recording monitor started');
+}
+
+/**
+ * 録音モニターを停止
+ */
+function stopRecordingMonitor() {
+  if (recordingMonitor) {
+    recordingMonitor.stop();
+    recordingMonitor = null;
+    console.log('[Monitor] Recording monitor stopped');
+  }
+}
+
+/**
+ * 録音モニターの参照を更新（MediaRecorder再起動時など）
+ */
+function updateRecordingMonitorReferences() {
+  if (recordingMonitor) {
+    recordingMonitor.updateReferences({
+      mediaRecorder: mediaRecorder,
+      audioContext: pcmStreamProcessor?.audioContext || null,
+      mediaStream: currentAudioStream
+    });
+  }
 }
 
 // キュー方式で直列化
