@@ -369,7 +369,13 @@
     "recordSavedAt": "保存",
     "recordDuration": "所要時間",
     "notSupported": "このブラウザでは履歴機能を利用できません。",
-    "missingRecord": "履歴が見つかりません"
+    "missingRecord": "履歴が見つかりません",
+    "import": "MDファイルを読み込む",
+    "importConfirmOverwrite": "現在の文字起こしとAI回答を上書きしますか？",
+    "importSuccess": "MDファイルを読み込みました",
+    "importFailed": "MDファイルの読み込みに失敗しました: {message}",
+    "importNoTranscript": "文字起こしが見つかりませんでした",
+    "importInvalidFile": "有効なMDファイルではありません"
   },
   "modal": {
     "welcome": {

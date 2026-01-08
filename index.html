@@ -802,6 +802,16 @@
       padding: 1.5rem;
       overflow-y: auto;
       max-height: calc(90vh - 140px);
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    /* モーダル表示時は背景スクロール禁止 */
+    body.modal-open {
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
     }
 
     .modal-footer {
@@ -2162,7 +2172,11 @@
       </div>
       <div class="modal-footer" style="justify-content:space-between;">
         <button class="btn btn-ghost" id="clearHistoryBtn">🧹 <span data-i18n="history.clearAll">履歴を全て削除</span></button>
-        <button class="btn btn-secondary" id="closeHistoryModalFooterBtn" data-i18n="common.close">閉じる</button>
+        <div style="display:flex; gap:0.5rem;">
+          <button class="btn btn-secondary" id="importHistoryBtn">📂 <span data-i18n="history.import">MDファイルを読み込む</span></button>
+          <input type="file" id="importFileInput" accept=".md,text/markdown" style="display:none;">
+          <button class="btn btn-secondary" id="closeHistoryModalFooterBtn" data-i18n="common.close">閉じる</button>
+        </div>
       </div>
     </div>
   </div>
