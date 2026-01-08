@@ -726,6 +726,22 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
+  // MDファイルインポート
+  const importHistoryBtn = document.getElementById('importHistoryBtn');
+  const importFileInput = document.getElementById('importFileInput');
+  if (importHistoryBtn && importFileInput) {
+    importHistoryBtn.addEventListener('click', () => {
+      importFileInput.click();
+    });
+    importFileInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        importFromMarkdown(file).catch(err => console.error('[History] import failed', err));
+        importFileInput.value = ''; // リセット
+      }
+    });
+  }
+
   const historyList = document.getElementById('historyList');
   if (historyList) {
     historyList.addEventListener('click', handleHistoryListAction);
@@ -3492,6 +3508,169 @@ async function restoreFromHistory(recordId) {
   closeHistoryModal();
   showToast(t('toast.history.restored'), 'success');
   console.log('[History] Restored from record:', record.id);
+}
+
+// =====================================
+// MDファイルインポート機能
+// =====================================
+
+/**
+ * MDファイルをパースして会議データを抽出
+ * @param {string} mdContent - MDファイルの内容
+ * @returns {Object|null} パースされたデータ
+ */
+function parseImportMarkdown(mdContent) {
+  if (!mdContent || typeof mdContent !== 'string') {
+    return null;
+  }
+
+  const result = {
+    title: null,
+    transcript: '',
+    transcriptChunks: [],
+    aiResponses: {
+      summary: [],
+      opinion: [],
+      idea: [],
+      minutes: '',
+      custom: []
+    }
+  };
+
+  // タイトル抽出（# で始まる最初の行）
+  const titleMatch = mdContent.match(/^#\s+(.+)$/m);
+  if (titleMatch) {
+    result.title = titleMatch[1].trim();
+  }
+
+  // 文字起こし抽出（<details>タグ内）
+  const transcriptMatch = mdContent.match(/<details>[\s\S]*?<summary>[\s\S]*?<\/summary>\s*([\s\S]*?)\s*<\/details>/i);
+  if (transcriptMatch) {
+    result.transcript = transcriptMatch[1].trim();
+    // チャンクに変換
+    result.transcriptChunks = parseTranscriptToChunks(result.transcript);
+  }
+
+  // 議事録抽出（## 📝 で始まるセクション）
+  const minutesMatch = mdContent.match(/##\s*📝[^\n]*\n\n([\s\S]*?)(?=\n---|\n##|$)/);
+  if (minutesMatch) {
+    result.minutes = minutesMatch[1].trim();
+    result.aiResponses.minutes = result.minutes;
+  }
+
+  // AI回答セクション抽出
+  // 要約
+  const summaryMatches = mdContent.matchAll(/###\s*📋[^\n]*(?:#(\d+))?[^\n]*\n\n(?:\*([^*]+)\*\n\n)?([\s\S]*?)(?=\n---|\n###|\n##|$)/g);
+  for (const match of summaryMatches) {
+    const timestamp = match[2] ? match[2].trim() : '';
+    const content = match[3] ? match[3].trim() : '';
+    if (content) {
+      result.aiResponses.summary.push({ timestamp, content });
+    }
+  }
+
+  // 意見
+  const opinionMatches = mdContent.matchAll(/###\s*💭[^\n]*(?:#(\d+))?[^\n]*\n\n(?:\*([^*]+)\*\n\n)?([\s\S]*?)(?=\n---|\n###|\n##|$)/g);
+  for (const match of opinionMatches) {
+    const timestamp = match[2] ? match[2].trim() : '';
+    const content = match[3] ? match[3].trim() : '';
+    if (content) {
+      result.aiResponses.opinion.push({ timestamp, content });
+    }
+  }
+
+  // アイデア
+  const ideaMatches = mdContent.matchAll(/###\s*💡[^\n]*(?:#(\d+))?[^\n]*\n\n(?:\*([^*]+)\*\n\n)?([\s\S]*?)(?=\n---|\n###|\n##|$)/g);
+  for (const match of ideaMatches) {
+    const timestamp = match[2] ? match[2].trim() : '';
+    const content = match[3] ? match[3].trim() : '';
+    if (content) {
+      result.aiResponses.idea.push({ timestamp, content });
+    }
+  }
+
+  // Q&A抽出
+  const qaMatches = mdContent.matchAll(/###\s*Q(\d+):\s*(.+)\n\n([\s\S]*?)(?=\n###|\n##|$)/g);
+  for (const match of qaMatches) {
+    const q = match[2] ? match[2].trim() : '';
+    const a = match[3] ? match[3].trim() : '';
+    if (q && a) {
+      result.aiResponses.custom.push({ q, a });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * MDファイルからインポートしてセッションに復元
+ * @param {File} file - MDファイル
+ */
+async function importFromMarkdown(file) {
+  if (!file) return;
+
+  try {
+    const content = await file.text();
+    const parsed = parseImportMarkdown(content);
+
+    if (!parsed) {
+      showToast(t('history.importInvalidFile'), 'error');
+      return;
+    }
+
+    // 文字起こしがない場合は警告
+    if (!parsed.transcript && parsed.transcriptChunks.length === 0) {
+      showToast(t('history.importNoTranscript'), 'warning');
+    }
+
+    // 録音中なら確認→停止
+    if (isRecording) {
+      if (!confirm(t('history.restoreConfirmRecording'))) return;
+      await stopRecording();
+    }
+
+    // 既存データがあれば上書き確認
+    if (transcriptChunks.length > 0 || hasAnyAiResponse()) {
+      if (!confirm(t('history.importConfirmOverwrite'))) return;
+    }
+
+    // 状態を復元
+    if (parsed.transcriptChunks.length > 0) {
+      transcriptChunks = parsed.transcriptChunks;
+      chunkIdCounter = transcriptChunks.length;
+    }
+    meetingStartMarkerId = null;
+
+    // AI回答を復元
+    aiResponses = parsed.aiResponses;
+
+    // UI更新
+    renderTranscriptChunks();
+    renderAIResponsesFromState();
+
+    // 会議タイトルを設定
+    const titleInput = document.getElementById('meetingTitleInput');
+    if (titleInput && parsed.title) {
+      titleInput.value = parsed.title;
+    }
+
+    // 議事録ボタン有効化
+    const minutesBtn = document.getElementById('minutesBtn');
+    if (minutesBtn && (transcriptChunks.length > 0 || parsed.aiResponses.minutes)) {
+      minutesBtn.disabled = false;
+    }
+
+    // インポートセッションはrestoredHistoryIdをリセット（新規保存される）
+    restoredHistoryId = null;
+
+    closeHistoryModal();
+    showToast(t('history.importSuccess'), 'success');
+    console.log('[History] Imported from MD file:', file.name);
+
+  } catch (error) {
+    console.error('[History] Import failed:', error);
+    showToast(t('history.importFailed', { message: error.message }), 'error');
+  }
 }
 
 async function openHistoryModal() {

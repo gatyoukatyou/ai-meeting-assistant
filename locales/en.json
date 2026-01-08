@@ -370,7 +370,13 @@
     "recordSavedAt": "Saved",
     "recordDuration": "Duration",
     "notSupported": "History is not available in this browser.",
-    "missingRecord": "Record not found"
+    "missingRecord": "Record not found",
+    "import": "Import MD file",
+    "importConfirmOverwrite": "Overwrite current transcript and AI responses?",
+    "importSuccess": "MD file imported successfully",
+    "importFailed": "Failed to import MD file: {message}",
+    "importNoTranscript": "No transcript found in the file",
+    "importInvalidFile": "Invalid MD file format"
   },
   "modal": {
     "welcome": {
