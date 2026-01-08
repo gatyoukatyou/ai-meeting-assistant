@@ -2805,8 +2805,9 @@ function generateExportMarkdown(options = null) {
 
   const now = new Date().toLocaleString(I18n.getLanguage() === 'ja' ? 'ja-JP' : 'en-US');
   const total = costs.transcript.total + costs.llm.total;
+  const title = getMeetingTitleValue() || t('export.document.title') || 'Meeting';
 
-  let md = `# ${t('export.document.title')}\n\n`;
+  let md = `# ${title}\n\n`;
   md += `**${t('export.document.datetime')}** ${now}\n\n`;
 
   // 選択された項目がない場合の警告
