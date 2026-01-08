@@ -3678,12 +3678,14 @@ async function openHistoryModal() {
   if (!modal) return;
   await renderHistoryList();
   modal.classList.add('active');
+  document.body.classList.add('modal-open');
 }
 
 function closeHistoryModal() {
   const modal = document.getElementById('historyModal');
   if (!modal) return;
   modal.classList.remove('active');
+  document.body.classList.remove('modal-open');
 }
 
 async function renderHistoryList() {

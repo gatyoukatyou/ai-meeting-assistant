@@ -802,6 +802,16 @@
       padding: 1.5rem;
       overflow-y: auto;
       max-height: calc(90vh - 140px);
+      -webkit-overflow-scrolling: touch;
+      overscroll-behavior: contain;
+    }
+
+    /* モーダル表示時は背景スクロール禁止 */
+    body.modal-open {
+      overflow: hidden;
+      position: fixed;
+      width: 100%;
+      height: 100%;
     }
 
     .modal-footer {
