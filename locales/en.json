@@ -242,7 +242,10 @@
   "toast": {
     "recording": {
       "started": "Recording started ({provider})",
-      "stopped": "Recording stopped"
+      "stopped": "Recording stopped",
+      "interrupted": "Recording interrupted. Tap screen to resume",
+      "resumed": "Recording resumed",
+      "recoveryFailed": "Failed to resume recording. Press record button to restart"
     },
     "copy": {
       "success": "Copied",

@@ -241,7 +241,10 @@
   "toast": {
     "recording": {
       "started": "録音を開始しました（{provider}）",
-      "stopped": "録音を停止しました"
+      "stopped": "録音を停止しました",
+      "interrupted": "録音が中断されました。画面をタップして再開してください",
+      "resumed": "録音を再開しました",
+      "recoveryFailed": "録音の再開に失敗しました。録音ボタンを押して再開してください"
     },
     "copy": {
       "success": "コピーしました",

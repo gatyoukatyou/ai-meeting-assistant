@@ -89,6 +89,9 @@ const ALLOWED_STT_MODELS = new Set([
 let currentSTTProvider = null;
 let pcmStreamProcessor = null;
 
+// 録音モニター（Issue #18: スマホでの録音中断対策）
+let recordingMonitor = null;
+
 // =====================================
 // STTプロバイダUIの更新
 // =====================================
@@ -855,6 +858,9 @@ async function startRecording() {
     isRecording = true;
     updateUI();
 
+    // 録音モニターを開始（Issue #18: スマホでの録音中断対策）
+    startRecordingMonitor();
+
     const providerName = getProviderDisplayName(provider);
     showToast(t('toast.recording.started', { provider: providerName }), 'success');
 
@@ -1237,6 +1243,9 @@ function escapeHtml(text) {
 async function cleanupRecording() {
   console.log('[Cleanup] Starting cleanup...');
 
+  // 0. 録音モニターを停止（Issue #18）
+  stopRecordingMonitor();
+
   // 1. 停止フラグをオンにする（onstopで最終blobを処理するため）
   isStopping = true;
 
@@ -1351,6 +1360,9 @@ function startNewMediaRecorder() {
   // timesliceなしで開始（stopするまで1つの完結したファイルになる）
   mediaRecorder.start();
   console.log('MediaRecorder started (no timeslice - will create complete file on stop)');
+
+  // 録音モニターの参照を更新（Issue #18）
+  updateRecordingMonitorReferences();
 }
 
 // 定期的にstop→restart（完結したBlobを生成）
@@ -1378,6 +1390,97 @@ async function stopRecording() {
 
   updateUI();
   showToast(t('toast.recording.stopped'), 'info');
+}
+
+// =====================================
+// 録音モニター（Issue #18: スマホでの録音中断対策）
+// =====================================
+
+/**
+ * 録音モニターを開始
+ * バックグラウンド遷移、画面スリープ、着信などによる録音中断を検知
+ */
+function startRecordingMonitor() {
+  if (!window.RecordingMonitor) {
+    console.warn('[Monitor] RecordingMonitor class not available');
+    return;
+  }
+
+  recordingMonitor = new RecordingMonitor();
+
+  // 中断検知時のコールバック
+  recordingMonitor.onInterruption = (reason, canRecover) => {
+    console.log(`[Monitor] Interruption: ${reason}, canRecover: ${canRecover}`);
+
+    // バックグラウンドに移行した場合は警告を表示
+    if (reason === 'background') {
+      // バックグラウンドでは表示されないが、復帰時に確認できる
+      console.log('[Monitor] App moved to background while recording');
+    }
+
+    // ストリームが終了した場合（着信などで発生）
+    if (reason === 'stream_ended' || reason === 'audiocontext_suspended') {
+      if (!canRecover) {
+        showToast(t('toast.recording.interrupted'), 'warning');
+      }
+    }
+  };
+
+  // 復帰試行時のコールバック
+  recordingMonitor.onRecoveryAttempt = (reason) => {
+    console.log(`[Monitor] Recovery attempt: ${reason}`);
+  };
+
+  // 復帰成功時のコールバック
+  recordingMonitor.onRecoverySuccess = () => {
+    console.log('[Monitor] Recovery successful');
+    showToast(t('toast.recording.resumed'), 'success');
+  };
+
+  // 復帰失敗時のコールバック
+  recordingMonitor.onRecoveryFailed = (reason) => {
+    console.log(`[Monitor] Recovery failed: ${reason}`);
+    // 復帰不能な場合はユーザーに通知
+    showToast(t('toast.recording.recoveryFailed'), 'error');
+  };
+
+  // 状態変化時のコールバック（デバッグ用）
+  recordingMonitor.onStateChange = (state) => {
+    console.log('[Monitor] State:', state);
+  };
+
+  // 監視を開始
+  recordingMonitor.start({
+    mediaRecorder: mediaRecorder,
+    audioContext: pcmStreamProcessor?.audioContext || null,
+    mediaStream: currentAudioStream
+  });
+
+  console.log('[Monitor] Recording monitor started');
+}
+
+/**
+ * 録音モニターを停止
+ */
+function stopRecordingMonitor() {
+  if (recordingMonitor) {
+    recordingMonitor.stop();
+    recordingMonitor = null;
+    console.log('[Monitor] Recording monitor stopped');
+  }
+}
+
+/**
+ * 録音モニターの参照を更新（MediaRecorder再起動時など）
+ */
+function updateRecordingMonitorReferences() {
+  if (recordingMonitor) {
+    recordingMonitor.updateReferences({
+      mediaRecorder: mediaRecorder,
+      audioContext: pcmStreamProcessor?.audioContext || null,
+      mediaStream: currentAudioStream
+    });
+  }
 }
 
 // キュー方式で直列化
