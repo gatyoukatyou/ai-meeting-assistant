@@ -255,6 +255,9 @@ let aiResponses = {
   custom: []    // Q&A形式で蓄積 { q: '...', a: '...' }
 };
 
+// 履歴復元用（上書き保存のため）
+let restoredHistoryId = null;
+
 function safeURL(input) {
   try {
     const url = new URL(input, window.location.href);
@@ -3180,6 +3183,19 @@ function getDefaultMeetingTitle(date = new Date()) {
   });
 }
 
+// ディープコピー用ヘルパー（structuredClone優先、フォールバックはJSON）
+function deepCopy(obj) {
+  if (obj === null || obj === undefined) return obj;
+  if (typeof structuredClone === 'function') {
+    try {
+      return structuredClone(obj);
+    } catch (e) {
+      // structuredCloneが失敗した場合はJSONフォールバック
+    }
+  }
+  return JSON.parse(JSON.stringify(obj));
+}
+
 function buildHistoryRecord() {
   if (typeof HistoryStore === 'undefined') return null;
   const transcriptText = getFilteredTranscriptText();
@@ -3197,6 +3213,7 @@ function buildHistoryRecord() {
     id: `history_${now.getTime()}_${Math.random().toString(36).substr(2, 6)}`,
     title: getMeetingTitleValue() || getDefaultMeetingTitle(now),
     createdAt: now.toISOString(),
+    updatedAt: now.toISOString(),
     transcript: transcriptText,
     durationSec: Math.round(costs.transcript.duration || 0),
     summaryPreview,
@@ -3208,7 +3225,13 @@ function buildHistoryRecord() {
       qa: true,
       transcript: true,
       cost: true
-    })
+    }),
+    // Phase2: 再読み込み用データ
+    transcriptChunks: deepCopy(transcriptChunks),
+    meetingStartMarkerId: meetingStartMarkerId,
+    chunkIdCounter: chunkIdCounter,
+    aiResponses: deepCopy(aiResponses),
+    costs: deepCopy(costs)
   };
 }
 
@@ -3216,18 +3239,259 @@ async function saveHistorySnapshot() {
   if (typeof HistoryStore === 'undefined') {
     return;
   }
-  const record = buildHistoryRecord();
+  let record = buildHistoryRecord();
   if (!record) {
     return;
   }
+
+  // 復元セッションの場合は上書き保存
+  if (restoredHistoryId) {
+    try {
+      const original = await HistoryStore.get(restoredHistoryId);
+      if (original) {
+        record.id = restoredHistoryId;
+        record.createdAt = original.createdAt; // 元の作成日時を維持
+      }
+    } catch (e) {
+      console.warn('[History] Failed to get original record for overwrite', e);
+    }
+  }
+  record.updatedAt = new Date().toISOString();
+
   try {
     await HistoryStore.save(record);
     showToast(t('toast.history.saved'), 'success');
+    restoredHistoryId = null; // リセット
     await refreshHistoryListIfOpen();
   } catch (err) {
     console.error('[History] Failed to save record', err);
     showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
   }
+}
+
+// =====================================
+// 履歴復元機能（Phase2）
+// =====================================
+
+// 旧形式のtranscript文字列からチャンクを再構築（堅牢版）
+function parseTranscriptToChunks(transcriptText) {
+  if (!transcriptText || typeof transcriptText !== 'string') {
+    return [];
+  }
+
+  const lines = transcriptText.split('\n').filter(line => line.trim());
+  if (lines.length === 0) return [];
+
+  const chunks = [];
+  let counter = 0;
+
+  for (const line of lines) {
+    // [HH:MM] または [H:MM] 形式を許容
+    const match = line.match(/^\[(\d{1,2}:\d{2})\]\s*(.*)$/);
+    if (match) {
+      chunks.push({
+        id: `chunk_${++counter}`,
+        timestamp: match[1],
+        text: match[2] || '',
+        excluded: false,
+        isMarkerStart: false
+      });
+    } else {
+      // タイムスタンプなし行: timestamp null で追加
+      chunks.push({
+        id: `chunk_${++counter}`,
+        timestamp: null,
+        text: line,
+        excluded: false,
+        isMarkerStart: false
+      });
+    }
+  }
+
+  // 失敗時フォールバック: 全文を1chunkに
+  if (chunks.length === 0 && transcriptText.trim()) {
+    return [{
+      id: 'chunk_1',
+      timestamp: null,
+      text: transcriptText.trim(),
+      excluded: false,
+      isMarkerStart: false
+    }];
+  }
+
+  return chunks;
+}
+
+// AI回答があるかどうかチェック
+function hasAnyAiResponse() {
+  return (
+    aiResponses.summary.length > 0 ||
+    aiResponses.opinion.length > 0 ||
+    aiResponses.idea.length > 0 ||
+    aiResponses.minutes !== '' ||
+    aiResponses.custom.length > 0
+  );
+}
+
+// AI回答をUIに反映（XSS安全）
+function renderAIResponsesFromState() {
+  // summary/opinion/idea: textContentのみ使用
+  ['summary', 'opinion', 'idea'].forEach(type => {
+    const el = document.getElementById(`response-${type}`);
+    if (!el) return;
+
+    if (aiResponses[type].length === 0) {
+      el.textContent = t('app.aiResponse.placeholder');
+      return;
+    }
+
+    const displayText = aiResponses[type].map((entry, i) => {
+      const ts = entry.timestamp || '';
+      return `━━━ #${i + 1}${ts ? `（${ts}）` : ''} ━━━\n\n${entry.content}`;
+    }).join('\n\n');
+    el.textContent = displayText; // XSS安全
+  });
+
+  // minutes: textContentのみ
+  const minutesEl = document.getElementById('response-minutes');
+  if (minutesEl) {
+    minutesEl.textContent = aiResponses.minutes || t('app.aiResponse.minutesPlaceholder');
+  }
+
+  // custom Q&A: DOM生成でtextContent使用
+  const qaHistory = document.getElementById('qa-history');
+  if (qaHistory) {
+    qaHistory.innerHTML = ''; // クリアのみ
+    if (aiResponses.custom.length === 0) {
+      const placeholder = document.createElement('div');
+      placeholder.className = 'ai-response';
+      placeholder.textContent = t('app.aiResponse.placeholder');
+      qaHistory.appendChild(placeholder);
+    } else {
+      aiResponses.custom.forEach((qa, i) => {
+        const item = document.createElement('div');
+        item.className = 'qa-item';
+        item.style.marginBottom = '1rem';
+        item.style.padding = '0.75rem';
+        item.style.border = '1px solid var(--border)';
+        item.style.borderRadius = '8px';
+
+        const qDiv = document.createElement('div');
+        qDiv.className = 'qa-question';
+        qDiv.style.fontWeight = '600';
+        qDiv.style.marginBottom = '0.5rem';
+        qDiv.style.color = 'var(--primary)';
+        qDiv.textContent = `Q${i + 1}: ${qa.q}`; // XSS安全
+
+        const aDiv = document.createElement('div');
+        aDiv.className = 'qa-answer';
+        aDiv.style.whiteSpace = 'pre-wrap';
+        aDiv.textContent = qa.a; // XSS安全
+
+        item.appendChild(qDiv);
+        item.appendChild(aDiv);
+        qaHistory.appendChild(item);
+      });
+    }
+  }
+}
+
+// コスト表示更新
+function updateCostDisplayFromState() {
+  if (typeof updateCostDisplay === 'function') {
+    updateCostDisplay();
+  }
+}
+
+// 履歴から復元
+async function restoreFromHistory(recordId) {
+  if (!recordId || typeof HistoryStore === 'undefined') {
+    showToast(t('toast.history.failed', { message: 'Invalid request' }), 'error');
+    return;
+  }
+
+  const record = await HistoryStore.get(recordId);
+  if (!record) {
+    showToast(t('toast.history.failed', { message: t('history.missingRecord') }), 'error');
+    return;
+  }
+
+  // 録音中なら確認→停止
+  if (isRecording) {
+    if (!confirm(t('history.restoreConfirmRecording'))) {
+      return;
+    }
+    try {
+      await stopRecording();
+    } catch (e) {
+      console.error('[History] Failed to stop recording before restore', e);
+    }
+  }
+
+  // 既存データがあれば上書き確認
+  if (transcriptChunks.length > 0 || hasAnyAiResponse()) {
+    if (!confirm(t('history.restoreConfirmOverwrite'))) {
+      return;
+    }
+  }
+
+  // 状態復元
+  if (record.transcriptChunks && Array.isArray(record.transcriptChunks)) {
+    transcriptChunks = record.transcriptChunks;
+    chunkIdCounter = record.chunkIdCounter || transcriptChunks.length;
+    meetingStartMarkerId = record.meetingStartMarkerId || null;
+  } else {
+    // 旧形式: transcript文字列から復元
+    transcriptChunks = parseTranscriptToChunks(record.transcript);
+    chunkIdCounter = transcriptChunks.length;
+    meetingStartMarkerId = null;
+  }
+
+  // fullTranscript更新（互換性維持）
+  fullTranscript = getFullTranscriptText();
+
+  // AI回答復元（無ければ空）
+  if (record.aiResponses) {
+    aiResponses = {
+      summary: record.aiResponses.summary || [],
+      opinion: record.aiResponses.opinion || [],
+      idea: record.aiResponses.idea || [],
+      minutes: record.aiResponses.minutes || '',
+      custom: record.aiResponses.custom || []
+    };
+  } else {
+    aiResponses = { summary: [], opinion: [], idea: [], minutes: '', custom: [] };
+  }
+
+  // コスト復元（無ければ現在値維持）
+  if (record.costs) {
+    costs.transcript = record.costs.transcript || costs.transcript;
+    costs.llm = record.costs.llm || costs.llm;
+  }
+
+  // UI更新
+  renderTranscriptChunks();
+  renderAIResponsesFromState();
+  updateCostDisplayFromState();
+
+  // 会議タイトル復元
+  const titleInput = document.getElementById('meetingTitleInput');
+  if (titleInput && record.title) {
+    titleInput.value = record.title;
+  }
+
+  // 議事録ボタン有効化（録音停止状態として扱う）
+  const minutesBtn = document.getElementById('minutesBtn');
+  if (minutesBtn) {
+    minutesBtn.disabled = false;
+  }
+
+  // 復元元ID保持（上書き保存用）
+  restoredHistoryId = record.id;
+
+  closeHistoryModal();
+  showToast(t('toast.history.restored'), 'success');
+  console.log('[History] Restored from record:', record.id);
 }
 
 async function openHistoryModal() {
@@ -3305,6 +3569,14 @@ async function renderHistoryList() {
     actions.style.flexDirection = 'column';
     actions.style.gap = '0.5rem';
 
+    // 再読み込みボタン（Phase2）
+    const restoreBtn = document.createElement('button');
+    restoreBtn.className = 'btn btn-secondary btn-sm';
+    restoreBtn.dataset.action = 'restore';
+    restoreBtn.dataset.id = record.id;
+    restoreBtn.textContent = `🔄 ${t('history.restore')}`;
+    actions.appendChild(restoreBtn);
+
     const downloadBtn = document.createElement('button');
     downloadBtn.className = 'btn btn-primary btn-sm';
     downloadBtn.dataset.action = 'download';
@@ -3335,6 +3607,8 @@ function handleHistoryListAction(event) {
     downloadHistoryRecord(id).catch(err => console.error('[History] download failed', err));
   } else if (action === 'delete') {
     deleteHistoryRecord(id).catch(err => console.error('[History] delete failed', err));
+  } else if (action === 'restore') {
+    restoreFromHistory(id).catch(err => console.error('[History] restore failed', err));
   }
 }
 
