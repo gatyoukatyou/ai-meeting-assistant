@@ -5,8 +5,8 @@
 ## 1. GitHub確認
 
 - [ ] リポジトリトップで `main` ブランチが表示されている
-- [ ] README.md がv0.9.1の内容になっている
-- [ ] Releases に v0.9.1 が表示されている
+- [ ] README.md が最新リリースの内容になっている
+- [ ] Releases に最新リリースが表示されている
 - [ ] Issue テンプレートが設定されている
 
 ## 2. 公開URL動作確認
@@ -36,7 +36,7 @@ URL: https://gatyoukatyou.github.io/ai-meeting-assistant/
 ### 設定
 - [ ] APIキーの保存ができる
 - [ ] 設定のエクスポート/インポートが動作する
-- [ ] テーマ切替が動作する（v0.9.1の象徴機能）
+- [ ] テーマ切替が動作する（主要UX機能）
 
 ## 3. ブラウザ互換性確認
 
@@ -51,8 +51,8 @@ URL: https://gatyoukatyou.github.io/ai-meeting-assistant/
 ## 4. ドキュメント確認
 
 - [ ] README.md のURLが正しい
-- [ ] README.md のバージョンがv0.9.1
-- [ ] CHANGELOG.md にv0.9.1の記載がある
+- [ ] README.md のバージョンが最新リリースと一致
+- [ ] CHANGELOG.md に最新リリースの記載がある
 - [ ] 法的ドキュメント（TERMS, PRIVACY, SECURITY）へのリンクが有効
 
 ## 5. 公開後の監視（最初の24時間）
