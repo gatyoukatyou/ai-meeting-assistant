@@ -204,6 +204,7 @@
       "clearOnClose": "ブラウザを閉じたらAPIキーを自動削除（共有PC向け）",
       "costAlertTitle": "コストアラート",
       "costLimit": "1セッションの上限金額（円）",
+      "costLimitPlaceholder": "例: 100",
       "costAlertEnabled": "上限の80%で警告を表示",
       "enhancedContextTitle": "強化コンテキスト",
       "enhancedContextEnabled": "ファイル添付による会議資料の提供を有効化",
