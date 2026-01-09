@@ -214,6 +214,12 @@ function loadSavedSettings() {
   document.getElementById('costAlertEnabled').checked = SecureStorage.getOption('costAlertEnabled', true);
   document.getElementById('costLimit').value = SecureStorage.getOption('costLimit', 100);
   document.getElementById('llmPriority').value = SecureStorage.getOption('llmPriority', 'auto');
+
+  // 強化コンテキストオプション
+  const enhancedContextEl = document.getElementById('enhancedContext');
+  if (enhancedContextEl) {
+    enhancedContextEl.checked = SecureStorage.getOption('enhancedContext', false);
+  }
 }
 
 function showMigrationNotice() {
@@ -273,6 +279,12 @@ async function saveSettings() {
   SecureStorage.setOption('costAlertEnabled', document.getElementById('costAlertEnabled').checked);
   SecureStorage.setOption('costLimit', parseInt(document.getElementById('costLimit').value) || 100);
   SecureStorage.setOption('llmPriority', document.getElementById('llmPriority').value);
+
+  // 強化コンテキストオプションを保存
+  const enhancedContextEl = document.getElementById('enhancedContext');
+  if (enhancedContextEl) {
+    SecureStorage.setOption('enhancedContext', enhancedContextEl.checked);
+  }
 
   // 選択されたSTTプロバイダーに応じたバリデーション
   const validationResult = await validateSTTProvider(sttProvider);

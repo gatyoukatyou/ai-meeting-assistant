@@ -200,7 +200,10 @@
       "clearOnClose": "ブラウザを閉じたらAPIキーを自動削除（共有PC向け）",
       "costAlertTitle": "コストアラート",
       "costLimit": "1セッションの上限金額（円）",
-      "costAlertEnabled": "上限の80%で警告を表示"
+      "costAlertEnabled": "上限の80%で警告を表示",
+      "enhancedContextTitle": "強化コンテキスト",
+      "enhancedContextEnabled": "ファイル添付による会議資料の提供を有効化",
+      "enhancedContextHint": "有効にすると、TXT/MDファイルを添付してAIに追加の会議資料を提供できます。"
     },
     "theme": {
       "title": "外観",
@@ -444,6 +447,17 @@
     "clear": "クリア",
     "save": "保存",
     "toastSaved": "会議情報を保存しました",
-    "toastCleared": "会議情報をクリアしました"
+    "toastCleared": "会議情報をクリアしました",
+    "filesLabel": "添付ファイル",
+    "dropZoneText": "ここにファイルをドラッグ、またはクリックして選択",
+    "dropZoneHint": "対応形式: TXT, MD（各2MBまで）",
+    "selectFiles": "ファイルを選択",
+    "fileChars": "{count}文字を抽出",
+    "fileExtracting": "テキスト抽出中...",
+    "fileError": "抽出エラー",
+    "fileTooLarge": "{name} は大きすぎます（最大2MB）",
+    "fileDuplicate": "{name} は既に追加されています",
+    "fileUnsupported": "{name} は対応していない形式です",
+    "fileLimitReached": "最大5ファイルまでです"
   }
 }

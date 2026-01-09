@@ -201,7 +201,10 @@
       "clearOnClose": "Auto-delete API keys when browser closes (for shared PCs)",
       "costAlertTitle": "Cost Alert",
       "costLimit": "Session cost limit (JPY)",
-      "costAlertEnabled": "Show warning at 80% of limit"
+      "costAlertEnabled": "Show warning at 80% of limit",
+      "enhancedContextTitle": "Enhanced Context",
+      "enhancedContextEnabled": "Enable file attachments for meeting context",
+      "enhancedContextHint": "When enabled, you can attach TXT/MD files to provide additional meeting materials to AI."
     },
     "theme": {
       "title": "Appearance",
@@ -445,6 +448,17 @@
     "clear": "Clear",
     "save": "Save",
     "toastSaved": "Meeting information saved",
-    "toastCleared": "Meeting information cleared"
+    "toastCleared": "Meeting information cleared",
+    "filesLabel": "Attached Files",
+    "dropZoneText": "Drag files here or click to select",
+    "dropZoneHint": "Supported: TXT, MD (max 2MB each)",
+    "selectFiles": "Select Files",
+    "fileChars": "{count} chars extracted",
+    "fileExtracting": "Extracting text...",
+    "fileError": "Extraction error",
+    "fileTooLarge": "{name} is too large (max 2MB)",
+    "fileDuplicate": "{name} is already added",
+    "fileUnsupported": "{name} format is not supported",
+    "fileLimitReached": "Maximum 5 files allowed"
   }
 }
