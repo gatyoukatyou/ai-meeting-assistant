@@ -2053,15 +2053,18 @@ async function askAI(type) {
   let prompt = '';
   let customQ = '';
 
+  // 会議コンテキストをプロンプトに付加
+  const contextPrompt = buildContextPrompt();
+
   switch(type) {
     case 'summary':
-      prompt = `${t('ai.prompt.summary')}\n\n${targetText}`;
+      prompt = `${contextPrompt}${t('ai.prompt.summary')}\n\n${targetText}`;
       break;
     case 'opinion':
-      prompt = `${t('ai.prompt.opinion')}\n\n${targetText}`;
+      prompt = `${contextPrompt}${t('ai.prompt.opinion')}\n\n${targetText}`;
       break;
     case 'idea':
-      prompt = `${t('ai.prompt.idea')}\n\n${targetText}`;
+      prompt = `${contextPrompt}${t('ai.prompt.idea')}\n\n${targetText}`;
       break;
     case 'minutes':
       // 議事録は録音停止後のみ
@@ -2069,7 +2072,7 @@ async function askAI(type) {
         showToast(t('toast.qa.minutesAfterStop'), 'warning');
         return;
       }
-      prompt = `${t('ai.prompt.minutes')}\n\n${targetText}`;
+      prompt = `${contextPrompt}${t('ai.prompt.minutes')}\n\n${targetText}`;
       break;
     case 'custom':
       customQ = document.getElementById('customQuestion').value.trim();
@@ -2083,7 +2086,7 @@ async function askAI(type) {
         showToast(t('toast.qa.duplicate'), 'warning');
         return;
       }
-      prompt = t('ai.prompt.custom', { transcript: targetText, question: customQ });
+      prompt = contextPrompt + t('ai.prompt.custom', { transcript: targetText, question: customQ });
       document.getElementById('customQuestion').value = '';
       break;
   }
@@ -3177,7 +3180,10 @@ async function downloadExport() {
   }
 
   const md = generateExportMarkdown(options);
-  const fileName = `meeting-${new Date().toISOString().split('T')[0]}.md`;
+  const title = getMeetingTitleValue();
+  const safeTitle = sanitizeFileName(title || 'meeting');
+  const dateStr = new Date().toISOString().split('T')[0];
+  const fileName = `${safeTitle}-${dateStr}.md`;
   const completed = await downloadMarkdownFile(md, fileName, 'toast.export');
   if (completed) {
     closeExportModal();
@@ -3936,6 +3942,36 @@ function hasMeetingContext() {
     (meetingContext.goal && meetingContext.goal.trim()) ||
     (meetingContext.reference && meetingContext.reference.trim())
   );
+}
+
+/**
+ * LLMプロンプトに付加するコンテキスト文字列を生成
+ * @param {number} maxLength - コンテキストの最大文字数（デフォルト: 2000）
+ * @returns {string} コンテキスト文字列（コンテキストがない場合は空文字）
+ */
+function buildContextPrompt(maxLength = 2000) {
+  if (!hasMeetingContext()) return '';
+
+  const contextParts = [];
+
+  if (meetingContext.goal && meetingContext.goal.trim()) {
+    contextParts.push(`【会議の目的】\n${meetingContext.goal.trim()}`);
+  }
+
+  if (meetingContext.reference && meetingContext.reference.trim()) {
+    contextParts.push(`【参考資料・背景】\n${meetingContext.reference.trim()}`);
+  }
+
+  if (contextParts.length === 0) return '';
+
+  let result = contextParts.join('\n\n');
+
+  // 長さ制限
+  if (result.length > maxLength) {
+    result = result.substring(0, maxLength) + '\n[... コンテキスト省略 ...]';
+  }
+
+  return result + '\n\n---\n\n';
 }
 
 function updateContextIndicators() {
