@@ -1783,6 +1783,183 @@
         box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
       }
     }
+
+    /* ファイルアップロードスタイル */
+    .file-drop-zone {
+      border: 2px dashed var(--border);
+      border-radius: 0.5rem;
+      padding: 1.5rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--card);
+    }
+
+    .file-drop-zone:hover,
+    .file-drop-zone.drag-over {
+      border-color: var(--primary);
+      background: var(--accent-blue, rgba(59, 130, 246, 0.1));
+    }
+
+    .file-drop-icon {
+      font-size: 2rem;
+      display: block;
+      margin-bottom: 0.5rem;
+    }
+
+    .file-drop-text {
+      font-size: 0.9rem;
+      color: var(--text);
+    }
+
+    .file-drop-hint {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      display: block;
+      margin-top: 0.25rem;
+    }
+
+    /* ファイルリスト */
+    .context-file-list {
+      margin-top: 0.75rem;
+    }
+
+    .context-file-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.5rem 0.75rem;
+      background: var(--card);
+      border-radius: 0.375rem;
+      margin-bottom: 0.375rem;
+      border: 1px solid var(--border);
+    }
+
+    .context-file-info {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .context-file-name {
+      font-size: 0.875rem;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .context-file-meta {
+      font-size: 0.7rem;
+      color: var(--text-secondary);
+    }
+
+    .context-file-status {
+      font-size: 0.7rem;
+      padding: 0.125rem 0.375rem;
+      border-radius: 0.25rem;
+      margin-left: 0.5rem;
+    }
+
+    .context-file-status.success {
+      background: #d1fae5;
+      color: #065f46;
+    }
+
+    .context-file-status.error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .context-file-status.loading {
+      background: #fef3c7;
+      color: #92400e;
+    }
+
+    .context-file-status.warning {
+      background: #fff7ed;
+      color: #9a3412;
+    }
+
+    .context-file-remove {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.25rem;
+      font-size: 1rem;
+      opacity: 0.6;
+      transition: opacity 0.2s;
+    }
+
+    .context-file-remove:hover {
+      opacity: 1;
+    }
+
+    /* 文字数カウンター */
+    .context-char-counter {
+      margin-top: 0.75rem;
+      padding-top: 0.5rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .char-count-text {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .char-count-bar {
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      margin-top: 0.25rem;
+      overflow: hidden;
+    }
+
+    .char-count-fill {
+      height: 100%;
+      background: var(--primary);
+      transition: width 0.3s, background 0.3s;
+    }
+
+    .char-count-fill.warning {
+      background: #f59e0b;
+    }
+
+    .char-count-fill.danger {
+      background: #ef4444;
+    }
+
+    /* モバイル: ドロップゾーンを非表示、ボタンのみ */
+    @media (max-width: 767px) {
+      .file-drop-zone {
+        display: none;
+      }
+
+      #contextSelectFilesBtn {
+        display: flex !important;
+        align-items: center;
+        justify-content: center;
+        gap: 0.5rem;
+        min-height: 48px;
+      }
+
+      .context-file-remove {
+        min-width: 44px;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+    }
+
+    /* デスクトップ: ボタンを非表示 */
+    @media (min-width: 768px) {
+      #contextSelectFilesBtn {
+        display: none !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1871,6 +2048,39 @@
         <div class="setting-group">
           <label class="setting-label" for="contextReferenceInput" data-i18n="context.referenceLabel">参考テキスト・資料</label>
           <textarea id="contextReferenceInput" rows="6" class="input" data-i18n-placeholder="context.referencePlaceholder" placeholder="必要に応じて企画書や専門用語リストを貼り付け"></textarea>
+        </div>
+
+        <!-- ファイルアップロードセクション（強化ON時のみ表示） -->
+        <div class="setting-group" id="contextFileUploadSection" style="display:none;">
+          <label class="setting-label" data-i18n="context.filesLabel">添付ファイル</label>
+
+          <!-- ドロップゾーン -->
+          <div class="file-drop-zone" id="contextDropZone">
+            <div class="file-drop-content">
+              <span class="file-drop-icon">📁</span>
+              <span class="file-drop-text" data-i18n="context.dropZoneText">ここにファイルをドラッグ、またはクリックして選択</span>
+              <span class="file-drop-hint" data-i18n="context.dropZoneHint">対応形式: TXT, MD（各2MBまで）</span>
+            </div>
+          </div>
+
+          <!-- 隠しファイル入力 -->
+          <input type="file" id="contextFileInput" accept=".txt,.md,text/plain,text/markdown" multiple style="display:none;">
+
+          <!-- ファイル選択ボタン（モバイル用） -->
+          <button type="button" class="btn btn-secondary" id="contextSelectFilesBtn" style="width:100%; margin-top:0.5rem;">
+            📎 <span data-i18n="context.selectFiles">ファイルを選択</span>
+          </button>
+
+          <!-- ファイルリスト -->
+          <div class="context-file-list" id="contextFileList"></div>
+
+          <!-- 文字数カウンター -->
+          <div class="context-char-counter" id="contextCharCounter">
+            <span class="char-count-text">0 / 8,000</span>
+            <div class="char-count-bar">
+              <div class="char-count-fill" style="width:0%"></div>
+            </div>
+          </div>
         </div>
       </div>
       <div class="modal-footer" style="justify-content:space-between;">
@@ -2259,6 +2469,8 @@
   <script src="js/stt/index.js" defer></script>
   <script src="js/stt/providers/openai_chunked.js" defer></script>
   <script src="js/stt/providers/deepgram_ws.js" defer></script>
+  <!-- ファイル抽出 -->
+  <script src="js/file-extractor.js" defer></script>
   <!-- メインアプリ -->
   <script src="js/app.js" defer></script>
 </body>
