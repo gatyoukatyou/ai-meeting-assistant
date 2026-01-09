@@ -4123,6 +4123,22 @@ function initContextFileUpload() {
     });
   }
 
+  // CSP対応: ファイル削除ボタンは inline onclick を使わず、イベントデリゲーションで処理する
+  const fileListContainer = document.getElementById('contextFileList');
+  if (fileListContainer && !fileListContainer.dataset.boundRemoveClick) {
+    fileListContainer.dataset.boundRemoveClick = '1';
+
+    fileListContainer.addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-action="remove-context-file"]');
+      if (!btn) return;
+
+      const fileId = btn.dataset.fileId;
+      if (!fileId) return;
+
+      removeContextFile(fileId);
+    });
+  }
+
   // 初期表示
   updateContextFileListUI();
   updateContextCharCounter();
@@ -4242,8 +4258,6 @@ function removeContextFile(fileId) {
   persistMeetingContext();
 }
 
-// グローバルに公開（onclick用）
-window.removeContextFile = removeContextFile;
 
 /**
  * ファイルリストUIの更新
@@ -4284,7 +4298,7 @@ function updateContextFileListUI() {
           </div>
         </div>
         <span class="context-file-status ${statusClass}">${statusIcon}</span>
-        <button type="button" class="context-file-remove" onclick="removeContextFile('${file.id}')" title="${t('common.delete') || '削除'}">
+        <button type="button" class="context-file-remove" data-action="remove-context-file" data-file-id="${file.id}" title="${t('common.delete') || '削除'}">
           🗑️
         </button>
       </div>
