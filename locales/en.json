@@ -28,8 +28,11 @@
     "recording": {
       "start": "Start Recording",
       "stop": "Stop Recording",
+      "pause": "Pause",
+      "resume": "Resume",
       "statusReady": "Ready",
       "statusRecording": "Recording",
+      "statusPaused": "Paused",
       "statusConnecting": "Connecting",
       "statusReconnecting": "Reconnecting",
       "statusDisconnected": "Disconnected",
@@ -91,6 +94,7 @@
     "meeting": {
       "modeButton": "Meeting Mode",
       "recording": "Recording",
+      "paused": "Paused",
       "focusHint": "Focus on your meeting",
       "returnButton": "Return to normal view"
     },
@@ -245,6 +249,8 @@
   "toast": {
     "recording": {
       "started": "Recording started ({provider})",
+      "paused": "Recording paused",
+      "resumed": "Recording resumed",
       "stopped": "Recording stopped",
       "interrupted": "Recording interrupted. Content saved. Press record button to continue"
     },

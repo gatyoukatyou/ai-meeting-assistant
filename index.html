@@ -445,6 +445,12 @@
       animation: pulse 1.5s infinite;
     }
 
+    .status-paused {
+      background: #fef3c7;
+      color: #92400e;
+      border-color: #fcd34d;
+    }
+
     @keyframes pulse {
       0%, 100% { opacity: 1; }
       50% { opacity: 0.6; }
@@ -1987,6 +1993,9 @@
         <button type="button" class="btn btn-primary record-btn" id="recordBtn">
           <span data-i18n="app.recording.start">🎤 録音開始</span>
         </button>
+        <button type="button" class="btn btn-secondary record-btn" id="pauseBtn" style="display: none;">
+          <span data-i18n="app.recording.pause">Pause</span>
+        </button>
         <span class="status-badge status-ready" id="statusBadge">
           <span data-i18n="app.recording.statusReady">待機中</span>
         </span>
@@ -2447,7 +2456,7 @@
   <div class="meeting-mode-overlay" id="meetingModeOverlay">
     <div class="meeting-mode-status">
       <div class="meeting-mode-icon">🔴</div>
-      <div class="meeting-mode-text" data-i18n="app.meeting.recording">録音中</div>
+      <div class="meeting-mode-text" id="meetingModeStatusText" data-i18n="app.meeting.recording">録音中</div>
       <div class="meeting-mode-time" id="meetingModeTime">00:00:00</div>
       <div class="meeting-mode-hint" data-i18n="app.meeting.focusHint">会議に集中してください</div>
     </div>
