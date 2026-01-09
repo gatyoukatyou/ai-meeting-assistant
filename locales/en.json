@@ -205,6 +205,7 @@
       "clearOnClose": "Auto-delete API keys when browser closes (for shared PCs)",
       "costAlertTitle": "Cost Alert",
       "costLimit": "Session cost limit (JPY)",
+      "costLimitPlaceholder": "e.g. 100",
       "costAlertEnabled": "Show warning at 80% of limit",
       "enhancedContextTitle": "Enhanced Context",
       "enhancedContextEnabled": "Enable file attachments for meeting context",
