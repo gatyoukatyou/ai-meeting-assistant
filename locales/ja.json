@@ -28,8 +28,11 @@
     "recording": {
       "start": "録音開始",
       "stop": "録音停止",
+      "pause": "一時停止",
+      "resume": "再開",
       "statusReady": "待機中",
       "statusRecording": "録音中",
+      "statusPaused": "一時停止中",
       "statusConnecting": "接続中",
       "statusReconnecting": "再接続中",
       "statusDisconnected": "切断",
@@ -91,6 +94,7 @@
     "meeting": {
       "modeButton": "会議中モード",
       "recording": "録音中",
+      "paused": "一時停止中",
       "focusHint": "会議に集中してください",
       "returnButton": "通常画面に戻る"
     },
@@ -244,6 +248,8 @@
   "toast": {
     "recording": {
       "started": "録音を開始しました（{provider}）",
+      "paused": "録音を一時停止しました",
+      "resumed": "録音を再開しました",
       "stopped": "録音を停止しました",
       "interrupted": "録音が中断されました。ここまでの内容は保存されています。録音ボタンで再開できます"
     },

@@ -2,6 +2,9 @@
 // グローバル変数
 // =====================================
 let isRecording = false;
+let isPaused = false;
+let pausedTotalMs = 0;
+let pauseStartedAt = null;
 let mediaRecorder = null;
 let audioChunks = [];
 let transcriptIntervalId = null;
@@ -16,6 +19,10 @@ let meetingStartMarkerId = null; // 会議開始マーカーのチャンクID
 let isStopping = false;
 let finalStopPromise = null;
 let finalStopResolve = null;
+let recorderStopReason = null;
+let recorderRestartTimeoutId = null;
+let activeProviderId = null;
+let activeProviderStartArgs = null;
 
 // Phase 5: 会議中モード用
 let isMeetingMode = false;
@@ -68,6 +75,20 @@ function isDuplicateQuestion(question) {
 
 function createFinalStopPromise() {
   finalStopPromise = new Promise(resolve => { finalStopResolve = resolve; });
+}
+
+function clearRecorderRestartTimeout() {
+  if (recorderRestartTimeoutId) {
+    clearTimeout(recorderRestartTimeoutId);
+    recorderRestartTimeoutId = null;
+  }
+}
+
+function getActiveDurationMs(now = Date.now()) {
+  if (!recordingStartTime) return 0;
+  const effectiveNow = (isPaused && pauseStartedAt) ? pauseStartedAt : now;
+  const activeMs = effectiveNow - recordingStartTime - pausedTotalMs;
+  return Math.max(activeMs, 0);
 }
 
 // =====================================
@@ -588,6 +609,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
+  const pauseBtn = document.getElementById('pauseBtn');
+  if (pauseBtn) {
+    let pauseGuard = false;
+    pauseBtn.addEventListener('click', async function(e) {
+      e.preventDefault();
+      if (!isRecording) return;
+      if (pauseGuard) return;
+      pauseGuard = true;
+      pauseBtn.disabled = true;
+      try {
+        if (isPaused) {
+          await resumeRecording();
+        } else {
+          await pauseRecording();
+        }
+      } finally {
+        pauseGuard = false;
+        pauseBtn.disabled = false;
+      }
+    });
+  }
+
   const exportBtn = document.getElementById('openExportBtn');
   if (exportBtn) {
     exportBtn.addEventListener('click', openExportModal);
@@ -939,6 +982,14 @@ async function startRecording() {
     return;
   }
 
+  isPaused = false;
+  pausedTotalMs = 0;
+  pauseStartedAt = null;
+  recorderStopReason = null;
+  clearRecorderRestartTimeout();
+  activeProviderId = provider;
+  activeProviderStartArgs = null;
+
   // 一時取得したストリームをcurrentAudioStreamに引き継ぐ
   currentAudioStream = tempAudioStream;
 
@@ -1088,6 +1139,9 @@ async function startStreamingRecording(provider) {
 
   currentSTTProvider.setOnStatusChange((status) => {
     console.log('[Streaming] Status:', status);
+    if (isPaused && status === 'connected') {
+      return;
+    }
     if (status === 'connected') {
       updateStatusBadge('🎙️ ' + t('app.recording.statusConnecting'), 'recording');
     } else if (status === 'reconnecting') {
@@ -1107,6 +1161,7 @@ async function startStreamingRecording(provider) {
   });
 
   pcmStreamProcessor.setOnAudioData((pcmData) => {
+    if (isPaused) return;
     if (currentSTTProvider && currentSTTProvider.isConnected) {
       currentSTTProvider.sendAudioData(pcmData);
     }
@@ -1359,6 +1414,7 @@ async function cleanupRecording() {
     transcriptIntervalId = null;
     console.log('[Cleanup] Interval cleared');
   }
+  clearRecorderRestartTimeout();
 
   // 4. PCMストリームを停止
   if (pcmStreamProcessor) {
@@ -1401,6 +1457,8 @@ async function cleanupRecording() {
   // 9. MediaRecorderの参照破棄は最後
   mediaRecorder = null;
   isStopping = false;
+  recorderStopReason = null;
+  activeProviderId = null;
 
   console.log('[Cleanup] Cleanup complete');
 }
@@ -1413,6 +1471,7 @@ let pendingBlob = null;
 // 新しいMediaRecorderを開始
 function startNewMediaRecorder() {
   if (!currentAudioStream) return;
+  recorderStopReason = null;
 
   // 停止時のPromiseを作成
   createFinalStopPromise();
@@ -1477,27 +1536,122 @@ function startNewMediaRecorder() {
 function stopAndRestartRecording() {
   if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
   if (!isRecording) return;
+  if (isPaused) return;
 
   console.log('Stopping MediaRecorder to create complete blob...');
+  recorderStopReason = 'chunk';
   mediaRecorder.stop();
 
   // 少し待ってから新しいMediaRecorderを開始（onstopの処理完了を待つ）
-  setTimeout(() => {
-    if (isRecording && currentAudioStream) {
+  clearRecorderRestartTimeout();
+  recorderRestartTimeoutId = setTimeout(() => {
+    if (isRecording && !isPaused && recorderStopReason === 'chunk' && currentAudioStream) {
       startNewMediaRecorder();
     }
+    recorderRestartTimeoutId = null;
   }, 100);
 }
 
 async function stopRecording() {
   console.log('=== stopRecording ===');
 
+  if (isPaused && pauseStartedAt) {
+    pausedTotalMs += Date.now() - pauseStartedAt;
+    pauseStartedAt = null;
+  }
+  isPaused = false;
+  recorderStopReason = 'stop';
+  clearRecorderRestartTimeout();
+  activeProviderStartArgs = null;
+
   // クリーンアップ処理を呼び出し
   await cleanupRecording();
   await saveHistorySnapshot();
 
+  activeProviderId = null;
+  pausedTotalMs = 0;
+  pauseStartedAt = null;
+
   updateUI();
   showToast(t('toast.recording.stopped'), 'info');
+}
+
+async function pauseRecording() {
+  console.log('=== pauseRecording ===');
+  if (!isRecording || isPaused) return;
+
+  isPaused = true;
+  pauseStartedAt = Date.now();
+  recorderStopReason = 'pause';
+  clearRecorderRestartTimeout();
+
+  if (transcriptIntervalId) {
+    clearInterval(transcriptIntervalId);
+    transcriptIntervalId = null;
+    console.log('[Pause] Interval cleared');
+  }
+
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    try {
+      mediaRecorder.stop();
+    } catch (e) {
+      console.warn('[Pause] MediaRecorder stop failed:', e);
+    }
+  }
+
+  if (STREAMING_PROVIDERS.has(activeProviderId) &&
+      currentSTTProvider &&
+      typeof currentSTTProvider.stop === 'function') {
+    try {
+      await currentSTTProvider.stop();
+    } catch (e) {
+      console.error('[Pause] Provider stop failed:', e);
+      showToast(t('error.recording', { message: e.message }), 'error');
+    }
+  }
+
+  updateUI();
+  showToast(t('toast.recording.paused'), 'info');
+}
+
+async function resumeRecording() {
+  console.log('=== resumeRecording ===');
+  if (!isRecording || !isPaused) return;
+
+  const resumedAt = Date.now();
+  if (pauseStartedAt) {
+    pausedTotalMs += resumedAt - pauseStartedAt;
+  }
+  pauseStartedAt = null;
+  isPaused = false;
+  recorderStopReason = null;
+
+  try {
+    if (STREAMING_PROVIDERS.has(activeProviderId)) {
+      if (!currentSTTProvider || typeof currentSTTProvider.start !== 'function') {
+        throw new Error('STT provider is not available');
+      }
+      await currentSTTProvider.start(...(activeProviderStartArgs || []));
+    } else {
+      if (!mediaRecorder || mediaRecorder.state === 'inactive') {
+        startNewMediaRecorder();
+      }
+      const intervalEl = document.getElementById('transcriptInterval');
+      const sec = intervalEl ? parseInt(intervalEl.value, 10) : NaN;
+      const interval = Math.max(1, Number.isFinite(sec) ? sec : 10) * 1000;
+      transcriptIntervalId = setInterval(stopAndRestartRecording, interval);
+    }
+  } catch (e) {
+    console.error('[Resume] Failed:', e);
+    isPaused = true;
+    pauseStartedAt = Date.now();
+    updateUI();
+    showToast(t('error.recording', { message: e.message }), 'error');
+    return;
+  }
+
+  updateUI();
+  showToast(t('toast.recording.resumed'), 'success');
 }
 
 // =====================================
@@ -2548,9 +2702,11 @@ function updateLabelSpan(parentEl, i18nKey, iconPrefix) {
 
 function updateUI() {
   const btn = document.getElementById('recordBtn');
+  const pauseBtn = document.getElementById('pauseBtn');
   const badge = document.getElementById('statusBadge');
   const floatingBtn = document.getElementById('floatingStopBtn');
   const meetingModeToggle = document.getElementById('meetingModeToggle');
+  const meetingModeText = document.getElementById('meetingModeStatusText');
   const minutesBtn = document.getElementById('minutesBtn');
 
   if (isRecording) {
@@ -2558,10 +2714,20 @@ function updateUI() {
     updateLabelSpan(btn, 'app.recording.stop', '⏹ ');
     btn.classList.remove('btn-primary');
     btn.classList.add('btn-danger');
+    if (pauseBtn) {
+      pauseBtn.style.display = 'inline-flex';
+      updateLabelSpan(pauseBtn, isPaused ? 'app.recording.resume' : 'app.recording.pause', '');
+    }
     // Update status badge via inner span
-    updateLabelSpan(badge, 'app.recording.statusRecording', '🔴 ');
-    badge.classList.remove('status-ready');
-    badge.classList.add('status-recording');
+    if (isPaused) {
+      updateLabelSpan(badge, 'app.recording.statusPaused', '⏸ ');
+      badge.classList.remove('status-ready', 'status-recording', 'status-error');
+      badge.classList.add('status-paused');
+    } else {
+      updateLabelSpan(badge, 'app.recording.statusRecording', '🔴 ');
+      badge.classList.remove('status-ready', 'status-paused', 'status-error');
+      badge.classList.add('status-recording');
+    }
     // Phase 2: フローティング停止ボタンを表示（スマホ用）
     if (floatingBtn) {
       floatingBtn.classList.add('visible');
@@ -2569,6 +2735,11 @@ function updateUI() {
     // Phase 5: 会議中モード切替ボタンを表示（スマホ用）
     if (meetingModeToggle) {
       meetingModeToggle.classList.add('visible');
+    }
+    if (meetingModeText) {
+      const key = isPaused ? 'app.meeting.paused' : 'app.meeting.recording';
+      meetingModeText.setAttribute('data-i18n', key);
+      meetingModeText.textContent = t(key);
     }
     // 議事録ボタンは録音中は無効
     if (minutesBtn) {
@@ -2584,9 +2755,13 @@ function updateUI() {
     updateLabelSpan(btn, 'app.recording.start', '🎤 ');
     btn.classList.remove('btn-danger');
     btn.classList.add('btn-primary');
+    if (pauseBtn) {
+      pauseBtn.style.display = 'none';
+      pauseBtn.disabled = false;
+    }
     // Update status badge via inner span
-    updateLabelSpan(badge, 'app.recording.statusReady', '⏸ ');
-    badge.classList.remove('status-recording');
+    updateLabelSpan(badge, 'app.recording.statusReady', '🟢 ');
+    badge.classList.remove('status-recording', 'status-paused', 'status-error');
     badge.classList.add('status-ready');
     // Phase 2: フローティング停止ボタンを非表示
     if (floatingBtn) {
@@ -2595,6 +2770,10 @@ function updateUI() {
     // Phase 5: 会議中モード切替ボタンを非表示
     if (meetingModeToggle) {
       meetingModeToggle.classList.remove('visible');
+    }
+    if (meetingModeText) {
+      meetingModeText.setAttribute('data-i18n', 'app.meeting.recording');
+      meetingModeText.textContent = t('app.meeting.recording');
     }
     // 議事録ボタンは録音停止後かつ文字起こしがある場合に有効
     if (minutesBtn) {
@@ -2623,7 +2802,7 @@ function updateStatusBadge(text, status) {
     // No span exists, update badge directly
     badge.textContent = text;
   }
-  badge.classList.remove('status-ready', 'status-recording', 'status-error');
+  badge.classList.remove('status-ready', 'status-recording', 'status-error', 'status-paused');
 
   switch (status) {
     case 'recording':
@@ -2794,7 +2973,7 @@ function exitMeetingMode() {
 function updateMeetingModeTime() {
   if (!recordingStartTime) return;
 
-  const elapsed = Date.now() - recordingStartTime;
+  const elapsed = getActiveDurationMs();
   const hours = Math.floor(elapsed / 3600000);
   const minutes = Math.floor((elapsed % 3600000) / 60000);
   const seconds = Math.floor((elapsed % 60000) / 1000);
