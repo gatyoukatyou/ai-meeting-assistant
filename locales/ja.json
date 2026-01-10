@@ -469,6 +469,16 @@
     "fileTooLarge": "{name} は大きすぎます（最大2MB）",
     "fileDuplicate": "{name} は既に追加されています",
     "fileUnsupported": "{name} は対応していない形式です",
-    "fileLimitReached": "最大5ファイルまでです"
+    "fileLimitReached": "最大5ファイルまでです",
+    "enhancementsLabel": "拡張機能",
+    "reasoningBoostLabel": "Thinking強化",
+    "reasoningBoostHint": "精度向上・時間/コスト増の可能性",
+    "reasoningBoostDisabled": "このプロバイダ/モデルでは使用不可",
+    "nativeDocsLabel": "資料そのまま送信",
+    "nativeDocsHint": "PDFをそのまま送信・精度向上/コスト増の可能性",
+    "nativeDocsDisabled": "Geminiプロバイダーで添付ファイルがある場合のみ",
+    "nativeDocsFallback": "Native Docsに失敗、テキスト抽出にフォールバック",
+    "badgeReasoningBoost": "Boost ON",
+    "badgeNativeDocs": "Native Docs ON"
   }
 }

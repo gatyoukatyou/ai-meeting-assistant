@@ -470,6 +470,16 @@
     "fileTooLarge": "{name} is too large (max 2MB)",
     "fileDuplicate": "{name} is already added",
     "fileUnsupported": "{name} format is not supported",
-    "fileLimitReached": "Maximum 5 files allowed"
+    "fileLimitReached": "Maximum 5 files allowed",
+    "enhancementsLabel": "Enhancements",
+    "reasoningBoostLabel": "Thinking Boost",
+    "reasoningBoostHint": "May improve accuracy, but increases time/cost",
+    "reasoningBoostDisabled": "Not available for this provider/model",
+    "nativeDocsLabel": "Native Docs",
+    "nativeDocsHint": "Send PDFs directly - may improve accuracy/increase cost",
+    "nativeDocsDisabled": "Only available with Gemini and attached files",
+    "nativeDocsFallback": "Native Docs failed, falling back to text extraction",
+    "badgeReasoningBoost": "Boost ON",
+    "badgeNativeDocs": "Native Docs ON"
   }
 }

@@ -2003,6 +2003,9 @@
           📝 <span data-i18n="context.trigger">会議情報を入力</span>
         </button>
         <div class="context-status" id="contextStatusBadge" style="display:none;" data-i18n="context.saved">会議情報を使用中</div>
+        <!-- Enhancement バッジ（v3: Issue #14） -->
+        <div class="enhancement-badge" id="reasoningBoostBadge" style="display:none; background: var(--accent); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">Boost ON</div>
+        <div class="enhancement-badge" id="nativeDocsBadge" style="display:none; background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">Native Docs ON</div>
       </div>
       <div class="header-stt-controls">
         <select id="transcriptProvider" class="model-select" title="STTプロバイダー">
@@ -2097,6 +2100,37 @@
             <div class="char-count-bar">
               <div class="char-count-fill" style="width:0%"></div>
             </div>
+          </div>
+        </div>
+
+        <!-- Enhancements セクション（Issue #14 two-toggles） -->
+        <div class="setting-group" style="margin-top:1rem; padding-top:1rem; border-top:1px solid var(--border-color);">
+          <label class="setting-label" data-i18n="context.enhancementsLabel">拡張機能</label>
+
+          <!-- Thinking Boost トグル -->
+          <div class="toggle-row" style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.75rem;">
+            <div style="flex:1;">
+              <span data-i18n="context.reasoningBoostLabel">Thinking強化</span>
+              <span class="toggle-hint" style="font-size:0.75rem; color:var(--text-secondary); display:block;" data-i18n="context.reasoningBoostHint">精度向上・時間/コスト増の可能性</span>
+              <span class="toggle-disabled-reason" id="reasoningBoostDisabledReason" style="font-size:0.7rem; color:var(--warning); display:none;"></span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="reasoningBoostToggle">
+              <span class="slider"></span>
+            </label>
+          </div>
+
+          <!-- Native Docs トグル -->
+          <div class="toggle-row" style="display:flex; justify-content:space-between; align-items:center;">
+            <div style="flex:1;">
+              <span data-i18n="context.nativeDocsLabel">資料そのまま送信</span>
+              <span class="toggle-hint" style="font-size:0.75rem; color:var(--text-secondary); display:block;" data-i18n="context.nativeDocsHint">PDFをそのまま送信・精度向上/コスト増の可能性</span>
+              <span class="toggle-disabled-reason" id="nativeDocsDisabledReason" style="font-size:0.7rem; color:var(--warning); display:none;"></span>
+            </div>
+            <label class="switch">
+              <input type="checkbox" id="nativeDocsToggle">
+              <span class="slider"></span>
+            </label>
           </div>
         </div>
       </div>

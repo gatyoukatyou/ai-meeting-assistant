@@ -2071,6 +2071,11 @@ function blobToBase64(blob) {
   });
 }
 
+// v3: fileToBase64 はblobToBase64のエイリアス（Fileも Blobを継承）
+function fileToBase64(file) {
+  return blobToBase64(file);
+}
+
 // =====================================
 // トースト通知
 // =====================================
@@ -2499,21 +2504,77 @@ async function callLLMOnce(provider, model, prompt) {
 
   switch(provider) {
     case 'gemini':
-      response = await fetchWithRetry(
-        'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }]
-          })
+      // Gemini用のpartsを構築（v3: Native Docs対応）
+      var geminiParts = [{ text: prompt }];
+      var usedNativeDocs = false;
+
+      // Native Docsが有効かつファイルがある場合
+      if (meetingContext.nativeDocsEnabled && meetingContext.files && meetingContext.files.length > 0) {
+        var caps = getCapabilities('gemini', model);
+        if (caps.supportsNativeDocs) {
+          // P1-6: PDFのみをinlineDataとして追加（非PDFはテキスト抽出で対応）
+          var pdfCount = 0;
+          for (var fi = 0; fi < meetingContext.files.length; fi++) {
+            var fileEntry = meetingContext.files[fi];
+            if (fileEntry.base64Data && fileEntry.type === 'application/pdf') {
+              geminiParts.push({
+                inlineData: {
+                  mimeType: fileEntry.type,
+                  data: fileEntry.base64Data
+                }
+              });
+              usedNativeDocs = true;
+              pdfCount++;
+            }
+          }
+          if (usedNativeDocs) {
+            console.log('[LLM] Native Docs: sending', pdfCount, 'PDF files to Gemini');
+          }
         }
-      );
-      data = await response.json();
-      if (!response.ok) {
-        var errMsg = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
-        throw new Error(errMsg);
       }
+
+      try {
+        response = await fetchWithRetry(
+          'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: geminiParts }]
+            })
+          }
+        );
+        data = await response.json();
+        if (!response.ok) {
+          var errMsg = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
+          throw new Error(errMsg);
+        }
+      } catch (geminiErr) {
+        // Native Docsで失敗した場合はテキスト抽出にフォールバック
+        if (usedNativeDocs) {
+          console.warn('[LLM] Native Docs failed, falling back to text extraction:', geminiErr.message);
+          showToast(t('context.nativeDocsFallback') || 'Native Docsに失敗、テキスト抽出にフォールバック', 'warning');
+          // テキストのみで再試行
+          response = await fetchWithRetry(
+            'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }]
+              })
+            }
+          );
+          data = await response.json();
+          if (!response.ok) {
+            var errMsg2 = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
+            throw new Error(errMsg2);
+          }
+        } else {
+          throw geminiErr;
+        }
+      }
+
       text = (data.candidates && data.candidates[0] && data.candidates[0].content &&
               data.candidates[0].content.parts && data.candidates[0].content.parts[0])
               ? data.candidates[0].content.parts[0].text : '';
@@ -2524,6 +2585,15 @@ async function callLLMOnce(provider, model, prompt) {
       break;
 
     case 'claude':
+      // ペイロードを構築
+      var claudePayload = {
+        model: model,
+        max_tokens: 2048,
+        messages: [{ role: 'user', content: prompt }]
+      };
+      // Reasoning Boost適用（v3: Issue #14）
+      claudePayload = applyReasoningBoost('anthropic', model, claudePayload);
+
       response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
         method: 'POST',
         headers: {
@@ -2532,18 +2602,27 @@ async function callLLMOnce(provider, model, prompt) {
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
-        body: JSON.stringify({
-          model: model,
-          max_tokens: 2048,
-          messages: [{ role: 'user', content: prompt }]
-        })
+        body: JSON.stringify(claudePayload)
       });
       data = await response.json();
       if (!response.ok) {
         var errMsg = (data && data.error && data.error.message) ? data.error.message : 'Claude API error';
         throw new Error(errMsg);
       }
-      text = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+      // Extended thinking有効時はthinkingブロックとtextブロックが混在する可能性
+      // textブロックのみを抽出
+      text = '';
+      if (data.content && Array.isArray(data.content)) {
+        for (var i = 0; i < data.content.length; i++) {
+          if (data.content[i].type === 'text') {
+            text += data.content[i].text;
+          }
+        }
+      }
+      if (!text && data.content && data.content[0] && data.content[0].text) {
+        // フォールバック: 従来形式
+        text = data.content[0].text;
+      }
       inputTokens = (data.usage && data.usage.input_tokens) ? data.usage.input_tokens : Math.ceil(prompt.length / 4);
       outputTokens = (data.usage && data.usage.output_tokens) ? data.usage.output_tokens : Math.ceil(text.length / 4);
       break;
@@ -3180,6 +3259,14 @@ function saveLLMSettings() {
   // APIキーとモデルを保存
   SecureStorage.setApiKey(provider, apiKey);
   SecureStorage.setModel(provider, model);
+
+  // P1-5: provider/model変更時にEnhancementバッジを更新
+  updateEnhancementBadges();
+  // コンテキストモーダルが開いていればトグルも更新
+  const contextModal = document.getElementById('contextModal');
+  if (contextModal && contextModal.classList.contains('active')) {
+    initEnhancementToggles();
+  }
 
   // トースト通知
   showToast(t('llmModal.saved') || 'LLM設定を保存しました', 'success');
@@ -4114,12 +4201,162 @@ function getCurrentCapabilities() {
   return getCapabilities(actualProvider, model);
 }
 
+/**
+ * Anthropic extended thinking を適用
+ * @param {string} provider - プロバイダー名
+ * @param {string} model - モデル名
+ * @param {Object} payload - APIリクエストペイロード
+ * @returns {Object} 修正されたペイロード
+ */
+function applyReasoningBoost(provider, model, payload) {
+  // トグルがOFFなら何もしない
+  if (!meetingContext.reasoningBoostEnabled) {
+    return payload;
+  }
+
+  // Anthropicかつ対応モデルでなければ何もしない
+  const caps = getCapabilities(provider, model);
+  if (!caps.supportsReasoningControl) {
+    return payload;
+  }
+
+  try {
+    // Extended thinking パラメータを追加
+    // budget_tokens: 思考に使用する最大トークン数
+    payload.thinking = {
+      type: 'enabled',
+      budget_tokens: 10000  // 10kトークンまで思考に使用
+    };
+
+    // Extended thinking使用時はmax_tokensを増やす必要がある場合がある
+    // budget_tokens + 通常出力 < max_tokens である必要があるので調整
+    if (payload.max_tokens < 12048) {
+      payload.max_tokens = 16000;  // 思考 + 出力に十分な量
+    }
+
+    console.log('[LLM] Reasoning boost applied for:', provider, model);
+  } catch (e) {
+    console.warn('[LLM] Failed to apply reasoning boost:', e);
+    // 失敗時はそのままのペイロードを返す
+  }
+
+  return payload;
+}
+
+// =====================================
+// Enhancement トグル（v3: Thinking/Native Docs）
+// =====================================
+
+/**
+ * Enhancementトグルを初期化
+ * - meetingContextから状態を復元
+ * - capabilities に基づいて enabled/disabled を更新
+ */
+function initEnhancementToggles() {
+  const reasoningToggle = document.getElementById('reasoningBoostToggle');
+  const nativeDocsToggle = document.getElementById('nativeDocsToggle');
+  const reasoningDisabledReason = document.getElementById('reasoningBoostDisabledReason');
+  const nativeDocsDisabledReason = document.getElementById('nativeDocsDisabledReason');
+
+  const caps = getCurrentCapabilities();
+  // P0-2: Native Docsは「PDFかつbase64あり」の場合のみ有効
+  const hasNativeDocsPayload = (meetingContext.files || []).some(
+    f => f.type === 'application/pdf' && f.base64Data
+  );
+
+  // Reasoning Boost トグル
+  if (reasoningToggle) {
+    if (caps.supportsReasoningControl) {
+      reasoningToggle.disabled = false;
+      reasoningToggle.checked = meetingContext.reasoningBoostEnabled || false;
+      if (reasoningDisabledReason) {
+        reasoningDisabledReason.style.display = 'none';
+      }
+    } else {
+      reasoningToggle.disabled = true;
+      reasoningToggle.checked = false;
+      // P1-4: disable時はmeetingContext側もfalseに寄せる（状態ズレ防止）
+      meetingContext.reasoningBoostEnabled = false;
+      if (reasoningDisabledReason) {
+        reasoningDisabledReason.textContent = t('context.reasoningBoostDisabled');
+        reasoningDisabledReason.style.display = 'block';
+      }
+    }
+  }
+
+  // Native Docs トグル
+  if (nativeDocsToggle) {
+    // P0-2: Gemini かつ PDF base64ありの場合のみ有効
+    if (caps.supportsNativeDocs && hasNativeDocsPayload) {
+      nativeDocsToggle.disabled = false;
+      nativeDocsToggle.checked = meetingContext.nativeDocsEnabled || false;
+      if (nativeDocsDisabledReason) {
+        nativeDocsDisabledReason.style.display = 'none';
+      }
+    } else {
+      nativeDocsToggle.disabled = true;
+      nativeDocsToggle.checked = false;
+      // P1-4: disable時はmeetingContext側もfalseに寄せる（状態ズレ防止）
+      meetingContext.nativeDocsEnabled = false;
+      if (nativeDocsDisabledReason) {
+        nativeDocsDisabledReason.textContent = t('context.nativeDocsDisabled');
+        nativeDocsDisabledReason.style.display = 'block';
+      }
+    }
+  }
+}
+
+/**
+ * Native Docs用のPDF base64ペイロードがあるか判定
+ * @returns {boolean}
+ */
+function hasNativeDocsPayload() {
+  return (meetingContext.files || []).some(
+    f => f.type === 'application/pdf' && f.base64Data
+  );
+}
+
+/**
+ * メイン画面のEnhancementバッジを更新
+ * P1-4: 「ON」ではなく「effective（実際に効く）」で判定
+ */
+function updateEnhancementBadges() {
+  const boostBadge = document.getElementById('reasoningBoostBadge');
+  const nativeDocsBadge = document.getElementById('nativeDocsBadge');
+  const caps = getCurrentCapabilities();
+
+  if (boostBadge) {
+    // P1-4: ONかつcapabilitiesで対応している場合のみ表示
+    const boostEffective = meetingContext.reasoningBoostEnabled && caps.supportsReasoningControl;
+    if (boostEffective) {
+      boostBadge.style.display = 'inline-flex';
+      boostBadge.textContent = t('context.badgeReasoningBoost') || 'Boost ON';
+    } else {
+      boostBadge.style.display = 'none';
+    }
+  }
+
+  if (nativeDocsBadge) {
+    // P1-4: ONかつGeminiかつPDF base64がある場合のみ表示
+    const nativeDocsEffective = meetingContext.nativeDocsEnabled &&
+                                caps.supportsNativeDocs &&
+                                hasNativeDocsPayload();
+    if (nativeDocsEffective) {
+      nativeDocsBadge.style.display = 'inline-flex';
+      nativeDocsBadge.textContent = t('context.badgeNativeDocs') || 'Native Docs ON';
+    } else {
+      nativeDocsBadge.style.display = 'none';
+    }
+  }
+}
+
 // =====================================
 // 会議コンテキスト入力
 // =====================================
 function initializeMeetingContextUI() {
   loadMeetingContextFromStorage();
   updateContextIndicators();
+  updateEnhancementBadges();
 }
 
 function openContextModal() {
@@ -4143,6 +4380,8 @@ function openContextModal() {
   }
   // ファイルアップロードUIを初期化
   initContextFileUpload();
+  // トグル初期化（v3: Enhancements）
+  initEnhancementToggles();
   modal.classList.add('active');
 }
 
@@ -4169,10 +4408,19 @@ function saveContextFromModal() {
   meetingContext.reference = reference;
   meetingContext.schemaVersion = CONTEXT_SCHEMA_VERSION;
   if (!meetingContext.files) meetingContext.files = [];
-  // togglesはUIから直接更新されるため、ここでは触らない
+  // トグル状態を保存（v3: Enhancements）
+  const reasoningToggle = document.getElementById('reasoningBoostToggle');
+  const nativeDocsToggle = document.getElementById('nativeDocsToggle');
+  if (reasoningToggle) {
+    meetingContext.reasoningBoostEnabled = reasoningToggle.checked;
+  }
+  if (nativeDocsToggle) {
+    meetingContext.nativeDocsEnabled = nativeDocsToggle.checked;
+  }
 
   persistMeetingContext();
   updateContextIndicators();
+  updateEnhancementBadges();
   closeContextModal();
   showToast(t('context.toastSaved') || '会議情報を保存しました', 'success');
 }
@@ -4241,7 +4489,13 @@ function createEmptyMeetingContext() {
 
 function persistMeetingContext() {
   if (hasMeetingContext()) {
-    localStorage.setItem(MEETING_CONTEXT_STORAGE_KEY, JSON.stringify(meetingContext));
+    // P0: base64Dataを永続化しない（localStorage上限対策）
+    // replacerでbase64Dataキーを除外
+    const serialized = JSON.stringify(meetingContext, (key, value) => {
+      if (key === 'base64Data') return undefined;  // 除外
+      return value;
+    });
+    localStorage.setItem(MEETING_CONTEXT_STORAGE_KEY, serialized);
   } else {
     localStorage.removeItem(MEETING_CONTEXT_STORAGE_KEY);
   }
@@ -4507,11 +4761,21 @@ async function processContextFile(file) {
     charCount: 0,
     status: 'loading',
     errorMessage: '',
-    uploadedAt: new Date().toISOString()
+    uploadedAt: new Date().toISOString(),
+    base64Data: ''  // v3: Native Docs用のbase64データ
   };
 
   meetingContext.files.push(fileEntry);
   updateContextFileListUI();
+
+  // Native Docs用にbase64データを取得（v3: Issue #14）
+  try {
+    const base64 = await fileToBase64(file);
+    fileEntry.base64Data = base64;
+  } catch (b64Err) {
+    console.warn('[Context] Failed to get base64:', b64Err);
+    // base64取得失敗でもテキスト抽出は続行
+  }
 
   // テキスト抽出
   try {
@@ -4542,6 +4806,8 @@ async function processContextFile(file) {
 
   updateContextFileListUI();
   updateContextCharCounter();
+  // ファイルが追加されたらトグル状態を更新（Native Docs用）
+  initEnhancementToggles();
 }
 
 /**
@@ -4553,6 +4819,8 @@ function removeContextFile(fileId) {
   updateContextFileListUI();
   updateContextCharCounter();
   persistMeetingContext();
+  // ファイルが変更されたらトグル状態を更新（Native Docs用）
+  initEnhancementToggles();
 }
 
 
