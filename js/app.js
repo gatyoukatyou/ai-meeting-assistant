@@ -2517,9 +2517,10 @@ async function callLLMOnce(provider, model, prompt) {
           for (var fi = 0; fi < meetingContext.files.length; fi++) {
             var fileEntry = meetingContext.files[fi];
             if (fileEntry.base64Data && fileEntry.type === 'application/pdf') {
+              // P0: Gemini REST APIはsnake_case（inline_data/mime_type）
               geminiParts.push({
-                inlineData: {
-                  mimeType: fileEntry.type,
+                inline_data: {
+                  mime_type: fileEntry.type,
                   data: fileEntry.base64Data
                 }
               });

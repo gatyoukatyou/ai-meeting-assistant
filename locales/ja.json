@@ -476,7 +476,7 @@
     "reasoningBoostDisabled": "このプロバイダ/モデルでは使用不可",
     "nativeDocsLabel": "資料そのまま送信",
     "nativeDocsHint": "PDFをそのまま送信・精度向上/コスト増の可能性",
-    "nativeDocsDisabled": "Geminiプロバイダーで添付ファイルがある場合のみ",
+    "nativeDocsDisabled": "GeminiプロバイダーでPDF添付がある場合のみ",
     "nativeDocsFallback": "Native Docsに失敗、テキスト抽出にフォールバック",
     "badgeReasoningBoost": "Boost ON",
     "badgeNativeDocs": "Native Docs ON"

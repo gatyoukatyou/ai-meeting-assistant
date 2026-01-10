@@ -477,7 +477,7 @@
     "reasoningBoostDisabled": "Not available for this provider/model",
     "nativeDocsLabel": "Native Docs",
     "nativeDocsHint": "Send PDFs directly - may improve accuracy/increase cost",
-    "nativeDocsDisabled": "Only available with Gemini and attached files",
+    "nativeDocsDisabled": "Only available with Gemini + PDF attached",
     "nativeDocsFallback": "Native Docs failed, falling back to text extraction",
     "badgeReasoningBoost": "Boost ON",
     "badgeNativeDocs": "Native Docs ON"
