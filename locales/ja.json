@@ -449,6 +449,10 @@
     "modalDescription": "会議の目的や参考資料を入力しておくと、AIがより適切な回答を生成できます。",
     "goalLabel": "会議の目的・ゴール",
     "goalPlaceholder": "例: 新機能の要件定義を決定する",
+    "participantsLabel": "参加者・役割",
+    "participantsPlaceholder": "例: 田中（PM）、佐藤（デザイン）、鈴木（エンジニア）",
+    "handoffLabel": "引き継ぎ・前提",
+    "handoffPlaceholder": "例: 前回の決定事項、未解決の課題、前提条件",
     "referenceLabel": "参考資料・背景情報",
     "referencePlaceholder": "例: 前回の会議で議論した内容、関連ドキュメントへのリンクなど",
     "clear": "クリア",
@@ -465,6 +469,16 @@
     "fileTooLarge": "{name} は大きすぎます（最大2MB）",
     "fileDuplicate": "{name} は既に追加されています",
     "fileUnsupported": "{name} は対応していない形式です",
-    "fileLimitReached": "最大5ファイルまでです"
+    "fileLimitReached": "最大5ファイルまでです",
+    "enhancementsLabel": "拡張機能",
+    "reasoningBoostLabel": "Thinking強化",
+    "reasoningBoostHint": "精度向上・時間/コスト増の可能性",
+    "reasoningBoostDisabled": "このプロバイダ/モデルでは使用不可",
+    "nativeDocsLabel": "資料そのまま送信",
+    "nativeDocsHint": "PDFをそのまま送信・精度向上/コスト増の可能性",
+    "nativeDocsDisabled": "GeminiプロバイダーでPDF添付がある場合のみ",
+    "nativeDocsFallback": "Native Docsに失敗、テキスト抽出にフォールバック",
+    "badgeReasoningBoost": "Boost ON",
+    "badgeNativeDocs": "Native Docs ON"
   }
 }

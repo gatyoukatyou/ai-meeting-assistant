@@ -450,6 +450,10 @@
     "modalDescription": "Adding meeting goals and reference materials helps AI generate more relevant responses.",
     "goalLabel": "Meeting Goal",
     "goalPlaceholder": "e.g., Finalize requirements for new feature",
+    "participantsLabel": "Participants / Roles",
+    "participantsPlaceholder": "e.g., John (PM), Sarah (Design), Mike (Engineer)",
+    "handoffLabel": "Handoff / Prerequisites",
+    "handoffPlaceholder": "e.g., Previous decisions, unresolved issues, prerequisites",
     "referenceLabel": "Reference Materials / Background",
     "referencePlaceholder": "e.g., Topics from previous meeting, links to related documents",
     "clear": "Clear",
@@ -466,6 +470,16 @@
     "fileTooLarge": "{name} is too large (max 2MB)",
     "fileDuplicate": "{name} is already added",
     "fileUnsupported": "{name} format is not supported",
-    "fileLimitReached": "Maximum 5 files allowed"
+    "fileLimitReached": "Maximum 5 files allowed",
+    "enhancementsLabel": "Enhancements",
+    "reasoningBoostLabel": "Thinking Boost",
+    "reasoningBoostHint": "May improve accuracy, but increases time/cost",
+    "reasoningBoostDisabled": "Not available for this provider/model",
+    "nativeDocsLabel": "Native Docs",
+    "nativeDocsHint": "Send PDFs directly - may improve accuracy/increase cost",
+    "nativeDocsDisabled": "Only available with Gemini + PDF attached",
+    "nativeDocsFallback": "Native Docs failed, falling back to text extraction",
+    "badgeReasoningBoost": "Boost ON",
+    "badgeNativeDocs": "Native Docs ON"
   }
 }
