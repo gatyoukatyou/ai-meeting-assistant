@@ -462,7 +462,7 @@
     "toastCleared": "Meeting information cleared",
     "filesLabel": "Attached Files",
     "dropZoneText": "Drag files here or click to select",
-    "dropZoneHint": "Supported: TXT, MD (max 2MB each)",
+    "dropZoneHint": "Supported: TXT, MD, PDF, DOCX, CSV (max 2MB each)",
     "selectFiles": "Select Files",
     "fileChars": "{count} chars extracted",
     "fileExtracting": "Extracting text...",
