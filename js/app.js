@@ -4058,6 +4058,63 @@ function sanitizeFileName(name) {
 }
 
 // =====================================
+// プロバイダ能力判定（Issue #14 two-toggles）
+// =====================================
+
+/**
+ * プロバイダとモデルの能力を判定する
+ * @param {string} provider - プロバイダ名 (anthropic, gemini, openai, groq)
+ * @param {string} model - モデル名
+ * @returns {{supportsReasoningControl: boolean, supportsNativeDocs: boolean, supportsVisionImages: boolean}}
+ */
+function getCapabilities(provider, model) {
+  return {
+    supportsReasoningControl: provider === 'anthropic' && isReasoningCapableModel(model),
+    supportsNativeDocs: provider === 'gemini',
+    supportsVisionImages: false  // 将来拡張用
+  };
+}
+
+/**
+ * Anthropicのthinking系パラメータを受け付けるモデルか判定
+ * @param {string} model - モデル名
+ * @returns {boolean}
+ */
+function isReasoningCapableModel(model) {
+  if (!model) return false;
+  // Extended thinking対応モデル
+  const reasoningModels = [
+    'claude-sonnet-4',
+    'claude-opus-4',
+    'claude-3-7-sonnet'  // claude-3.7-sonnet系も対応
+  ];
+  return reasoningModels.some(m => model.includes(m));
+}
+
+/**
+ * 現在のLLM設定から能力を取得
+ * @returns {{supportsReasoningControl: boolean, supportsNativeDocs: boolean, supportsVisionImages: boolean}}
+ */
+function getCurrentCapabilities() {
+  const provider = SecureStorage.getOption('llmPriority', 'auto');
+  let actualProvider = provider;
+
+  // auto の場合は設定されている最優先プロバイダを取得
+  if (provider === 'auto') {
+    const priorityOrder = ['anthropic', 'openai', 'gemini', 'groq'];
+    for (const p of priorityOrder) {
+      if (SecureStorage.getApiKey(p)) {
+        actualProvider = p;
+        break;
+      }
+    }
+  }
+
+  const model = SecureStorage.getEffectiveModel(actualProvider, getDefaultModel(actualProvider));
+  return getCapabilities(actualProvider, model);
+}
+
+// =====================================
 // 会議コンテキスト入力
 // =====================================
 function initializeMeetingContextUI() {
