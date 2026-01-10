@@ -2079,12 +2079,12 @@
             <div class="file-drop-content">
               <span class="file-drop-icon">📁</span>
               <span class="file-drop-text" data-i18n="context.dropZoneText">ここにファイルをドラッグ、またはクリックして選択</span>
-              <span class="file-drop-hint" data-i18n="context.dropZoneHint">対応形式: TXT, MD（各2MBまで）</span>
+              <span class="file-drop-hint" data-i18n="context.dropZoneHint">対応形式: TXT, MD, PDF, DOCX, CSV（各2MBまで）</span>
             </div>
           </div>
 
           <!-- 隠しファイル入力 -->
-          <input type="file" id="contextFileInput" accept=".txt,.md,text/plain,text/markdown" multiple style="display:none;">
+          <input type="file" id="contextFileInput" accept=".txt,.md,.pdf,.docx,.csv,text/plain,text/markdown,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document,text/csv" multiple style="display:none;">
 
           <!-- ファイル選択ボタン（モバイル用） -->
           <button type="button" class="btn btn-secondary" id="contextSelectFilesBtn" style="width:100%; margin-top:0.5rem;">

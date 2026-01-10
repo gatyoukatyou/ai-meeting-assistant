@@ -461,7 +461,7 @@
     "toastCleared": "会議情報をクリアしました",
     "filesLabel": "添付ファイル",
     "dropZoneText": "ここにファイルをドラッグ、またはクリックして選択",
-    "dropZoneHint": "対応形式: TXT, MD（各2MBまで）",
+    "dropZoneHint": "対応形式: TXT, MD, PDF, DOCX, CSV（各2MBまで）",
     "selectFiles": "ファイルを選択",
     "fileChars": "{count}文字を抽出",
     "fileExtracting": "テキスト抽出中...",
