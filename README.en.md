@@ -73,10 +73,12 @@ See [Security Details](docs/SECURITY.md) for more information.
 ### Large Language Models (LLM)
 | Provider | Models |
 |----------|--------|
-| Google Gemini | gemini-2.0-flash, gemini-1.5-flash, gemini-1.5-pro |
-| Anthropic Claude | claude-sonnet-4, claude-3.5-sonnet |
-| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo |
-| Groq | llama-3.3-70b, llama-3.1-70b, llama-3.1-8b |
+| Google Gemini | gemini-2.0-flash-exp, gemini-1.5-flash-latest, gemini-1.5-pro-latest |
+| Anthropic Claude | claude-sonnet-4-20250514, claude-3-5-sonnet-20241022 |
+| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo-2024-04-09 |
+| Groq | llama-3.3-70b-versatile, llama-3.1-8b-instant |
+
+Note: These are preset examples. Custom model names are supported.
 
 ## Quick Start
 

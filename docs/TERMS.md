@@ -1,6 +1,6 @@
 # 利用規約 / Terms of Service
 
-最終更新日 / Last Updated: 2024-12-29
+最終更新日 / Last Updated: 2026-01-10
 
 ---
 
@@ -13,6 +13,11 @@
 ### サービスの性質
 本アプリは、ブラウザ上で動作するクライアントサイド中心のアプリケーションです。
 開発者は、ユーザーの会議内容や文字起こし結果を収集・保存・送信しません。
+
+### ローカル保存について
+本アプリは利便性のため、会議履歴（文字起こし・AI回答）をブラウザのIndexedDBに保存します（最大5件）。
+会議コンテキスト（目的/参考情報/添付資料の抽出テキスト）はlocalStorageに保存されます。
+不要になったデータは履歴削除や設定のクリアで削除してください。
 
 ### APIキー（BYOK）について
 本アプリは BYOK（Bring Your Own Key）方式を採用しています。
@@ -48,6 +53,11 @@ By using the Application, you agree to be bound by these terms.
 ### Nature of the Service
 The Application operates primarily as a client-side, browser-based tool.
 The developer does not collect, store, or transmit meeting audio, transcripts, or content.
+
+### Local Storage
+For convenience, the Application stores meeting history (transcripts and AI responses) in browser IndexedDB (max 5 records).
+Meeting context (goals, references, extracted attachment text) is stored in localStorage.
+Remove this data via history clear or settings reset when no longer needed.
 
 ### API Keys (BYOK)
 The Application uses a Bring Your Own Key (BYOK) model.

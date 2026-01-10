@@ -1,6 +1,6 @@
 # セキュリティ / Security
 
-最終更新日 / Last Updated: 2024-12-29
+最終更新日 / Last Updated: 2026-01-10
 
 ---
 
@@ -22,6 +22,12 @@
 ### クライアントサイド設計
 - 会議音声や文字起こしデータはサーバーに保存されません
 - 処理の大部分はブラウザ内で完結します
+
+### ローカル保存されるデータ
+- 会議履歴（文字起こし・AI回答など）はブラウザのIndexedDBに保存されます（最大5件）
+- 会議コンテキスト（目的/参考情報/添付資料の抽出テキスト）はlocalStorageに保存されます
+- 添付資料のテキストは、AIに送信する際のみ各プロバイダーへ送信されます
+- 不要になったデータは履歴削除や設定のクリアで消去してください
 
 ### APIキーの扱い
 - APIキーはローカルストレージに難読化して保存されます
@@ -68,6 +74,12 @@ The Application is designed to minimize security risks.
 ### Client-Side Architecture
 - Meeting audio and transcripts are not stored on servers
 - Most processing occurs entirely within the user's browser
+
+### Locally Stored Data
+- Meeting history (transcripts and AI responses) is saved in browser IndexedDB (max 5 records)
+- Meeting context (goals, references, extracted attachment text) is saved in localStorage
+- Attachment text is sent to providers only when making AI requests
+- Remove data via history clear or settings reset when no longer needed
 
 ### Handling of API Keys
 - API keys are obfuscated and stored in browser local storage
