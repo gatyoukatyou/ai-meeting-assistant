@@ -17,6 +17,7 @@ class PCMStreamProcessor {
     this.scriptProcessor = null;
     this.audioWorklet = null;
     this.isProcessing = false;
+    this.externalStream = false;  // true if stream was provided externally
 
     this.onAudioData = null;  // (Int16Array) => void
     this.onError = null;      // (Error) => void
@@ -33,23 +34,32 @@ class PCMStreamProcessor {
 
   /**
    * ストリーミングを開始
+   * @param {MediaStream} [existingStream] - 既存のMediaStream（指定時はgetUserMediaをスキップ）
    */
-  async start() {
+  async start(existingStream = null) {
     if (this.isProcessing) {
       console.warn('[PCM] Already processing');
       return;
     }
 
     try {
-      // マイクアクセスを取得
-      this.mediaStream = await navigator.mediaDevices.getUserMedia({
-        audio: {
-          channelCount: 1,
-          sampleRate: this.sampleRate,
-          echoCancellation: true,
-          noiseSuppression: true
-        }
-      });
+      // 既存ストリームがあれば再利用、なければマイクアクセスを取得
+      if (existingStream) {
+        console.log('[PCM] Using existing MediaStream');
+        this.mediaStream = existingStream;
+        this.externalStream = true;  // Don't stop this stream in stop()
+      } else {
+        console.log('[PCM] Requesting new MediaStream');
+        this.mediaStream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            channelCount: 1,
+            sampleRate: this.sampleRate,
+            echoCancellation: true,
+            noiseSuppression: true
+          }
+        });
+        this.externalStream = false;
+      }
 
       // AudioContextを作成
       this.audioContext = new (window.AudioContext || window.webkitAudioContext)({
@@ -120,10 +130,12 @@ class PCMStreamProcessor {
       this.audioContext = null;
     }
 
-    if (this.mediaStream) {
+    // Only stop the stream if we created it (not if it was provided externally)
+    if (this.mediaStream && !this.externalStream) {
       this.mediaStream.getTracks().forEach(track => track.stop());
-      this.mediaStream = null;
     }
+    this.mediaStream = null;
+    this.externalStream = false;
 
     this.audioBuffer = [];
     console.log('[PCM] Stream stopped');

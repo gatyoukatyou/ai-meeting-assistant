@@ -15,6 +15,10 @@ let transcriptChunks = []; // { id, timestamp, text, excluded, isMarkerStart }
 let chunkIdCounter = 0;
 let meetingStartMarkerId = null; // 会議開始マーカーのチャンクID
 
+// Transcript rendering cap (Issue #44: long session stability)
+const TRANSCRIPT_RENDER_CAP = 200;
+let transcriptRenderPending = false;
+
 // 停止時のレース防止用
 let isStopping = false;
 let finalStopPromise = null;
@@ -61,6 +65,61 @@ const QA_TIMEOUT_MS = 30000; // 30秒タイムアウト
 
 // Q&Aリクエストログ（Issue #3対応）
 let qaEventLog = [];
+
+// Issue #40: Global error handling
+let errorHandlerActive = false;
+
+// Sanitize error logs to remove potential API key leaks
+function sanitizeErrorLog(str) {
+  if (typeof str !== 'string') return String(str);
+  // Common API key patterns: sk-..., AIza..., dg_..., etc.
+  return str
+    .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***REDACTED***')
+    .replace(/AIza[a-zA-Z0-9_-]{30,}/g, 'AIza***REDACTED***')
+    .replace(/dg_[a-zA-Z0-9_-]{20,}/g, 'dg_***REDACTED***')
+    .replace(/[a-f0-9]{32,}/gi, '***HASH_REDACTED***');
+}
+
+// Handle fatal errors - show modal and safely stop recording
+function handleFatalError(error) {
+  // Prevent recursive error handling
+  if (errorHandlerActive) return;
+  errorHandlerActive = true;
+
+  const sanitizedMessage = sanitizeErrorLog(error?.message || String(error));
+  const sanitizedStack = sanitizeErrorLog(error?.stack || '');
+  console.error('[FatalError]', sanitizedMessage, sanitizedStack);
+
+  // Safely stop recording if in progress
+  if (isRecording && !isStopping) {
+    try {
+      cleanupRecording().catch(e => {
+        console.error('[FatalError] Cleanup failed:', sanitizeErrorLog(e?.message));
+      });
+    } catch (e) {
+      console.error('[FatalError] Cleanup threw:', sanitizeErrorLog(e?.message));
+    }
+  }
+
+  // Show error modal
+  const modal = document.getElementById('fatalErrorModal');
+  if (modal) {
+    modal.style.display = 'flex';
+  }
+
+  // Reset handler flag after a delay to allow future errors
+  setTimeout(() => { errorHandlerActive = false; }, 3000);
+}
+
+// Global error handlers
+window.onerror = function(msg, src, line, col, err) {
+  handleFatalError(err || new Error(msg));
+  return true; // Prevent default browser error handling
+};
+
+window.onunhandledrejection = function(event) {
+  handleFatalError(event.reason);
+};
 
 function generateQARequestId() {
   return `qa_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -486,6 +545,34 @@ document.addEventListener('DOMContentLoaded', async function() {
   // テーマトグルボタンの初期化
   if (window.AIMeetingTheme && document.getElementById('themeToggleBtn')) {
     window.AIMeetingTheme.bindThemeToggle(document.getElementById('themeToggleBtn'));
+  }
+
+  // Issue #41: API key storage migration check
+  if (SecureStorage.needsMigration()) {
+    showStorageMigrationModal();
+  }
+
+  // Issue #40: Setup error modal button handlers
+  const resetSessionBtn = document.getElementById('resetSessionBtn');
+  const reloadPageBtn = document.getElementById('reloadPageBtn');
+  if (resetSessionBtn) {
+    resetSessionBtn.onclick = function() {
+      // Clear transcript and AI response, hide modal
+      transcriptChunks = [];
+      fullTranscript = '';
+      const transcriptContainer = document.getElementById('transcriptContent');
+      if (transcriptContainer) transcriptContainer.innerHTML = '';
+      const aiContainer = document.getElementById('aiResponseContent');
+      if (aiContainer) aiContainer.innerHTML = '';
+      const modal = document.getElementById('fatalErrorModal');
+      if (modal) modal.style.display = 'none';
+      showToast(t('app.error.resetSession') || 'Session reset', 'info');
+    };
+  }
+  if (reloadPageBtn) {
+    reloadPageBtn.onclick = function() {
+      window.location.reload();
+    };
   }
 
   // セキュリティオプション：ブラウザを閉じたらクリア
@@ -1181,8 +1268,8 @@ async function startStreamingRecording(provider) {
     showToast(t('error.recording', { message: error.message }), 'error');
   });
 
-  // PCMストリーミングを開始
-  await pcmStreamProcessor.start();
+  // PCMストリーミングを開始（既存のcurrentAudioStreamを再利用）
+  await pcmStreamProcessor.start(currentAudioStream);
 }
 
 /**
@@ -1347,6 +1434,17 @@ function setMeetingStartMarker(chunkId) {
 
 // チャンクをレンダリング
 function renderTranscriptChunks() {
+  // Throttle rendering with requestAnimationFrame (Issue #44)
+  if (transcriptRenderPending) return;
+  transcriptRenderPending = true;
+
+  requestAnimationFrame(() => {
+    transcriptRenderPending = false;
+    _doRenderTranscriptChunks();
+  });
+}
+
+function _doRenderTranscriptChunks() {
   const container = document.getElementById('transcriptText');
   const placeholder = document.getElementById('transcriptPlaceholder');
   if (!container) return;
@@ -1356,14 +1454,34 @@ function renderTranscriptChunks() {
     if (placeholder) placeholder.style.display = '';
     return;
   }
-  
+
   // Hide placeholder when there's content
   if (placeholder) placeholder.style.display = 'none';
 
+  // Cap rendering to last N chunks for performance (Issue #44)
+  const totalChunks = transcriptChunks.length;
+  const hiddenCount = Math.max(0, totalChunks - TRANSCRIPT_RENDER_CAP);
+  const displayChunks = hiddenCount > 0
+    ? transcriptChunks.slice(-TRANSCRIPT_RENDER_CAP)
+    : transcriptChunks;
+  const startIdx = hiddenCount;  // Offset for correct index calculation
+
   let html = '';
-  transcriptChunks.forEach((chunk, idx) => {
+
+  // Show notice if earlier chunks are hidden
+  if (hiddenCount > 0) {
+    html += `<div class="transcript-truncated-notice">${t('app.transcript.truncatedNotice', { count: hiddenCount }) || hiddenCount + ' earlier segments not shown (available in export)'}</div>`;
+  }
+
+  // Pre-calculate marker index once (Issue #44: avoid repeated findIndex in loop)
+  const markerIndex = meetingStartMarkerId
+    ? transcriptChunks.findIndex(c => c.id === meetingStartMarkerId)
+    : -1;
+
+  displayChunks.forEach((chunk, displayIdx) => {
+    const idx = startIdx + displayIdx;  // Original index in transcriptChunks
     const isExcluded = chunk.excluded;
-    const isBeforeMarker = meetingStartMarkerId && idx < transcriptChunks.findIndex(c => c.id === meetingStartMarkerId);
+    const isBeforeMarker = markerIndex >= 0 && idx < markerIndex;
     const isMarker = chunk.isMarkerStart;
     const isGrayed = isExcluded || isBeforeMarker;
 
@@ -3163,6 +3281,36 @@ function closeWelcomeModal() {
 }
 
 // =====================================
+// Issue #41: API Key Storage Migration Modal
+// =====================================
+function showStorageMigrationModal() {
+  const modal = document.getElementById('storageMigrationModal');
+  if (!modal) return;
+
+  modal.style.display = 'flex';
+
+  // Bind buttons
+  const sessionBtn = document.getElementById('migrateToSessionBtn');
+  const persistBtn = document.getElementById('keepPersistentBtn');
+
+  if (sessionBtn) {
+    sessionBtn.onclick = function() {
+      SecureStorage.migrateToSessionStorage();
+      modal.style.display = 'none';
+      showToast(t('config.storage.sessionNotice') || 'Keys are now session-only', 'info');
+    };
+  }
+
+  if (persistBtn) {
+    persistBtn.onclick = function() {
+      SecureStorage.keepInLocalStorage();
+      modal.style.display = 'none';
+      showToast(t('common.save') || 'Settings saved', 'success');
+    };
+  }
+}
+
+// =====================================
 // LLM設定モーダル
 // =====================================
 const LLM_PROVIDERS = {
@@ -4657,18 +4805,22 @@ function initContextFileUpload() {
 
   if (!enhancedEnabled) return;
 
-  if (dropZone) {
+  // Guard against duplicate event bindings (Issue #33)
+  if (dropZone && !dropZone.dataset.boundContextUpload) {
+    dropZone.dataset.boundContextUpload = '1';
     dropZone.addEventListener('click', () => fileInput?.click());
     dropZone.addEventListener('dragover', handleContextDragOver);
     dropZone.addEventListener('dragleave', handleContextDragLeave);
     dropZone.addEventListener('drop', handleContextFileDrop);
   }
 
-  if (selectBtn) {
+  if (selectBtn && !selectBtn.dataset.boundContextUpload) {
+    selectBtn.dataset.boundContextUpload = '1';
     selectBtn.addEventListener('click', () => fileInput?.click());
   }
 
-  if (fileInput) {
+  if (fileInput && !fileInput.dataset.boundContextUpload) {
+    fileInput.dataset.boundContextUpload = '1';
     fileInput.addEventListener('change', (e) => {
       handleContextFileSelection(e.target.files);
       fileInput.value = ''; // 同じファイルの再アップロードを可能に
