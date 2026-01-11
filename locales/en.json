@@ -105,7 +105,8 @@
       "exclude": "Exclude this segment",
       "restore": "Restore this segment",
       "copySegment": "Copy this segment",
-      "clearConfirm": "Clear all transcription?"
+      "clearConfirm": "Clear all transcription?",
+      "truncatedNotice": "{{count}} earlier segments not shown (available in export)"
     },
     "aiResponse": {
       "placeholder": "AI responses will appear here when you ask a question...",
@@ -116,6 +117,12 @@
       "incompatibleMessage": "Some features are not supported in your browser. Please use the latest version of Chrome, Edge, or Safari.",
       "incompatibleButton": "⚠️ Unsupported Browser",
       "incompatibleTooltip": "The following features are not available: {features}"
+    },
+    "error": {
+      "fatalTitle": "An error occurred",
+      "fatalBody": "An unexpected error occurred. Recording has been stopped automatically if in progress.",
+      "resetSession": "Reset Session",
+      "reloadPage": "Reload Page"
     }
   },
   "config": {
@@ -130,6 +137,15 @@
       "httpsOnly": "Only sent via HTTPS during API calls",
       "isolated": "Inaccessible from other websites",
       "exportable": "Import/export settings supported"
+    },
+    "storage": {
+      "migrationTitle": "API Key Storage Update",
+      "migrationBody": "For improved security, API keys are now session-only by default. How would you like to proceed?",
+      "sessionOnly": "Session only (Recommended)",
+      "persistKeys": "Save to device",
+      "persistLabel": "Persist API keys across sessions (not recommended)",
+      "persistWarning": "Not recommended on shared devices. Keys remain in this browser.",
+      "sessionNotice": "This key will be lost when you close the tab"
     },
     "stt": {
       "title": "Transcription (STT) - Provider Selection",

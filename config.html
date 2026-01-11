@@ -725,6 +725,11 @@
       <div class="security-options">
         <div class="security-options-title">🛡️ <span data-i18n="config.options.securityTitle">Security Options</span></div>
         <div class="checkbox-group">
+          <input type="checkbox" id="persistApiKeys">
+          <label for="persistApiKeys" data-i18n="config.storage.persistLabel">Persist API keys across sessions (not recommended)</label>
+        </div>
+        <div class="setting-hint" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0.5rem;" data-i18n="config.storage.persistWarning">Not recommended on shared devices. Keys remain in this browser.</div>
+        <div class="checkbox-group">
           <input type="checkbox" id="clearOnClose">
           <label for="clearOnClose" data-i18n="config.options.clearOnClose">Auto-delete API keys when browser closes (for shared PCs)</label>
         </div>

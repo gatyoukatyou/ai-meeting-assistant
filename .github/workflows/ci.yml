@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Check JS syntax
+        run: |
+          echo "Checking JavaScript syntax..."
+          for f in js/*.js; do
+            echo "  Checking $f"
+            node --check "$f"
+          done
+          echo "All JS files passed syntax check"
+
+      - name: Check JSON validity (locales)
+        run: |
+          echo "Checking JSON validity..."
+          for f in locales/*.json; do
+            echo "  Checking $f"
+            node -e "JSON.parse(require('fs').readFileSync('$f', 'utf8'))"
+          done
+          echo "All JSON files are valid"
+
+      - name: Check required docs exist
+        run: |
+          echo "Checking required documentation..."
+          test -f docs/RELEASE_CHECKLIST.md && echo "  docs/RELEASE_CHECKLIST.md exists"
+          test -f docs/SECURITY.md && echo "  docs/SECURITY.md exists"
+          test -f docs/PRIVACY.md && echo "  docs/PRIVACY.md exists"
+          echo "All required docs present"

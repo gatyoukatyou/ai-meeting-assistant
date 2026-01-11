@@ -2,6 +2,9 @@
 // セキュリティ：暗号化・復号化モジュール
 // =====================================
 const SecureStorage = {
+  // API key storage providers list
+  _providers: ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'],
+
   // デバイス固有のキーを生成（ブラウザフィンガープリント的なもの）
   _getDeviceKey: function() {
     let deviceKey = localStorage.getItem('_dk');
@@ -17,6 +20,12 @@ const SecureStorage = {
     const array = new Uint8Array(32);
     crypto.getRandomValues(array);
     return Array.from(array, b => b.toString(16).padStart(2, '0')).join('');
+  },
+
+  // Get appropriate storage for API keys based on persistApiKeys option
+  // Note: Options themselves are always in localStorage
+  _getKeyStorage: function() {
+    return this.getOption('persistApiKeys', false) ? localStorage : sessionStorage;
   },
 
   // 簡易暗号化（XOR + Base64）
@@ -50,18 +59,21 @@ const SecureStorage = {
     }
   },
 
-  // APIキーを保存
+  // APIキーを保存 (uses session or local storage based on persistApiKeys)
   setApiKey: function(provider, key) {
+    const storage = this._getKeyStorage();
+    const storageKey = `_ak_${provider}`;
     if (!key) {
-      localStorage.removeItem(`_ak_${provider}`);
+      storage.removeItem(storageKey);
       return;
     }
-    localStorage.setItem(`_ak_${provider}`, this._encrypt(key));
+    storage.setItem(storageKey, this._encrypt(key));
   },
 
-  // APIキーを取得
+  // APIキーを取得 (checks current storage based on persistApiKeys)
   getApiKey: function(provider) {
-    const encrypted = localStorage.getItem(`_ak_${provider}`);
+    const storage = this._getKeyStorage();
+    const encrypted = storage.getItem(`_ak_${provider}`);
     return this._decrypt(encrypted);
   },
 
@@ -103,7 +115,13 @@ const SecureStorage = {
 
   getOption: function(key, defaultValue) {
     const val = localStorage.getItem(`_opt_${key}`);
-    return val ? JSON.parse(val) : defaultValue;
+    if (!val) return defaultValue;
+    try {
+      return JSON.parse(val);
+    } catch (e) {
+      console.warn(`[SecureStorage] Invalid JSON for option "${key}", using default`);
+      return defaultValue;
+    }
   },
 
   // 全設定をエクスポート（別のデバイス用に再暗号化）
@@ -124,7 +142,8 @@ const SecureStorage = {
         llmPriority: this.getOption('llmPriority', 'auto'),
         sttProvider: this.getOption('sttProvider', 'openai_stt'),
         sttUserDictionary: this.getOption('sttUserDictionary', ''),
-        sttLanguage: this.getOption('sttLanguage', 'ja')
+        sttLanguage: this.getOption('sttLanguage', 'ja'),
+        persistApiKeys: this.getOption('persistApiKeys', false)
       },
       exportedAt: new Date().toISOString()
     };
@@ -189,6 +208,9 @@ const SecureStorage = {
         if (data.options.sttProvider) this.setOption('sttProvider', data.options.sttProvider);
         if (data.options.sttUserDictionary) this.setOption('sttUserDictionary', data.options.sttUserDictionary);
         if (data.options.sttLanguage) this.setOption('sttLanguage', data.options.sttLanguage);
+        // Import persistApiKeys setting (defaults to false if not in export)
+        this.setOption('persistApiKeys', data.options.persistApiKeys || false);
+        this.setMigrationDone(); // Mark as done since user imported settings
       }
 
       return true;
@@ -200,9 +222,10 @@ const SecureStorage = {
 
   // 全削除
   clearAll: function() {
-    // LLM用 + STT用の全プロバイダー
-    ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'].forEach(p => {
+    // Clear keys from both storages
+    this._providers.forEach(p => {
       localStorage.removeItem(`_ak_${p}`);
+      sessionStorage.removeItem(`_ak_${p}`);
       localStorage.removeItem(`_m_${p}`);
       localStorage.removeItem(`_mc_${p}`);
     });
@@ -213,13 +236,60 @@ const SecureStorage = {
     localStorage.removeItem('_opt_sttProvider');
     localStorage.removeItem('_opt_sttUserDictionary');
     localStorage.removeItem('_opt_sttLanguage');
+    localStorage.removeItem('_opt_persistApiKeys');
+    localStorage.removeItem('_apiKeyStorageMigrationDone');
   },
 
-  // APIキーのみ削除（デバイスキーは残す）
+  // APIキーのみ削除（デバイスキーは残す）- clears from BOTH storages
   clearApiKeys: function() {
-    // LLM用 + STT用の全プロバイダー
-    ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'].forEach(p => {
+    this._providers.forEach(p => {
       localStorage.removeItem(`_ak_${p}`);
+      sessionStorage.removeItem(`_ak_${p}`);
     });
+  },
+
+  // Check if there are legacy keys in localStorage (for migration)
+  hasLegacyLocalStorageKeys: function() {
+    return this._providers.some(p => localStorage.getItem(`_ak_${p}`));
+  },
+
+  // Check if migration has been completed
+  isMigrationDone: function() {
+    return localStorage.getItem('_apiKeyStorageMigrationDone') === 'true';
+  },
+
+  // Mark migration as done
+  setMigrationDone: function() {
+    localStorage.setItem('_apiKeyStorageMigrationDone', 'true');
+  },
+
+  // Migrate keys from localStorage to sessionStorage
+  migrateToSessionStorage: function() {
+    this._providers.forEach(p => {
+      const key = `_ak_${p}`;
+      const val = localStorage.getItem(key);
+      if (val) {
+        sessionStorage.setItem(key, val);
+        localStorage.removeItem(key);
+      }
+    });
+    this.setOption('persistApiKeys', false);
+    this.setMigrationDone();
+  },
+
+  // Keep keys in localStorage (user opted in)
+  keepInLocalStorage: function() {
+    this.setOption('persistApiKeys', true);
+    this.setMigrationDone();
+  },
+
+  // Check if migration modal should be shown
+  needsMigration: function() {
+    // Already migrated
+    if (this.isMigrationDone()) return false;
+    // persistApiKeys already set explicitly
+    if (localStorage.getItem('_opt_persistApiKeys') !== null) return false;
+    // Has legacy keys in localStorage
+    return this.hasLegacyLocalStorageKeys();
   }
 };

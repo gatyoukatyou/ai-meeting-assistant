@@ -1192,6 +1192,17 @@
       border-radius: 4px;
     }
 
+    .transcript-truncated-notice {
+      background: var(--bg-secondary);
+      color: var(--text-secondary);
+      padding: 0.5rem 1rem;
+      font-size: 0.85rem;
+      margin-bottom: 0.5rem;
+      border-radius: 4px;
+      text-align: center;
+      border: 1px dashed var(--border);
+    }
+
     /* 設定インポート/エクスポート */
     .settings-transfer {
       margin-top: 1.5rem;
@@ -2477,6 +2488,50 @@
       <div class="modal-footer">
         <button class="btn btn-secondary" id="closeLLMModalFooterBtn" data-i18n="common.cancel">キャンセル</button>
         <button class="btn btn-primary" id="saveLLMModalBtn">💾 <span data-i18n="common.save">保存</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- API Key Storage Migration Modal (Issue #41) -->
+  <div class="modal-overlay" id="storageMigrationModal" style="display: none;">
+    <div class="modal" style="max-width: 450px;">
+      <div class="modal-header">
+        <h2 data-i18n="config.storage.migrationTitle">APIキー保存方式が変わりました</h2>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 1rem;" data-i18n="config.storage.migrationBody">
+          安全性向上のため、APIキーは通常セッション内のみ保持されます。次回からどうしますか？
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <button class="btn btn-primary" id="migrateToSessionBtn">
+            <span data-i18n="config.storage.sessionOnly">セッションのみ（推奨）</span>
+          </button>
+          <button class="btn btn-secondary" id="keepPersistentBtn">
+            <span data-i18n="config.storage.persistKeys">端末に保存する</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Issue #40: Fatal error modal -->
+  <div class="modal-overlay" id="fatalErrorModal" style="display: none;">
+    <div class="modal" style="max-width: 400px;">
+      <div class="modal-header">
+        <h2 data-i18n="app.error.fatalTitle">エラーが発生しました</h2>
+      </div>
+      <div class="modal-body">
+        <p style="margin-bottom: 1rem;" data-i18n="app.error.fatalBody">
+          予期しないエラーが発生しました。録音中の場合は自動停止されました。
+        </p>
+        <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+          <button class="btn btn-primary" id="resetSessionBtn">
+            <span data-i18n="app.error.resetSession">セッションをリセット</span>
+          </button>
+          <button class="btn btn-secondary" id="reloadPageBtn">
+            <span data-i18n="app.error.reloadPage">ページを再読み込み</span>
+          </button>
+        </div>
       </div>
     </div>
   </div>

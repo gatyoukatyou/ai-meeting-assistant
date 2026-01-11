@@ -210,6 +210,7 @@ function loadSavedSettings() {
   if (userDictEl) userDictEl.value = userDictionary;
 
   // オプション
+  document.getElementById('persistApiKeys').checked = SecureStorage.getOption('persistApiKeys', false);
   document.getElementById('clearOnClose').checked = SecureStorage.getOption('clearOnClose', false);
   document.getElementById('costAlertEnabled').checked = SecureStorage.getOption('costAlertEnabled', true);
   document.getElementById('costLimit').value = SecureStorage.getOption('costLimit', 100);
@@ -275,6 +276,25 @@ async function saveSettings() {
   if (userDictEl) SecureStorage.setOption('sttUserDictionary', userDictEl.value.trim());
 
   // オプションを保存
+  // Handle persistApiKeys toggle - migrate keys between storages if changed
+  const newPersistValue = document.getElementById('persistApiKeys').checked;
+  const oldPersistValue = SecureStorage.getOption('persistApiKeys', false);
+  if (newPersistValue !== oldPersistValue) {
+    // Migration needed
+    const providers = ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'];
+    const oldStorage = oldPersistValue ? localStorage : sessionStorage;
+    const newStorage = newPersistValue ? localStorage : sessionStorage;
+    providers.forEach(p => {
+      const key = `_ak_${p}`;
+      const val = oldStorage.getItem(key);
+      if (val) {
+        newStorage.setItem(key, val);
+        oldStorage.removeItem(key);
+      }
+    });
+    SecureStorage.setMigrationDone(); // Mark migration as done
+  }
+  SecureStorage.setOption('persistApiKeys', newPersistValue);
   SecureStorage.setOption('clearOnClose', document.getElementById('clearOnClose').checked);
   SecureStorage.setOption('costAlertEnabled', document.getElementById('costAlertEnabled').checked);
   SecureStorage.setOption('costLimit', parseInt(document.getElementById('costLimit').value) || 100);

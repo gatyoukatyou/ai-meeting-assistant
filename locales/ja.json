@@ -105,7 +105,8 @@
       "exclude": "この文節を除外",
       "restore": "この文節を復元",
       "copySegment": "この文節をコピー",
-      "clearConfirm": "文字起こしをクリアしますか？"
+      "clearConfirm": "文字起こしをクリアしますか？",
+      "truncatedNotice": "{{count}}件の古いセグメントは表示省略（エクスポートには含まれます）"
     },
     "aiResponse": {
       "placeholder": "AIに質問すると、ここに回答が表示されます...",
@@ -116,6 +117,12 @@
       "incompatibleMessage": "お使いのブラウザは一部機能に対応していません。Chrome/Edge/Safari最新版をご利用ください。",
       "incompatibleButton": "⚠️ 非対応ブラウザ",
       "incompatibleTooltip": "以下の機能が使用できません: {features}"
+    },
+    "error": {
+      "fatalTitle": "エラーが発生しました",
+      "fatalBody": "予期しないエラーが発生しました。録音中の場合は自動停止されました。",
+      "resetSession": "セッションをリセット",
+      "reloadPage": "ページを再読み込み"
     }
   },
   "config": {
@@ -130,6 +137,15 @@
       "httpsOnly": "API呼び出し時のみHTTPS経由で送信",
       "isolated": "他のWebサイトからはアクセス不可",
       "exportable": "設定のエクスポート/インポート対応"
+    },
+    "storage": {
+      "migrationTitle": "APIキー保存方式が変わりました",
+      "migrationBody": "安全性向上のため、APIキーは通常セッション内のみ保持されます。次回からどうしますか？",
+      "sessionOnly": "セッションのみ（推奨）",
+      "persistKeys": "端末に保存する",
+      "persistLabel": "APIキーを次回も保持する（非推奨）",
+      "persistWarning": "共有端末では推奨しません。ブラウザにキーが残ります。",
+      "sessionNotice": "このキーはタブを閉じると消えます"
     },
     "stt": {
       "title": "文字起こし（STT）- プロバイダー選択",
