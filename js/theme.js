@@ -6,6 +6,8 @@
   // ========== Display Theme (Light/Dark - Manual only, no auto) ==========
   var DISPLAY_THEME_KEY = 'display_theme';
   var DEFAULT_DISPLAY_THEME = 'light';
+  var STYLE_KEY = 'appStyle';
+  var DEFAULT_STYLE = 'brutalism';
 
   /**
    * Get current theme from storage
@@ -107,6 +109,60 @@
     }
   }
 
+  // ========== Style Switcher (Brutalism / Paper) ==========
+  function normalizeStyle(value) {
+    return (value === 'paper') ? 'paper' : 'brutalism';
+  }
+
+  function getStyle() {
+    try {
+      return normalizeStyle(localStorage.getItem(STYLE_KEY));
+    } catch (e) {
+      return DEFAULT_STYLE;
+    }
+  }
+
+  function saveStyle(style) {
+    try {
+      localStorage.setItem(STYLE_KEY, style);
+    } catch (e) {
+      // Ignore storage errors
+    }
+  }
+
+  function syncStyleSwitcher(style) {
+    var selectEl = document.getElementById('styleSwitcher');
+    if (selectEl && selectEl.value !== style) {
+      selectEl.value = style;
+    }
+  }
+
+  function applyStyle(style) {
+    var validStyle = normalizeStyle(style);
+    document.documentElement.setAttribute('data-style', validStyle);
+    syncStyleSwitcher(validStyle);
+  }
+
+  function setStyle(style) {
+    var validStyle = normalizeStyle(style);
+    saveStyle(validStyle);
+    applyStyle(validStyle);
+  }
+
+  function initStyleSwitcher() {
+    var style = getStyle();
+    applyStyle(style);
+
+    var selectEl = document.getElementById('styleSwitcher');
+    if (!selectEl) return;
+
+    selectEl.value = style;
+    selectEl.addEventListener('change', function(e) {
+      var value = (e.target && e.target.value) ? e.target.value : DEFAULT_STYLE;
+      setStyle(value);
+    });
+  }
+
   /**
    * Bind toggle button (for index.html)
    * @param {HTMLElement} btnEl
@@ -150,6 +206,9 @@
       if (newTheme === 'light' || newTheme === 'dark') {
         applyTheme(newTheme);
       }
+    }
+    if (e.key === STYLE_KEY) {
+      applyStyle(e.newValue || DEFAULT_STYLE);
     }
     // Also sync accent color changes
     if (e.key === STORAGE_KEY) {
@@ -283,5 +342,6 @@
 
   // Auto-apply on load (before DOMContentLoaded for faster paint)
   initTheme();
+  initStyleSwitcher();
   applySavedColorTheme();
 })();
