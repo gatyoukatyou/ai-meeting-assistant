@@ -218,6 +218,8 @@
       "title": "オプション設定",
       "securityTitle": "セキュリティオプション",
       "clearOnClose": "ブラウザを閉じたらAPIキーを自動削除（共有PC向け）",
+      "persistMeetingContext": "会議情報を次回も保持する（非推奨）",
+      "persistMeetingContextHint": "共有PCでは非推奨です。会議情報がこのブラウザに残ります。",
       "costAlertTitle": "コストアラート",
       "costLimit": "1セッションの上限金額（円）",
       "costLimitPlaceholder": "例: 100",
