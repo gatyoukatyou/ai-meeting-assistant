@@ -35,6 +35,7 @@ let meetingModeTimerId = null;
 
 const MEETING_TITLE_STORAGE_KEY = '_meetingTitle';
 const MEETING_CONTEXT_STORAGE_KEY = '_meetingContext';
+const LEGACY_MEETING_CONTEXT_STORAGE_KEY = '__meetingContext';
 
 // ファイルアップロード関連の定数
 const CONTEXT_SCHEMA_VERSION = 3;  // v3: participants, handoff, toggles追加
@@ -4592,8 +4593,51 @@ function clearContextData() {
   showToast(t('context.toastCleared') || '会議情報を削除しました', 'info');
 }
 
+function getMeetingContextStorage() {
+  return SecureStorage.getOption('persistMeetingContext', false) ? localStorage : sessionStorage;
+}
+
+function findMeetingContextEntry(storage) {
+  const primary = storage.getItem(MEETING_CONTEXT_STORAGE_KEY);
+  if (primary) return { key: MEETING_CONTEXT_STORAGE_KEY, value: primary };
+  const legacy = storage.getItem(LEGACY_MEETING_CONTEXT_STORAGE_KEY);
+  if (legacy) return { key: LEGACY_MEETING_CONTEXT_STORAGE_KEY, value: legacy };
+  return null;
+}
+
+function clearMeetingContextKeys(storage) {
+  storage.removeItem(MEETING_CONTEXT_STORAGE_KEY);
+  storage.removeItem(LEGACY_MEETING_CONTEXT_STORAGE_KEY);
+}
+
+function migrateMeetingContextStorage() {
+  const persist = SecureStorage.getOption('persistMeetingContext', false);
+  const primary = persist ? localStorage : sessionStorage;
+  const secondary = persist ? sessionStorage : localStorage;
+
+  const primaryEntry = findMeetingContextEntry(primary);
+  const secondaryEntry = findMeetingContextEntry(secondary);
+  let didSetPrimary = false;
+
+  if (!primaryEntry && secondaryEntry) {
+    primary.setItem(MEETING_CONTEXT_STORAGE_KEY, secondaryEntry.value);
+    didSetPrimary = true;
+  }
+  if (primaryEntry && primaryEntry.key !== MEETING_CONTEXT_STORAGE_KEY) {
+    primary.setItem(MEETING_CONTEXT_STORAGE_KEY, primaryEntry.value);
+    didSetPrimary = true;
+  }
+
+  clearMeetingContextKeys(secondary);
+  if (didSetPrimary) {
+    primary.removeItem(LEGACY_MEETING_CONTEXT_STORAGE_KEY);
+  }
+
+  return primary.getItem(MEETING_CONTEXT_STORAGE_KEY);
+}
+
 function loadMeetingContextFromStorage() {
-  const saved = localStorage.getItem(MEETING_CONTEXT_STORAGE_KEY);
+  const saved = migrateMeetingContextStorage();
   if (!saved) {
     meetingContext = createEmptyMeetingContext();
     return;
@@ -4637,6 +4681,8 @@ function createEmptyMeetingContext() {
 }
 
 function persistMeetingContext() {
+  const storage = getMeetingContextStorage();
+  const otherStorage = storage === localStorage ? sessionStorage : localStorage;
   if (hasMeetingContext()) {
     // P0: base64Dataを永続化しない（localStorage上限対策）
     // replacerでbase64Dataキーを除外
@@ -4644,9 +4690,11 @@ function persistMeetingContext() {
       if (key === 'base64Data') return undefined;  // 除外
       return value;
     });
-    localStorage.setItem(MEETING_CONTEXT_STORAGE_KEY, serialized);
+    storage.setItem(MEETING_CONTEXT_STORAGE_KEY, serialized);
+    clearMeetingContextKeys(otherStorage);
   } else {
-    localStorage.removeItem(MEETING_CONTEXT_STORAGE_KEY);
+    clearMeetingContextKeys(storage);
+    clearMeetingContextKeys(otherStorage);
   }
 }
 
