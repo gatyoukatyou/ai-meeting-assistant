@@ -56,7 +56,7 @@ class OpenAIChunkedProvider {
     }
     this.isActive = true;
     this.updateStatus('ready');
-    console.log('[OpenAI STT] Provider started');
+    debugLog('[OpenAI STT] Provider started');
   }
 
   /**
@@ -65,7 +65,7 @@ class OpenAIChunkedProvider {
   async stop() {
     this.isActive = false;
     this.updateStatus('stopped');
-    console.log('[OpenAI STT] Provider stopped');
+    debugLog('[OpenAI STT] Provider stopped');
   }
 
   /**
@@ -90,7 +90,7 @@ class OpenAIChunkedProvider {
     }
     const prompt = promptParts.join(' ');
 
-    console.log('[OpenAI STT] Transcribing blob:', {
+    debugLog('[OpenAI STT] Transcribing blob:', {
       size: audioBlob.size,
       type: audioBlob.type,
       model: this.model,
@@ -109,7 +109,7 @@ class OpenAIChunkedProvider {
       // promptパラメータを追加（空でない場合のみ）
       if (prompt) {
         formData.append('prompt', prompt);
-        console.log('[OpenAI STT] Using prompt:', prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''));
+        debugLog('[OpenAI STT] Using prompt:', prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''));
       }
 
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {

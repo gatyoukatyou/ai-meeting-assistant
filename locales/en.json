@@ -219,6 +219,8 @@
       "title": "Options",
       "securityTitle": "Security Options",
       "clearOnClose": "Auto-delete API keys when browser closes (for shared PCs)",
+      "persistMeetingContext": "Persist meeting context across sessions (not recommended)",
+      "persistMeetingContextHint": "Not recommended on shared devices. Meeting context remains in this browser.",
       "costAlertTitle": "Cost Alert",
       "costLimit": "Session cost limit (JPY)",
       "costLimitPlaceholder": "e.g. 100",
