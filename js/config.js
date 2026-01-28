@@ -212,6 +212,10 @@ function loadSavedSettings() {
   // オプション
   document.getElementById('persistApiKeys').checked = SecureStorage.getOption('persistApiKeys', false);
   document.getElementById('clearOnClose').checked = SecureStorage.getOption('clearOnClose', false);
+  const persistMeetingContextEl = document.getElementById('persistMeetingContext');
+  if (persistMeetingContextEl) {
+    persistMeetingContextEl.checked = SecureStorage.getOption('persistMeetingContext', false);
+  }
   document.getElementById('costAlertEnabled').checked = SecureStorage.getOption('costAlertEnabled', true);
   document.getElementById('costLimit').value = SecureStorage.getOption('costLimit', 100);
   document.getElementById('llmPriority').value = SecureStorage.getOption('llmPriority', 'auto');
@@ -296,6 +300,10 @@ async function saveSettings() {
   }
   SecureStorage.setOption('persistApiKeys', newPersistValue);
   SecureStorage.setOption('clearOnClose', document.getElementById('clearOnClose').checked);
+  const persistMeetingContextEl = document.getElementById('persistMeetingContext');
+  if (persistMeetingContextEl) {
+    SecureStorage.setOption('persistMeetingContext', persistMeetingContextEl.checked);
+  }
   SecureStorage.setOption('costAlertEnabled', document.getElementById('costAlertEnabled').checked);
   SecureStorage.setOption('costLimit', parseInt(document.getElementById('costLimit').value) || 100);
   SecureStorage.setOption('llmPriority', document.getElementById('llmPriority').value);

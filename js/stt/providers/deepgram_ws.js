@@ -68,7 +68,7 @@ class DeepgramWSProvider {
       // VADイベント（SpeechStarted/UtteranceEnd）を有効化
       wsUrl.searchParams.set('vad_events', 'true');
 
-      console.log('[Deepgram] Connecting to Deepgram API...');
+      debugLog('[Deepgram] Connecting to Deepgram API...');
 
       // Browser auth: pass token via WebSocket subprotocol (Deepgram official method)
       const ws = new WebSocket(wsUrl.toString(), ['token', this.apiKey]);
@@ -86,7 +86,7 @@ class DeepgramWSProvider {
           clearTimeout(this._connectTimer);
           this._connectTimer = null;
         }
-        console.log('[Deepgram] WebSocket connected');
+        debugLog('[Deepgram] WebSocket connected');
         this.isConnected = true;
         this.reconnectAttempts = 0;
         this.updateStatus('connected');
@@ -108,7 +108,7 @@ class DeepgramWSProvider {
           clearTimeout(this._connectTimer);
           this._connectTimer = null;
         }
-        console.log('[Deepgram] WebSocket closed:', event.code, event.reason);
+        debugLog('[Deepgram] WebSocket closed:', event.code, event.reason);
         this.isConnected = false;
 
         // 残っているバッファがあればフラッシュ
@@ -116,7 +116,7 @@ class DeepgramWSProvider {
 
         if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
-          console.log(`[Deepgram] Attempting reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
+          debugLog(`[Deepgram] Attempting reconnect (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
           this.updateStatus('reconnecting');
           setTimeout(() => this.start().catch(console.error), 1000 * this.reconnectAttempts);
         } else {
@@ -130,7 +130,7 @@ class DeepgramWSProvider {
         if (this.ws !== ws) return;
 
         if (!this.isConnected && ws.readyState === WebSocket.CONNECTING) {
-          console.log('[Deepgram] Connection timeout, closing...');
+          debugLog('[Deepgram] Connection timeout, closing...');
           try {
             ws.close();
           } catch (e) {
@@ -173,7 +173,7 @@ class DeepgramWSProvider {
     }
     this.isConnected = false;
     this.updateStatus('stopped');
-    console.log('[Deepgram] Provider stopped');
+    debugLog('[Deepgram] Provider stopped');
   }
 
   /**
@@ -199,7 +199,7 @@ class DeepgramWSProvider {
 
       // VADイベント: SpeechStarted
       if (message.type === 'SpeechStarted') {
-        console.log('[Deepgram] SpeechStarted');
+        debugLog('[Deepgram] SpeechStarted');
         this._isSpeaking = true;
         // 新しい発話開始時はバッファをクリア（必要に応じて）
         // this._finalBuffer = '';
@@ -208,7 +208,7 @@ class DeepgramWSProvider {
 
       // VADイベント: UtteranceEnd（発話終了）
       if (message.type === 'UtteranceEnd') {
-        console.log('[Deepgram] UtteranceEnd - flushing buffer:', this._finalBuffer);
+        debugLog('[Deepgram] UtteranceEnd - flushing buffer:', this._finalBuffer);
         this._isSpeaking = false;
         // UtteranceEndで蓄積したfinalBufferを確定として出力
         this._flushFinalBuffer();
@@ -229,28 +229,28 @@ class DeepgramWSProvider {
           if (isFinal) {
             // is_final=trueの断片はバッファに蓄積
             this._finalBuffer += transcript;
-            console.log(`[Deepgram] Final (buffered):`, transcript, '| Total:', this._finalBuffer);
+            debugLog(`[Deepgram] Final (buffered):`, transcript, '| Total:', this._finalBuffer);
 
             // Partialとして表示（確定前のプレビュー）
             this.emitTranscript(this._finalBuffer, false);
 
             // speech_final=trueなら即座にフラッシュ（UtteranceEndの代わり）
             if (speechFinal) {
-              console.log('[Deepgram] speech_final=true - flushing buffer');
+              debugLog('[Deepgram] speech_final=true - flushing buffer');
               this._flushFinalBuffer();
             }
           } else {
             // Partialはバッファ+現在のpartialを表示
             this._partialBuffer = transcript;
             const displayText = this._finalBuffer + transcript;
-            console.log(`[Deepgram] Partial:`, transcript);
+            debugLog(`[Deepgram] Partial:`, transcript);
             this.emitTranscript(displayText, false);
           }
         }
       } else if (message.type === 'Metadata') {
-        console.log('[Deepgram] Metadata:', message);
+        debugLog('[Deepgram] Metadata:', message);
       } else if (message.type === 'Error') {
-        console.error('[Deepgram] Error from server:', message);
+        debugLog('[Deepgram] Error from server:', message);
         this.emitError(new Error(message.message || 'Unknown error'));
       }
     } catch (e) {
@@ -263,7 +263,7 @@ class DeepgramWSProvider {
    */
   _flushFinalBuffer() {
     if (this._finalBuffer.trim()) {
-      console.log('[Deepgram] Emitting final:', this._finalBuffer);
+      debugLog('[Deepgram] Emitting final:', this._finalBuffer);
       this.emitTranscript(this._finalBuffer.trim(), true);
     }
     this._finalBuffer = '';

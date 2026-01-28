@@ -127,7 +127,7 @@ function generateQARequestId() {
 
 function logQA(requestId, event, details = {}) {
   const timestamp = new Date().toISOString();
-  console.log(`[Q&A] ${event}: ${requestId}`, details);
+  debugLog(`[Q&A] ${event}: ${requestId}`, details);
   qaEventLog.push({ timestamp, requestId, event, ...details });
 }
 
@@ -1951,7 +1951,7 @@ async function processQueue() {
         // キャプチャしたproviderを使用（stopRecording後もnullにならない）
         if (providerSnapshot && typeof providerSnapshot.transcribeBlob === 'function') {
           const text = await providerSnapshot.transcribeBlob(audioBlob);
-          console.log(`[Transcription] id=${blobId}, result:`, text);
+          debugLog(`[Transcription] id=${blobId}, result:`, text);
           // handleTranscriptResultはprovider.emitTranscript経由で呼ばれる
           // ここでは重複呼び出しを避けるため、直接呼び出さない
 
@@ -2075,7 +2075,7 @@ function loadUserDictionary() {
     parts.push(userDict.trim());
   }
   whisperUserDictionary = parts.join(', ');
-  console.log('[STT] User dictionary loaded:', whisperUserDictionary.substring(0, 100) + (whisperUserDictionary.length > 100 ? '...' : ''));
+  debugLog('[STT] User dictionary loaded:', whisperUserDictionary.substring(0, 100) + (whisperUserDictionary.length > 100 ? '...' : ''));
 }
 
 async function transcribeWithWhisper(audioBlob) {
@@ -2141,7 +2141,7 @@ async function transcribeWithWhisper(audioBlob) {
   }
   if (effectivePrompt) {
     formData.append('prompt', effectivePrompt);
-    console.log('Using Whisper prompt:', effectivePrompt.substring(0, 100) + (effectivePrompt.length > 100 ? '...' : ''));
+    debugLog('Using Whisper prompt:', effectivePrompt.substring(0, 100) + (effectivePrompt.length > 100 ? '...' : ''));
   }
 
   const response = await fetchWithRetry('https://api.openai.com/v1/audio/transcriptions', {
@@ -4592,8 +4592,28 @@ function clearContextData() {
   showToast(t('context.toastCleared') || '会議情報を削除しました', 'info');
 }
 
+function getMeetingContextStorage() {
+  return SecureStorage.getOption('persistMeetingContext', false) ? localStorage : sessionStorage;
+}
+
+function migrateMeetingContextStorage() {
+  const persist = SecureStorage.getOption('persistMeetingContext', false);
+  const primary = persist ? localStorage : sessionStorage;
+  const secondary = persist ? sessionStorage : localStorage;
+  const primaryVal = primary.getItem(MEETING_CONTEXT_STORAGE_KEY);
+  const secondaryVal = secondary.getItem(MEETING_CONTEXT_STORAGE_KEY);
+
+  if (!primaryVal && secondaryVal) {
+    primary.setItem(MEETING_CONTEXT_STORAGE_KEY, secondaryVal);
+  }
+  if (secondaryVal) {
+    secondary.removeItem(MEETING_CONTEXT_STORAGE_KEY);
+  }
+  return primary.getItem(MEETING_CONTEXT_STORAGE_KEY);
+}
+
 function loadMeetingContextFromStorage() {
-  const saved = localStorage.getItem(MEETING_CONTEXT_STORAGE_KEY);
+  const saved = migrateMeetingContextStorage();
   if (!saved) {
     meetingContext = createEmptyMeetingContext();
     return;
@@ -4637,6 +4657,8 @@ function createEmptyMeetingContext() {
 }
 
 function persistMeetingContext() {
+  const storage = getMeetingContextStorage();
+  const otherStorage = storage === localStorage ? sessionStorage : localStorage;
   if (hasMeetingContext()) {
     // P0: base64Dataを永続化しない（localStorage上限対策）
     // replacerでbase64Dataキーを除外
@@ -4644,9 +4666,11 @@ function persistMeetingContext() {
       if (key === 'base64Data') return undefined;  // 除外
       return value;
     });
-    localStorage.setItem(MEETING_CONTEXT_STORAGE_KEY, serialized);
+    storage.setItem(MEETING_CONTEXT_STORAGE_KEY, serialized);
+    otherStorage.removeItem(MEETING_CONTEXT_STORAGE_KEY);
   } else {
-    localStorage.removeItem(MEETING_CONTEXT_STORAGE_KEY);
+    storage.removeItem(MEETING_CONTEXT_STORAGE_KEY);
+    otherStorage.removeItem(MEETING_CONTEXT_STORAGE_KEY);
   }
 }
 

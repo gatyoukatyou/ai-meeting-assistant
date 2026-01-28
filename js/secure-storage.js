@@ -143,7 +143,8 @@ const SecureStorage = {
         sttProvider: this.getOption('sttProvider', 'openai_stt'),
         sttUserDictionary: this.getOption('sttUserDictionary', ''),
         sttLanguage: this.getOption('sttLanguage', 'ja'),
-        persistApiKeys: this.getOption('persistApiKeys', false)
+        persistApiKeys: this.getOption('persistApiKeys', false),
+        persistMeetingContext: this.getOption('persistMeetingContext', false)
       },
       exportedAt: new Date().toISOString()
     };
@@ -210,6 +211,7 @@ const SecureStorage = {
         if (data.options.sttLanguage) this.setOption('sttLanguage', data.options.sttLanguage);
         // Import persistApiKeys setting (defaults to false if not in export)
         this.setOption('persistApiKeys', data.options.persistApiKeys || false);
+        this.setOption('persistMeetingContext', data.options.persistMeetingContext || false);
         this.setMigrationDone(); // Mark as done since user imported settings
       }
 
@@ -237,6 +239,7 @@ const SecureStorage = {
     localStorage.removeItem('_opt_sttUserDictionary');
     localStorage.removeItem('_opt_sttLanguage');
     localStorage.removeItem('_opt_persistApiKeys');
+    localStorage.removeItem('_opt_persistMeetingContext');
     localStorage.removeItem('_apiKeyStorageMigrationDone');
   },
 
