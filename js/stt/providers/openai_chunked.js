@@ -56,7 +56,7 @@ class OpenAIChunkedProvider {
     }
     this.isActive = true;
     this.updateStatus('ready');
-    console.log('[OpenAI STT] Provider started');
+    DebugLogger.log('[OpenAI STT]', 'Provider started');
   }
 
   /**
@@ -65,7 +65,7 @@ class OpenAIChunkedProvider {
   async stop() {
     this.isActive = false;
     this.updateStatus('stopped');
-    console.log('[OpenAI STT] Provider stopped');
+    DebugLogger.log('[OpenAI STT]', 'Provider stopped');
   }
 
   /**
@@ -90,7 +90,7 @@ class OpenAIChunkedProvider {
     }
     const prompt = promptParts.join(' ');
 
-    console.log('[OpenAI STT] Transcribing blob:', {
+    DebugLogger.log('[OpenAI STT]', 'Transcribing blob:', {
       size: audioBlob.size,
       type: audioBlob.type,
       model: this.model,
@@ -109,7 +109,8 @@ class OpenAIChunkedProvider {
       // promptパラメータを追加（空でない場合のみ）
       if (prompt) {
         formData.append('prompt', prompt);
-        console.log('[OpenAI STT] Using prompt:', prompt.substring(0, 100) + (prompt.length > 100 ? '...' : ''));
+        // Note: promptの内容は機微情報を含む可能性があるため、長さのみをログ出力
+        DebugLogger.log('[OpenAI STT]', 'Using prompt, length:', prompt.length);
       }
 
       const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -153,7 +154,7 @@ class OpenAIChunkedProvider {
 
   // エラー通知
   emitError(error) {
-    console.error('[OpenAI STT] Error:', error);
+    DebugLogger.error('[OpenAI STT]', 'Error:', error.message || 'unknown');
     if (this.onError) {
       this.onError(error);
     }
