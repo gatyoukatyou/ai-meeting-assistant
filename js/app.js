@@ -582,24 +582,21 @@ var DEPRECATED_MODELS = {
 // https://ai.google.dev/gemini-api/docs/deprecations
 // https://ai.google.dev/gemini-api/docs/changelog
 var MODEL_SHUTDOWN_DATES = {
-  // Gemini 1.5系: shutdown済み (Release notes)
+  // Gemini 1.5系: shutdown済み (Release notes 2025-09-29)
+  // 公式に明記: gemini-1.5-pro, gemini-1.5-flash, gemini-1.5-flash-8b
   'gemini-1.5-pro': '2025-09-29',
-  'gemini-1.5-pro-latest': '2025-09-29',
   'gemini-1.5-flash': '2025-09-29',
-  'gemini-1.5-flash-latest': '2025-09-29',
   'gemini-1.5-flash-8b': '2025-09-29',
-  'gemini-pro': '2025-09-29',
-  'gemini-pro-latest': '2025-09-29',
 
   // Gemini 2.0 exp/thinking-exp: shutdown済み (Release notes)
   'gemini-2.0-flash-thinking-exp': '2025-12-02',
   'gemini-2.0-flash-thinking-exp-01-21': '2025-12-02',
   'gemini-2.0-flash-exp': '2025-12-09',
 
-  // Gemini 2.0 Live API: shutdown済み (Deprecations)
+  // Gemini 2.0 Live API: shutdown済み (Release notes 2025-12-09)
   'gemini-2.0-flash-live-001': '2025-12-09',
 
-  // Gemini 2.0 GA: 最短shutdown (Deprecations表)
+  // Gemini 2.0 GA: 最短shutdown (models page / Deprecations表)
   'gemini-2.0-flash': '2026-03-31',
   'gemini-2.0-flash-001': '2026-03-31',
   'gemini-2.0-flash-lite': '2026-03-31',

@@ -15,6 +15,15 @@ const ModelRegistry = (function() {
   const HEALTH_TTL = 6 * 60 * 60 * 1000;       // 6 hours
   const FLAKY_COOLDOWN = 5 * 60 * 1000;        // 5 minutes (for 429/5xx)
 
+  // Gemini 2.0 Flash GA models - exact match only (avoid catching exp/live/preview)
+  // 出典: https://ai.google.dev/gemini-api/docs/deprecations
+  const GEMINI_2_FLASH_GA = new Set([
+    'gemini-2.0-flash',
+    'gemini-2.0-flash-001',
+    'gemini-2.0-flash-lite',
+    'gemini-2.0-flash-lite-001'
+  ]);
+
   // =====================================
   // Provider Configurations
   // =====================================
@@ -39,14 +48,7 @@ const ModelRegistry = (function() {
             var deprecated = m.lifecycle && m.lifecycle.status === 'DEPRECATED';
             var shutdownDate = m.lifecycle && m.lifecycle.shutdownDate;
 
-            // Gemini 2.0 Flash GA models - exact match only (avoid catching exp/live/preview)
-            // 出典: https://ai.google.dev/gemini-api/docs/deprecations
-            var GEMINI_2_FLASH_GA = new Set([
-              'gemini-2.0-flash',
-              'gemini-2.0-flash-001',
-              'gemini-2.0-flash-lite',
-              'gemini-2.0-flash-lite-001'
-            ]);
+            // Mark Gemini 2.0 Flash GA models as deprecated
             if (GEMINI_2_FLASH_GA.has(id)) {
               deprecated = true;
               shutdownDate = shutdownDate || '2026-03-31';
