@@ -578,26 +578,32 @@ var DEPRECATED_MODELS = {
 };
 
 // モデルのshutdown日（P0-5: 日付を過ぎたら自動マイグレーション）
-// 出典: Generative Language API / Firebase AI Logic 側のスケジュール（安全側＝早い方を採用）
-// Note: Vertex AI側では異なる日付の場合あり
+// 出典: Gemini API Deprecations / Release notes
+// https://ai.google.dev/gemini-api/docs/deprecations
+// https://ai.google.dev/gemini-api/docs/changelog
 var MODEL_SHUTDOWN_DATES = {
-  // Gemini 1.5系: 2025-09-24 retirement
-  'gemini-1.5-pro': '2025-09-24',
-  'gemini-1.5-pro-latest': '2025-09-24',
-  'gemini-1.5-flash': '2025-09-24',
-  'gemini-1.5-flash-latest': '2025-09-24',
-  'gemini-1.5-flash-8b': '2025-09-24',
-  'gemini-pro': '2025-09-24',
-  'gemini-pro-latest': '2025-09-24',
-  // Gemini 2.0 Flash系: 2026-03-03 retirement (Generative Language API側、安全側)
-  'gemini-2.0-flash': '2026-03-03',
-  'gemini-2.0-flash-001': '2026-03-03',
-  'gemini-2.0-flash-exp': '2026-03-03',
-  'gemini-2.0-flash-lite': '2026-03-03',
-  'gemini-2.0-flash-lite-001': '2026-03-03',
-  'gemini-2.0-flash-thinking': '2026-03-03',
-  'gemini-2.0-flash-thinking-exp': '2026-03-03',
-  'gemini-2.0-flash-thinking-exp-01-21': '2026-03-03'
+  // Gemini 1.5系: shutdown済み (Release notes)
+  'gemini-1.5-pro': '2025-09-29',
+  'gemini-1.5-pro-latest': '2025-09-29',
+  'gemini-1.5-flash': '2025-09-29',
+  'gemini-1.5-flash-latest': '2025-09-29',
+  'gemini-1.5-flash-8b': '2025-09-29',
+  'gemini-pro': '2025-09-29',
+  'gemini-pro-latest': '2025-09-29',
+
+  // Gemini 2.0 exp/thinking-exp: shutdown済み (Release notes)
+  'gemini-2.0-flash-thinking-exp': '2025-12-02',
+  'gemini-2.0-flash-thinking-exp-01-21': '2025-12-02',
+  'gemini-2.0-flash-exp': '2025-12-09',
+
+  // Gemini 2.0 Live API: shutdown済み (Deprecations)
+  'gemini-2.0-flash-live-001': '2025-12-09',
+
+  // Gemini 2.0 GA: 最短shutdown (Deprecations表)
+  'gemini-2.0-flash': '2026-03-31',
+  'gemini-2.0-flash-001': '2026-03-31',
+  'gemini-2.0-flash-lite': '2026-03-31',
+  'gemini-2.0-flash-lite-001': '2026-03-31'
 };
 
 // =====================================

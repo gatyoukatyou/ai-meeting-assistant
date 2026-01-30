@@ -39,10 +39,17 @@ const ModelRegistry = (function() {
             var deprecated = m.lifecycle && m.lifecycle.status === 'DEPRECATED';
             var shutdownDate = m.lifecycle && m.lifecycle.shutdownDate;
 
-            // Mark 2.0-flash variants as deprecated (shutdown 2026-03-03, Generative Language API側)
-            if (id.includes('2.0-flash')) {
+            // Gemini 2.0 Flash GA models - exact match only (avoid catching exp/live/preview)
+            // 出典: https://ai.google.dev/gemini-api/docs/deprecations
+            var GEMINI_2_FLASH_GA = new Set([
+              'gemini-2.0-flash',
+              'gemini-2.0-flash-001',
+              'gemini-2.0-flash-lite',
+              'gemini-2.0-flash-lite-001'
+            ]);
+            if (GEMINI_2_FLASH_GA.has(id)) {
               deprecated = true;
-              shutdownDate = shutdownDate || '2026-03-03';
+              shutdownDate = shutdownDate || '2026-03-31';
             }
 
             return {
@@ -57,7 +64,7 @@ const ModelRegistry = (function() {
       fixedModels: [
         { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', deprecated: false },
         { id: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash', deprecated: false },
-        { id: 'gemini-2.0-flash', displayName: 'Gemini 2.0 Flash (2026-03-03 shutdown)', deprecated: true, shutdownDate: '2026-03-03' }
+        { id: 'gemini-2.0-flash', displayName: 'Gemini 2.0 Flash (2026-03-31 shutdown)', deprecated: true, shutdownDate: '2026-03-31' }
       ]
     },
     openai_llm: {
