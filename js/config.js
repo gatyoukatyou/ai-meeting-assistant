@@ -414,7 +414,9 @@ async function validateApiKey(provider, key) {
 
     switch (provider) {
       case 'gemini':
-        response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models?key=${key}`);
+        // Try header auth first (more secure), fallback to ?key= if needed
+        // Try v1 first (stable), fallback to v1beta
+        response = await tryGeminiAuth(key);
         break;
 
       case 'openai':
@@ -444,12 +446,32 @@ async function validateApiKey(provider, key) {
         return 'unknown';
     }
 
+    // Null check (all fetch attempts failed with network errors)
+    if (!response) {
+      if (statusEl) {
+        statusEl.className = 'validation-status validation-pending';
+        statusEl.textContent = '⚠ ' + t('config.validation.browserLimit');
+      }
+      return 'unknown';
+    }
+
     // HTTPステータスで判定
     if (response.ok) {
       if (statusEl) {
         statusEl.className = 'validation-status validation-success';
         statusEl.textContent = '✓ ' + t('config.validation.valid');
       }
+
+      // On successful validation, refresh model list (if ModelRegistry available)
+      if (window.ModelRegistry && isLLMProvider(provider)) {
+        try {
+          await ModelRegistry.getModels(provider, key, { forceRefresh: true });
+          console.log('[Config] Model list refreshed for', provider);
+        } catch (e) {
+          console.warn('[Config] Failed to refresh models for', provider, ':', e.message);
+        }
+      }
+
       return 'valid';
     } else if (response.status === 401 || response.status === 403) {
       if (statusEl) {
@@ -648,6 +670,13 @@ function clearApiKey(provider) {
 }
 
 // =====================================
+// LLMプロバイダー判定
+// =====================================
+function isLLMProvider(provider) {
+  return ['gemini', 'claude', 'openai_llm', 'groq'].includes(provider);
+}
+
+// =====================================
 // プロバイダー表示名取得
 // =====================================
 function getProviderName(provider) {
@@ -660,4 +689,42 @@ function getProviderName(provider) {
     'groq': 'Groq'
   };
   return names[provider] || provider;
+}
+
+// =====================================
+// Gemini認証フォールバック
+// v1 → v1beta, header → ?key= の順で試行
+// =====================================
+async function tryGeminiAuth(key) {
+  const apiVersions = ['v1', 'v1beta'];
+  const authMethods = ['header', 'query'];
+  let lastResponse = null;
+
+  for (const version of apiVersions) {
+    for (const authMethod of authMethods) {
+      try {
+        let url = `https://generativelanguage.googleapis.com/${version}/models`;
+        const fetchOptions = { method: 'GET' };
+
+        if (authMethod === 'header') {
+          fetchOptions.headers = { 'x-goog-api-key': key };
+        } else {
+          url = `${url}?key=${encodeURIComponent(key)}`;
+        }
+
+        const response = await fetch(url, fetchOptions);
+        lastResponse = response;
+        if (response.ok || response.status === 401 || response.status === 403) {
+          // Return on success or definite auth failure
+          return response;
+        }
+        // Continue trying on other errors
+      } catch (e) {
+        console.warn(`Gemini ${version} ${authMethod} auth failed:`, e.message);
+      }
+    }
+  }
+
+  // Return last response if any, or null if all failed with network errors
+  return lastResponse;
 }

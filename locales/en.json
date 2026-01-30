@@ -136,7 +136,9 @@
       "encrypted": "Obfuscated local storage (never stored as plain text)",
       "httpsOnly": "Only sent via HTTPS during API calls",
       "isolated": "Inaccessible from other websites",
-      "exportable": "Import/export settings supported"
+      "exportable": "Import/export settings supported",
+      "clientWarningTitle": "Client-Side API Warning",
+      "clientWarningText": "This app calls APIs directly from your browser. API keys are exposed in client-side code. For personal use and self-responsibility only. Not recommended for public/production deployments."
     },
     "storage": {
       "migrationTitle": "API Key Storage Update",
@@ -196,20 +198,23 @@
       "getFromOpenAILLM": "Get from OpenAI Platform (separate key from STT recommended)",
       "getFromGroq": "Get from Groq Console (fast, low cost)",
       "models": {
-        "gemini20Flash": "gemini-2.0-flash (Recommended)",
+        "gemini25Flash": "gemini-2.5-flash (Recommended)",
+        "gemini25Pro": "gemini-2.5-pro",
+        "gemini20Flash": "gemini-2.0-flash",
+        "gemini20FlashDeprecated": "gemini-2.0-flash (2026-03 shutdown)",
         "gemini15Flash": "gemini-1.5-flash",
         "gemini15Pro": "gemini-1.5-pro",
         "claudeSonnet4": "claude-sonnet-4",
         "claude35Sonnet": "claude-3.5-sonnet",
         "gpt4o": "gpt-4o (Recommended)",
         "gpt4oMini": "gpt-4o-mini (Low cost)",
-        "gpt4Turbo": "gpt-4-turbo (Legacy)",
+        "gpt4Turbo": "gpt-4-turbo",
         "llama33": "llama-3.3-70b (Recommended)",
         "llama31_8b": "llama-3.1-8b (Low cost)"
       },
       "customModelWarning": "⚠️ Custom model: Not verified, may not work due to API changes",
       "customModelPlaceholder": {
-        "gemini": "Custom model (e.g. gemini-2.0-flash-exp)",
+        "gemini": "Custom model (e.g. gemini-2.5-pro)",
         "claude": "Custom model (e.g. claude-opus-4-20250514)",
         "openai": "Custom model (e.g. gpt-4o-2024-08-06)",
         "groq": "Custom model (e.g. llama-3.3-70b-versatile)"
@@ -301,7 +306,11 @@
     },
     "model": {
       "deprecated": "Model deprecated. Auto-switched: {from} → {to}",
-      "migrated": "Deprecated model settings were auto-updated"
+      "migrated": "Deprecated model settings were auto-updated",
+      "fallback": "{from} is unavailable, falling back to {to}",
+      "fallbackRetry": "Error with selected model. Retrying with {fallback} (settings unchanged)",
+      "unavailable": "Unavailable",
+      "shutdownScheduled": "Shutdown: {date}"
     },
     "qa": {
       "submitting": "Submitting. Please wait.",

@@ -477,6 +477,17 @@
     <div id="errorMessage" class="error-message"></div>
 
     <div class="card">
+      <!-- Security Warning for client-side API exposure -->
+      <div class="security-notice" style="background: #fef3c7; border-color: #fef08a; margin-bottom: 1rem;">
+        <div class="security-notice-title" style="color: #92400e;">
+          <span>⚠️</span>
+          <span data-i18n="config.security.clientWarningTitle">Client-Side API Warning</span>
+        </div>
+        <div class="security-notice-text" style="color: #92400e;" data-i18n="config.security.clientWarningText">
+          This app calls APIs directly from your browser. API keys are exposed in client-side code. For personal use and self-responsibility only. Not recommended for public/production deployments.
+        </div>
+      </div>
+
       <div class="security-notice">
         <div class="security-notice-title">
           <span>🔒</span>
@@ -597,13 +608,13 @@
           <div class="setting-row">
             <input type="password" class="setting-input" id="geminiApiKey" placeholder="AIza...">
             <select class="model-select" id="geminiModel">
-              <option value="gemini-2.0-flash-exp" data-i18n="config.llm.models.gemini20Flash">gemini-2.0-flash (Recommended)</option>
-              <option value="gemini-1.5-flash-latest">gemini-1.5-flash</option>
-              <option value="gemini-1.5-pro-latest">gemini-1.5-pro</option>
+              <option value="gemini-2.5-flash" data-i18n="config.llm.models.gemini25Flash">gemini-2.5-flash (Recommended)</option>
+              <option value="gemini-2.5-pro" data-i18n="config.llm.models.gemini25Pro">gemini-2.5-pro</option>
+              <option value="gemini-2.0-flash" style="color: #999;" data-i18n="config.llm.models.gemini20FlashDeprecated">gemini-2.0-flash (2026-03 shutdown)</option>
             </select>
           </div>
           <div class="setting-row" style="margin-top: 0.5rem;">
-            <input type="text" class="setting-input" id="geminiCustomModel" data-i18n-placeholder="config.llm.customModelPlaceholder.gemini" placeholder="Custom model (e.g. gemini-2.0-flash-exp)" style="font-size: 0.8rem;">
+            <input type="text" class="setting-input" id="geminiCustomModel" data-i18n-placeholder="config.llm.customModelPlaceholder.gemini" placeholder="Custom model (e.g. gemini-2.5-pro)" style="font-size: 0.8rem;">
           </div>
           <div class="setting-hint custom-model-warning" style="color: var(--warning); font-size: 0.7rem;" data-i18n="config.llm.customModelWarning">
             ⚠️ Custom model: Not verified, may not work due to API changes
@@ -654,7 +665,7 @@
             <select class="model-select" id="openaiLlmModel">
               <option value="gpt-4o" data-i18n="config.llm.models.gpt4o">gpt-4o (Recommended)</option>
               <option value="gpt-4o-mini" data-i18n="config.llm.models.gpt4oMini">gpt-4o-mini (Low cost)</option>
-              <option value="gpt-4-turbo-2024-04-09" data-i18n="config.llm.models.gpt4Turbo">gpt-4-turbo (Legacy)</option>
+              <option value="gpt-4-turbo" data-i18n="config.llm.models.gpt4Turbo">gpt-4-turbo</option>
             </select>
           </div>
           <div class="setting-row" style="margin-top: 0.5rem;">

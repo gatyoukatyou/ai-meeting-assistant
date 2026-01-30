@@ -136,7 +136,9 @@
       "encrypted": "難読化してローカル保存（平文では保存しない）",
       "httpsOnly": "API呼び出し時のみHTTPS経由で送信",
       "isolated": "他のWebサイトからはアクセス不可",
-      "exportable": "設定のエクスポート/インポート対応"
+      "exportable": "設定のエクスポート/インポート対応",
+      "clientWarningTitle": "クライアントサイドAPI警告",
+      "clientWarningText": "このアプリはブラウザから直接APIを呼び出します。APIキーがクライアントサイドに露出するため、個人利用・自己責任でご使用ください。公開環境での運用は推奨されません。"
     },
     "storage": {
       "migrationTitle": "APIキー保存方式が変わりました",
@@ -195,20 +197,23 @@
       "getFromOpenAILLM": "<a href=\"https://platform.openai.com/api-keys\" target=\"_blank\" rel=\"noopener\">OpenAI Platform</a> から取得（STTと別のキーを推奨）",
       "getFromGroq": "<a href=\"https://console.groq.com/keys\" target=\"_blank\" rel=\"noopener\">Groq Console</a> から取得（高速・低コスト）",
       "models": {
-        "gemini20Flash": "gemini-2.0-flash（推奨）",
+        "gemini25Flash": "gemini-2.5-flash（推奨）",
+        "gemini25Pro": "gemini-2.5-pro",
+        "gemini20Flash": "gemini-2.0-flash",
+        "gemini20FlashDeprecated": "gemini-2.0-flash（2026-03終了予定）",
         "gemini15Flash": "gemini-1.5-flash",
         "gemini15Pro": "gemini-1.5-pro",
         "claudeSonnet4": "claude-sonnet-4",
         "claude35Sonnet": "claude-3.5-sonnet",
         "gpt4o": "gpt-4o（推奨）",
         "gpt4oMini": "gpt-4o-mini（低コスト）",
-        "gpt4Turbo": "gpt-4-turbo（互換用）",
+        "gpt4Turbo": "gpt-4-turbo",
         "llama33": "llama-3.3-70b（推奨）",
         "llama31_8b": "llama-3.1-8b（低コスト）"
       },
       "customModelWarning": "⚠️ カスタムモデル: 未検証のため、APIの仕様変更で動作しない場合があります",
       "customModelPlaceholder": {
-        "gemini": "カスタムモデル（例: gemini-2.0-flash-exp）",
+        "gemini": "カスタムモデル（例: gemini-2.5-pro）",
         "claude": "カスタムモデル（例: claude-opus-4-20250514）",
         "openai": "カスタムモデル（例: gpt-4o-2024-08-06）",
         "groq": "カスタムモデル（例: llama-3.3-70b-versatile）"
@@ -300,7 +305,11 @@
     },
     "model": {
       "deprecated": "モデルが廃止されたため自動変更しました: {from} → {to}",
-      "migrated": "廃止されたモデル設定を自動更新しました"
+      "migrated": "廃止されたモデル設定を自動更新しました",
+      "fallback": "{from} は利用不可、{to} にフォールバック",
+      "fallbackRetry": "選択モデルでエラー。今回は {fallback} に切替して再試行します（設定は変更しません）",
+      "unavailable": "利用不可",
+      "shutdownScheduled": "終了予定: {date}"
     },
     "qa": {
       "submitting": "送信中です。しばらくお待ちください。",
