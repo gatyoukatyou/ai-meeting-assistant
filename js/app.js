@@ -353,11 +353,39 @@ const PRICING = {
 // AI回答の履歴
 let aiResponses = {
   summary: [],  // { timestamp: '19:05', content: '...' }
-  opinion: [],  // { timestamp: '19:06', content: '...' }
-  idea: [],     // { timestamp: '19:07', content: '...' }
+  opinion: [],  // { timestamp: '19:06', content: '...' } - 後方互換用
+  idea: [],     // { timestamp: '19:07', content: '...' } - 後方互換用
+  consult: [],  // { timestamp: '19:08', content: '...' } - 統合された相談結果
   minutes: '',  // 議事録（録音停止後に生成、単一）
   custom: []    // Q&A形式で蓄積 { q: '...', a: '...' }
 };
+
+// Memo Timeline
+let meetingMemos = { items: [] };
+let memoIdCounter = 0;
+
+/*
+Memo item structure:
+{
+  id: 'memo_1',
+  timestamp: '14:32',           // HH:MM format
+  elapsedSec: 1250,             // seconds since recording start
+  type: 'memo' | 'todo',
+  content: 'メモ内容',
+  quote: '[14:30] 参照テキスト...',
+  quotedChunkIds: ['chunk_5'],
+  completed: false,             // TODOのみ
+  pinned: false,
+  createdAt: '2025-01-31T14:32:00.000Z'
+}
+*/
+
+// Meeting Mode (Panel Toggle) - デフォルトON
+let isPanelMeetingMode = localStorage.getItem('_panelMeetingMode') !== '0';
+
+// Timeline state
+let currentTimelineFilter = 'all';
+let currentTimelineSearch = '';
 
 // 履歴復元用（上書き保存のため）
 let restoredHistoryId = null;
@@ -840,6 +868,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   });
 
+  // Cost chip click handlers (Phase 2 compact cost display)
+  document.getElementById('transcriptCostChip')?.addEventListener('click', () => toggleCostDetails('transcript'));
+  document.getElementById('llmCostChip')?.addEventListener('click', () => toggleCostDetails('llm'));
+
+  // Close cost popover on outside click
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.cost-chip') && !e.target.closest('.cost-popover')) {
+      document.getElementById('costPopover')?.classList.remove('open');
+    }
+  });
+
   document.querySelectorAll('.ask-ai-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       // LLM未設定チェック
@@ -1083,6 +1122,50 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   initializeMeetingContextUI();
 
+  // Panel Meeting Mode (会議モード切替)
+  const meetingModeChip = document.getElementById('meetingModeChip');
+  if (meetingModeChip) {
+    meetingModeChip.addEventListener('click', togglePanelMeetingMode);
+  }
+  initPanelMeetingMode();
+
+  // Memo button
+  const addMemoBtn = document.getElementById('addMemoBtn');
+  if (addMemoBtn) {
+    addMemoBtn.addEventListener('click', () => {
+      toggleMemoInputSection();
+      switchTab('timeline');
+    });
+  }
+
+  // Memo submit
+  const submitMemoBtn = document.getElementById('submitMemoBtn');
+  if (submitMemoBtn) {
+    submitMemoBtn.addEventListener('click', () => {
+      const input = document.getElementById('memoInput');
+      const content = input?.value.trim();
+      if (content) {
+        createMemo(content);
+        input.value = '';
+        document.getElementById('memoInputSection').style.display = 'none';
+      }
+    });
+  }
+
+  // Ctrl+Enter for memo input
+  const memoInput = document.getElementById('memoInput');
+  if (memoInput) {
+    memoInput.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        submitMemoBtn?.click();
+      }
+    });
+  }
+
+  // Timeline filters
+  initTimelineFilters();
+
   // 言語変更時の再レンダリング
   window.addEventListener('languagechange', function() {
     // 動的コンテンツの再レンダリング
@@ -1090,6 +1173,8 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateLLMButtonsState();
     updateCosts();
     renderTranscriptChunks();
+    renderTimeline();
+    updatePanelMeetingModeUI();
     updateUI();
   });
 
@@ -2503,6 +2588,9 @@ async function askAI(type) {
     case 'idea':
       prompt = `${contextPrompt}${t('ai.prompt.idea')}\n\n${targetText}`;
       break;
+    case 'consult':
+      prompt = `${contextPrompt}${t('ai.prompt.consult')}\n\n【会議内容】\n${targetText}`;
+      break;
     case 'minutes':
       // 議事録は録音停止後のみ
       if (isRecording) {
@@ -3254,6 +3342,9 @@ function updateCosts() {
 
   // 合計
   document.getElementById('totalCost').textContent = formatCost(total);
+
+  // Sync to compact chips
+  syncChipValues();
 }
 
 function formatCost(yen) {
@@ -3290,9 +3381,58 @@ function updateCostBadge(badge, cost) {
   }
 }
 
+// Sync values from hidden original elements to visible chips
+function syncChipValues() {
+  document.querySelectorAll('[data-mirror]').forEach(el => {
+    const sourceId = el.getAttribute('data-mirror');
+    const source = document.getElementById(sourceId);
+    if (source) el.textContent = source.textContent;
+  });
+
+  // Mirror badge classes
+  document.querySelectorAll('[data-mirror-class]').forEach(el => {
+    const sourceId = el.getAttribute('data-mirror-class');
+    const source = document.getElementById(sourceId);
+    if (source) {
+      el.className = 'chip-cost-badge ' + Array.from(source.classList).filter(c => c.startsWith('cost-badge')).join(' ');
+      el.textContent = source.textContent;
+    }
+  });
+}
+
 function toggleCostDetails(type) {
-  const details = document.getElementById(`${type}CostDetails`);
-  details.classList.toggle('show');
+  const chip = document.getElementById(`${type}CostChip`);
+  const popover = document.getElementById('costPopover');
+  const content = document.getElementById('costPopoverContent');
+
+  // If already open for this type, close it
+  const isOpen = popover.classList.contains('open') && popover.dataset.type === type;
+  if (isOpen) {
+    popover.classList.remove('open');
+    return;
+  }
+
+  // Copy content from hidden original panel
+  const originalDetails = document.getElementById(`${type}CostDetails`);
+  content.innerHTML = originalDetails ? originalDetails.innerHTML : '';
+
+  // Position below the chip (fallback to above if clipped)
+  if (chip) {
+    const rect = chip.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+
+    if (spaceBelow > 200) {
+      popover.style.top = `${rect.bottom + 8}px`;
+      popover.style.bottom = 'auto';
+    } else {
+      popover.style.bottom = `${window.innerHeight - rect.top + 8}px`;
+      popover.style.top = 'auto';
+    }
+    popover.style.left = `${Math.max(8, rect.left)}px`;
+  }
+
+  popover.dataset.type = type;
+  popover.classList.add('open');
 }
 
 function checkCostAlert() {
@@ -3305,27 +3445,46 @@ function checkCostAlert() {
   const threshold = costLimit * 0.8;
 
   const warningEl = document.getElementById('costWarning');
+  const warningInlineEl = document.getElementById('costWarningInline');
+
   if (total >= threshold) {
     warningEl.style.display = 'block';
     const percent = Math.round(total / costLimit * 100);
-    warningEl.textContent = '⚠️ ' + t('app.cost.warningNear', { limit: costLimit, percent: percent });
+    const warningText = '⚠️ ' + t('app.cost.warningNear', { limit: costLimit, percent: percent });
+    warningEl.textContent = warningText;
+
+    // Update inline warning too
+    if (warningInlineEl) {
+      warningInlineEl.textContent = warningText;
+      warningInlineEl.classList.add('show');
+    }
 
     if (total >= costLimit) {
-      warningEl.textContent = '🚫 ' + t('app.cost.warningExceeded', { limit: costLimit });
+      const exceededText = '🚫 ' + t('app.cost.warningExceeded', { limit: costLimit });
+      warningEl.textContent = exceededText;
       warningEl.style.background = '#fee2e2';
       warningEl.style.borderColor = '#fca5a5';
       warningEl.style.color = '#991b1b';
+      if (warningInlineEl) warningInlineEl.textContent = exceededText;
     }
   } else {
     warningEl.style.display = 'none';
+    if (warningInlineEl) warningInlineEl.classList.remove('show');
   }
 }
 
 function switchTab(tabName) {
   document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
   document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-  document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
-  document.getElementById(`tab-${tabName}`).classList.add('active');
+  const tabEl = document.querySelector(`.tab[data-tab="${tabName}"]`);
+  const contentEl = document.getElementById(`tab-${tabName}`);
+  if (tabEl) tabEl.classList.add('active');
+  if (contentEl) contentEl.classList.add('active');
+
+  // タイムラインタブに切り替えた時は再レンダリング
+  if (tabName === 'timeline') {
+    renderTimeline();
+  }
 }
 
 // Phase 3: メインパネル切り替え（スマホ用）
@@ -3407,6 +3566,296 @@ function clearTranscript() {
 }
 
 // =====================================
+// Panel Meeting Mode (会議モード - パネル切替)
+// =====================================
+function initPanelMeetingMode() {
+  if (isPanelMeetingMode) {
+    document.querySelector('.main-container')?.classList.add('meeting-mode');
+  }
+  updatePanelMeetingModeUI();
+}
+
+function togglePanelMeetingMode() {
+  isPanelMeetingMode = !isPanelMeetingMode;
+  document.querySelector('.main-container')?.classList.toggle('meeting-mode', isPanelMeetingMode);
+  localStorage.setItem('_panelMeetingMode', isPanelMeetingMode ? '1' : '0');
+  updatePanelMeetingModeUI();
+}
+
+function updatePanelMeetingModeUI() {
+  const chip = document.getElementById('meetingModeChip');
+  const label = document.getElementById('meetingModeLabel');
+  if (chip && label) {
+    if (isPanelMeetingMode) {
+      chip.classList.remove('edit-mode');
+      label.textContent = t('app.meeting.meetingMode') || '会議モード';
+    } else {
+      chip.classList.add('edit-mode');
+      label.textContent = t('app.meeting.editMode') || '編集モード';
+    }
+  }
+}
+
+// =====================================
+// Memo CRUD Functions
+// =====================================
+function createMemo(content) {
+  const now = new Date();
+  const timestamp = now.toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+
+  // 引用を取得（選択テキストがあればそれ、なければ直近3行）
+  const quoteData = getSelectedTranscriptQuote() || getRecentTranscriptQuote(3);
+
+  const memo = {
+    id: `memo_${++memoIdCounter}`,
+    timestamp,
+    elapsedSec: isRecording ? Math.floor(getActiveDurationMs() / 1000) : 0,
+    type: 'memo',
+    content,
+    quote: quoteData.quote,
+    quotedChunkIds: quoteData.chunkIds,
+    completed: false,
+    pinned: false,
+    createdAt: now.toISOString()
+  };
+
+  meetingMemos.items.push(memo);
+  renderTimeline();
+  return memo;
+}
+
+function getSelectedTranscriptQuote() {
+  const selection = window.getSelection().toString().trim();
+  if (!selection || selection.length < 5) return null;
+
+  // 選択テキストにマッチするchunkを探す
+  const matchedChunks = transcriptChunks.filter(c =>
+    selection.includes(c.text.substring(0, 20)) || c.text.includes(selection.substring(0, 20))
+  );
+
+  return {
+    quote: selection.length > 200 ? selection.substring(0, 200) + '...' : selection,
+    chunkIds: matchedChunks.map(c => c.id)
+  };
+}
+
+function getRecentTranscriptQuote(lineCount = 3) {
+  const recentChunks = transcriptChunks.slice(-lineCount);
+  if (recentChunks.length === 0) return { quote: '', chunkIds: [] };
+
+  const quote = recentChunks.map(c => `[${c.timestamp}] ${c.text}`).join('\n');
+  return {
+    quote: quote.length > 200 ? quote.substring(0, 200) + '...' : quote,
+    chunkIds: recentChunks.map(c => c.id)
+  };
+}
+
+function convertToTodo(memoId) {
+  const memo = meetingMemos.items.find(m => m.id === memoId);
+  if (memo) {
+    memo.type = 'todo';
+    renderTimeline();
+  }
+}
+
+function toggleTodoComplete(memoId) {
+  const memo = meetingMemos.items.find(m => m.id === memoId && m.type === 'todo');
+  if (memo) {
+    memo.completed = !memo.completed;
+    renderTimeline();
+  }
+}
+
+function toggleMemoPinned(memoId) {
+  const memo = meetingMemos.items.find(m => m.id === memoId);
+  if (memo) {
+    memo.pinned = !memo.pinned;
+    renderTimeline();
+  }
+}
+
+function deleteMemo(memoId) {
+  meetingMemos.items = meetingMemos.items.filter(m => m.id !== memoId);
+  renderTimeline();
+}
+
+// =====================================
+// Timeline Rendering
+// =====================================
+function renderTimeline() {
+  const container = document.getElementById('timelineList');
+  if (!container) return;
+
+  let items = [];
+
+  // Add memos/TODOs
+  meetingMemos.items.forEach(memo => {
+    items.push({
+      ...memo,
+      source: 'memo',
+      sortTime: new Date(memo.createdAt).getTime()
+    });
+  });
+
+  // Add AI responses (summary, consult, opinion, idea for backward compat)
+  ['summary', 'consult', 'opinion', 'idea'].forEach(aiType => {
+    (aiResponses[aiType] || []).forEach((entry, idx) => {
+      items.push({
+        id: `ai_${aiType}_${idx}`,
+        type: 'ai',
+        aiType: aiType,
+        timestamp: entry.timestamp,
+        content: entry.content,
+        source: 'ai',
+        sortTime: parseTimestampToMs(entry.timestamp),
+        pinned: false
+      });
+    });
+  });
+
+  // Add Q&A
+  aiResponses.custom.forEach((qa, idx) => {
+    items.push({
+      id: `qa_${idx}`,
+      type: 'qa',
+      timestamp: qa.timestamp || '',
+      content: `Q: ${qa.q}\n\nA: ${qa.a}`,
+      source: 'qa',
+      sortTime: qa.timestamp ? parseTimestampToMs(qa.timestamp) : Date.now() - (aiResponses.custom.length - idx) * 60000,
+      pinned: false
+    });
+  });
+
+  // Apply filter
+  if (currentTimelineFilter !== 'all') {
+    items = items.filter(item => {
+      if (currentTimelineFilter === 'memo') return item.source === 'memo' && item.type === 'memo';
+      if (currentTimelineFilter === 'todo') return item.source === 'memo' && item.type === 'todo';
+      if (currentTimelineFilter === 'ai') return item.source === 'ai';
+      if (currentTimelineFilter === 'qa') return item.source === 'qa';
+      return true;
+    });
+  }
+
+  // Apply search
+  if (currentTimelineSearch) {
+    const q = currentTimelineSearch.toLowerCase();
+    items = items.filter(item =>
+      item.content.toLowerCase().includes(q) ||
+      (item.quote && item.quote.toLowerCase().includes(q))
+    );
+  }
+
+  // Sort: pinned first, then newest first
+  items.sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return b.sortTime - a.sortTime;
+  });
+
+  // Render
+  if (items.length === 0) {
+    container.innerHTML = '<p class="placeholder-text" style="text-align:center;padding:2rem;">' +
+      escapeHtml(t('app.timeline.empty') || 'タイムラインにアイテムがありません') + '</p>';
+  } else {
+    container.innerHTML = items.map(renderTimelineItem).join('');
+  }
+
+  attachTimelineListeners();
+}
+
+function renderTimelineItem(item) {
+  const icons = { memo: '📝', todo: item.completed ? '✅' : '☐', ai: '🤖', qa: '❓' };
+  const icon = icons[item.type] || '📝';
+  const classes = [
+    'timeline-item',
+    item.type,
+    item.pinned ? 'pinned' : '',
+    item.completed ? 'completed' : ''
+  ].filter(Boolean).join(' ');
+
+  const aiTypeLabel = item.aiType ? ` (${item.aiType})` : '';
+
+  const memoActions = item.source === 'memo' ? `
+    <button class="btn-icon" data-action="pin" title="${item.pinned ? 'ピン解除' : 'ピン留め'}">📌</button>
+    ${item.type === 'memo' ? '<button class="btn-icon" data-action="to-todo" title="TODOに変換">☑️</button>' : ''}
+    ${item.type === 'todo' ? '<button class="btn-icon" data-action="toggle" title="完了切替">✓</button>' : ''}
+    <button class="btn-icon" data-action="delete" title="削除">🗑️</button>
+  ` : '';
+
+  return `
+    <div class="${classes}" data-id="${escapeHtml(item.id)}" data-source="${escapeHtml(item.source)}">
+      <div class="timeline-item-header">
+        <span class="timeline-item-meta">${icon} ${escapeHtml(item.timestamp)}${escapeHtml(aiTypeLabel)}</span>
+        <div class="timeline-item-actions">${memoActions}</div>
+      </div>
+      <div class="timeline-item-content">${escapeHtml(item.content)}</div>
+      ${item.quote ? `<div class="timeline-item-quote">${escapeHtml(item.quote)}</div>` : ''}
+    </div>
+  `;
+}
+
+function attachTimelineListeners() {
+  document.querySelectorAll('.timeline-item[data-source="memo"]').forEach(el => {
+    el.querySelectorAll('[data-action]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const id = el.dataset.id;
+        const action = btn.dataset.action;
+        if (action === 'pin') toggleMemoPinned(id);
+        if (action === 'to-todo') convertToTodo(id);
+        if (action === 'toggle') toggleTodoComplete(id);
+        if (action === 'delete') deleteMemo(id);
+      });
+    });
+  });
+}
+
+function parseTimestampToMs(timestamp) {
+  if (!timestamp) return 0;
+  const parts = timestamp.split(':').map(Number);
+  if (parts.length === 2) {
+    const [h, m] = parts;
+    return (h * 60 + m) * 60 * 1000;
+  }
+  return 0;
+}
+
+function initTimelineFilters() {
+  document.querySelectorAll('.timeline-filter').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.timeline-filter').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentTimelineFilter = btn.dataset.filter;
+      renderTimeline();
+    });
+  });
+
+  const searchInput = document.getElementById('timelineSearch');
+  if (searchInput) {
+    let timeout;
+    searchInput.addEventListener('input', () => {
+      clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        currentTimelineSearch = searchInput.value;
+        renderTimeline();
+      }, 200);
+    });
+  }
+}
+
+function toggleMemoInputSection() {
+  const section = document.getElementById('memoInputSection');
+  if (section) {
+    const isVisible = section.style.display !== 'none';
+    section.style.display = isVisible ? 'none' : 'block';
+    if (!isVisible) {
+      document.getElementById('memoInput')?.focus();
+    }
+  }
+}
+
+// =====================================
 // エクスポート
 // =====================================
 function openExportModal() {
@@ -3434,8 +3883,11 @@ function getExportOptions() {
   return {
     minutes: getChecked('exportMinutes'),
     summary: getChecked('exportSummary'),
-    opinion: getChecked('exportOpinion'),
-    idea: getChecked('exportIdea'),
+    consult: getChecked('exportConsult'),
+    opinion: false,  // 後方互換用（UIから削除済み）
+    idea: false,     // 後方互換用（UIから削除済み）
+    memos: getChecked('exportMemos'),
+    todos: getChecked('exportTodos'),
     qa: getChecked('exportQA'),
     transcript: getChecked('exportTranscript'),
     cost: getChecked('exportCost')
@@ -3446,18 +3898,19 @@ function setExportPreset(preset) {
   const checkboxes = {
     minutes: document.getElementById('exportMinutes'),
     summary: document.getElementById('exportSummary'),
-    opinion: document.getElementById('exportOpinion'),
-    idea: document.getElementById('exportIdea'),
+    consult: document.getElementById('exportConsult'),
+    memos: document.getElementById('exportMemos'),
+    todos: document.getElementById('exportTodos'),
     qa: document.getElementById('exportQA'),
     transcript: document.getElementById('exportTranscript'),
     cost: document.getElementById('exportCost')
   };
 
   const presets = {
-    all: { minutes: true, summary: true, opinion: true, idea: true, qa: true, transcript: true, cost: true },
-    minutes: { minutes: true, summary: false, opinion: false, idea: false, qa: false, transcript: false, cost: false },
-    ai: { minutes: false, summary: true, opinion: true, idea: true, qa: true, transcript: false, cost: false },
-    none: { minutes: false, summary: false, opinion: false, idea: false, qa: false, transcript: false, cost: false }
+    all: { minutes: true, summary: true, consult: true, memos: true, todos: true, qa: true, transcript: true, cost: true },
+    minutes: { minutes: true, summary: false, consult: false, memos: false, todos: false, qa: false, transcript: false, cost: false },
+    ai: { minutes: false, summary: true, consult: true, memos: true, todos: true, qa: true, transcript: false, cost: false },
+    none: { minutes: false, summary: false, consult: false, memos: false, todos: false, qa: false, transcript: false, cost: false }
   };
 
   const selected = presets[preset] || presets.all;
@@ -3671,8 +4124,8 @@ function openFullSettings() {
 function generateExportMarkdown(options = null) {
   // デフォルトは全て有効
   const opts = options || {
-    minutes: true, summary: true, opinion: true, idea: true,
-    qa: true, transcript: true, cost: true
+    minutes: true, summary: true, consult: true, opinion: true, idea: true,
+    memos: true, todos: true, qa: true, transcript: true, cost: true
   };
 
   const now = new Date().toLocaleString(I18n.getLanguage() === 'ja' ? 'ja-JP' : 'en-US');
@@ -3696,11 +4149,12 @@ function generateExportMarkdown(options = null) {
     md += `${aiResponses.minutes}\n\n`;
   }
 
-  // 2. AI回答（要約・意見・アイデア）- 配列形式でタイムスタンプ付き
+  // 2. AI回答（要約・相談・意見・アイデア）- 配列形式でタイムスタンプ付き
   const showSummary = opts.summary && aiResponses.summary.length > 0;
+  const showConsult = opts.consult && aiResponses.consult.length > 0;
   const showOpinion = opts.opinion && aiResponses.opinion.length > 0;
   const showIdea = opts.idea && aiResponses.idea.length > 0;
-  const hasAIResponses = showSummary || showOpinion || showIdea;
+  const hasAIResponses = showSummary || showConsult || showOpinion || showIdea;
 
   // 配列形式のAI回答をフォーマット
   const formatAIResponses = (entries, label, emoji) => {
@@ -3723,11 +4177,43 @@ function generateExportMarkdown(options = null) {
     if (showSummary) {
       md += formatAIResponses(aiResponses.summary, t('export.items.summary'), '📋');
     }
+    if (showConsult) {
+      md += formatAIResponses(aiResponses.consult, t('export.items.consult') || '相談', '💭');
+    }
     if (showOpinion) {
       md += formatAIResponses(aiResponses.opinion, t('export.items.opinion'), '💭');
     }
     if (showIdea) {
       md += formatAIResponses(aiResponses.idea, t('export.items.idea'), '💡');
+    }
+  }
+
+  // 2.5 メモセクション
+  if (opts.memos) {
+    const memos = meetingMemos.items.filter(m => m.type === 'memo');
+    if (memos.length > 0) {
+      md += `---\n\n## 📝 ${t('export.items.memos') || 'メモ'}\n\n`;
+      memos.forEach(memo => {
+        md += `### [${memo.timestamp}]\n\n${memo.content}\n\n`;
+        if (memo.quote) {
+          md += `> ${memo.quote.replace(/\n/g, '\n> ')}\n\n`;
+        }
+      });
+    }
+  }
+
+  // 2.6 TODOセクション
+  if (opts.todos) {
+    const todos = meetingMemos.items.filter(m => m.type === 'todo');
+    if (todos.length > 0) {
+      md += `---\n\n## ☑️ ${t('export.items.todos') || 'TODO'}\n\n`;
+      todos.forEach(todo => {
+        const checkbox = todo.completed ? '[x]' : '[ ]';
+        md += `- ${checkbox} ${todo.content}`;
+        if (todo.timestamp) md += ` *(${todo.timestamp})*`;
+        md += '\n';
+      });
+      md += '\n';
     }
   }
 
@@ -3913,8 +4399,11 @@ function buildHistoryRecord() {
     exportMarkdown: generateExportMarkdown({
       minutes: true,
       summary: true,
+      consult: true,
       opinion: true,
       idea: true,
+      memos: true,
+      todos: true,
       qa: true,
       transcript: true,
       cost: true
@@ -3924,7 +4413,10 @@ function buildHistoryRecord() {
     meetingStartMarkerId: meetingStartMarkerId,
     chunkIdCounter: chunkIdCounter,
     aiResponses: deepCopy(aiResponses),
-    costs: deepCopy(costs)
+    costs: deepCopy(costs),
+    // Memos
+    meetingMemos: deepCopy(meetingMemos),
+    memoIdCounter: memoIdCounter
   };
 }
 
@@ -4019,21 +4511,23 @@ function parseTranscriptToChunks(transcriptText) {
 function hasAnyAiResponse() {
   return (
     aiResponses.summary.length > 0 ||
+    aiResponses.consult.length > 0 ||
     aiResponses.opinion.length > 0 ||
     aiResponses.idea.length > 0 ||
     aiResponses.minutes !== '' ||
-    aiResponses.custom.length > 0
+    aiResponses.custom.length > 0 ||
+    meetingMemos.items.length > 0
   );
 }
 
 // AI回答をUIに反映（XSS安全）
 function renderAIResponsesFromState() {
-  // summary/opinion/idea: textContentのみ使用
-  ['summary', 'opinion', 'idea'].forEach(type => {
+  // summary/consult: textContentのみ使用
+  ['summary', 'consult'].forEach(type => {
     const el = document.getElementById(`response-${type}`);
     if (!el) return;
 
-    if (aiResponses[type].length === 0) {
+    if (!aiResponses[type] || aiResponses[type].length === 0) {
       el.textContent = t('app.aiResponse.placeholder');
       return;
     }
@@ -4044,6 +4538,9 @@ function renderAIResponsesFromState() {
     }).join('\n\n');
     el.textContent = displayText; // XSS安全
   });
+
+  // タイムラインも更新
+  renderTimeline();
 
   // minutes: textContentのみ
   const minutesEl = document.getElementById('response-minutes');
@@ -4149,11 +4646,21 @@ async function restoreFromHistory(recordId) {
       summary: record.aiResponses.summary || [],
       opinion: record.aiResponses.opinion || [],
       idea: record.aiResponses.idea || [],
+      consult: record.aiResponses.consult || [],
       minutes: record.aiResponses.minutes || '',
       custom: record.aiResponses.custom || []
     };
   } else {
-    aiResponses = { summary: [], opinion: [], idea: [], minutes: '', custom: [] };
+    aiResponses = { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [] };
+  }
+
+  // メモ復元
+  if (record.meetingMemos) {
+    meetingMemos = { items: record.meetingMemos.items || [] };
+    memoIdCounter = record.memoIdCounter || 0;
+  } else {
+    meetingMemos = { items: [] };
+    memoIdCounter = 0;
   }
 
   // コスト復元（無ければ現在値維持）

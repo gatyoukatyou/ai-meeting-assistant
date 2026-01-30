@@ -168,16 +168,44 @@
 
     *{margin:0;padding:0;box-sizing:border-box;}
     html{color-scheme:light dark;}
+
+    /* Phase 1: 100vh Fixed Layout */
+    html, body {
+      height: 100vh;
+      overflow: hidden;
+    }
+
     body{
       font-family:var(--font-body);
       background-color:var(--bg);
       color:var(--text);
       line-height:1.6;
-      min-height:100vh;
-      padding-bottom:2rem;
       /* Dot pattern（重い場合は後で消してOK） */
       background-image:var(--pattern-image);
       background-size:var(--pattern-size) var(--pattern-size);
+    }
+
+    /* Mobile fallback - prevent content clipping on small screens */
+    @media (max-width: 767px) {
+      html, body {
+        height: auto;
+        min-height: 100vh;
+        overflow: auto;
+      }
+    }
+
+    .app-wrapper {
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      overflow: hidden;
+    }
+
+    @media (max-width: 767px) {
+      .app-wrapper {
+        height: auto;
+        min-height: 100vh;
+      }
     }
 
     /* fixed背景はモバイルで重いことがあるのでPCだけ */
@@ -190,11 +218,9 @@
       background:var(--card-bg);
       border-bottom:var(--border-width) solid var(--border-color);
       padding:.6rem 1rem;
-      position:sticky;
-      top:0;
       z-index:100;
       box-shadow:var(--shadow-hard);
-      margin-bottom:1.25rem;
+      flex-shrink: 0;
     }
     .header-row-1{
       display:flex;
@@ -245,9 +271,12 @@
       display:grid;
       grid-template-columns:1fr 1fr;
       gap:1.25rem;
-      padding:0 1.5rem;
+      padding:1.25rem 1.5rem;
       max-width:1600px;
       margin:0 auto;
+      flex: 1;
+      min-height: 0;
+      overflow: hidden;
     }
     @media (max-width:1024px){
       .main-container{ grid-template-columns:1fr; }
@@ -262,35 +291,37 @@
       overflow:hidden;
       display:flex;
       flex-direction:column;
-
-      /* “高さ固定”は破綻しやすいので、まずは min-height + 余裕 */
-      min-height:520px;
+      height: 100%;
+      min-height: 0;
     }
     .panel-header{
       background:var(--surface-muted);
       border-bottom:var(--border-width) solid var(--border-color);
-      padding:.75rem 1rem;
+      padding:.85rem 1.15rem;
       font-weight:900;
       display:flex;
       justify-content:space-between;
       align-items:center;
       gap:.75rem;
+      flex-shrink: 0;
     }
     .panel-title{
       font-size:1.05rem;
       text-transform:uppercase;
     }
     .panel-body{
-      padding:1rem;
+      padding:1.15rem;
       overflow:auto;
       flex:1;
+      min-height: 0;
     }
 
     /* ===== Buttons ===== */
     .btn{
       border:var(--border-width) solid var(--border-color);
       border-radius:var(--radius);
-      padding:.55rem .95rem;
+      padding:0.6rem 1rem;
+      min-height:42px;
       font-weight:800;
       cursor:pointer;
       box-shadow:var(--shadow-hard-sm);
@@ -319,7 +350,8 @@
     input, select, textarea{
       border:var(--border-width) solid var(--border-color);
       border-radius:var(--radius);
-      padding:.55rem .65rem;
+      padding:0.6rem 0.8rem;
+      min-height:42px;
       background:var(--card-bg);
       color:var(--text);
       font-family:inherit;
@@ -355,22 +387,21 @@
       border-bottom:var(--border-width) solid var(--border-color);
       background:var(--tab-strip-bg);
       gap:0;
+      flex-shrink: 0;
     }
     .tab{
       padding:.7rem 1rem;
       border:none;
-      border-right:var(--border-width) solid var(--border-color);
       background:transparent;
-      font-weight:900;
+      font-weight:700;
       cursor:pointer;
       color:var(--text-secondary);
+      border-bottom: 2px solid transparent;
     }
-    .tab:last-child{ border-right:none; }
     .tab.active{
-      background:var(--tab-active-bg);
-      color:var(--text);
-      margin-bottom:calc(-1 * var(--border-width));
-      box-shadow:inset 0 -2px 0 0 var(--tab-active-bg);
+      color:var(--primary);
+      border-bottom-color:var(--primary);
+      background:transparent;
     }
 
     /* ===== Cost display ===== */
@@ -379,6 +410,7 @@
       border-top:var(--border-width) solid var(--border-color);
       color:var(--cost-text);
       padding:.75rem;
+      flex-shrink: 0;
     }
     .cost-badge{
       border:var(--border-width) solid var(--border-color);
@@ -388,6 +420,104 @@
       border-radius:999px;
       padding:.12rem .55rem;
     }
+
+    /* ===== Cost Chip Bar (Phase 2) ===== */
+    .cost-chip-bar {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.5rem 1rem;
+      background: var(--surface-muted);
+      border-top: var(--border-width) solid var(--border-color);
+      flex-shrink: 0;
+      font-size: 0.85rem;
+    }
+
+    .cost-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.65rem;
+      background: var(--cost-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: 999px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: var(--shadow-hard-sm);
+      transition: transform 0.1s, box-shadow 0.1s;
+      font-size: 0.85rem;
+    }
+
+    .cost-chip:hover {
+      transform: translate(-1px, -1px);
+      box-shadow: 2px 2px 0 0 var(--border-color);
+    }
+
+    .cost-chip .chip-cost-badge,
+    .chip-cost-badge {
+      font-size: 0.7rem;
+      padding: 0.08rem 0.35rem;
+      border: var(--border-width) solid var(--border-color);
+      background: #fff;
+      border-radius: 999px;
+      font-weight: 700;
+    }
+
+    .cost-total-inline {
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    /* ===== Cost Popover ===== */
+    .cost-popover {
+      position: fixed;
+      z-index: 1100;
+      background: var(--card-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-modal);
+      padding: 1rem;
+      min-width: 260px;
+      max-width: 340px;
+      display: none;
+    }
+
+    .cost-popover.open { display: block; }
+
+    .cost-popover .cost-section { margin-bottom: 0.6rem; }
+    .cost-popover .cost-section:last-child { margin-bottom: 0; }
+
+    .cost-popover .cost-section-title {
+      font-weight: 800;
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-secondary);
+      margin-bottom: 0.3rem;
+      border-bottom: 1px dashed var(--border-color);
+      padding-bottom: 0.2rem;
+    }
+
+    .cost-popover .cost-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 0.1rem 0;
+      font-size: 0.85rem;
+    }
+
+    .cost-popover .cost-item-label { color: var(--text-secondary); }
+
+    #costWarningInline {
+      display: none;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.5rem;
+      background: #fee2e2;
+      border-radius: var(--radius);
+      color: #991b1b;
+    }
+    #costWarningInline.show { display: inline-block; }
+
+    /* ===== Footer ===== */
+    footer { flex-shrink: 0; }
 
     /* ===== Modals ===== */
     .modal{
@@ -420,7 +550,7 @@
       .header-row-1{ flex-direction:column; align-items:flex-start; }
       .header-row-2{ flex-direction:column; align-items:stretch; }
       .btn{ width:100%; justify-content:center; }
-      .panel{ min-height:420px; }
+      .panel{ min-height:420px; height: auto; }
     }
 
     /* ===== Reduced motion ===== */
@@ -428,14 +558,197 @@
       *{ transition:none !important; }
     }
 
+    /* ===== Meeting Mode (会議モード - Panel Toggle) ===== */
+    .main-container.meeting-mode #transcriptPanel {
+      display: none;
+    }
+
+    .main-container.meeting-mode #aiPanel {
+      grid-column: 1 / -1;
+    }
+
+    @media (min-width: 1025px) {
+      .main-container.meeting-mode {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* Meeting Mode Toggle Chip */
+    .meeting-mode-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.65rem;
+      background: var(--accent-blue);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s;
+      box-shadow: var(--shadow-hard-sm);
+    }
+
+    .meeting-mode-chip:hover {
+      background: var(--primary);
+      color: white;
+    }
+
+    .meeting-mode-chip.edit-mode {
+      background: var(--accent-green);
+    }
+
+    /* ===== Memo Input ===== */
+    .memo-input-section {
+      padding: 0.75rem 0;
+      border-top: var(--border-width) dashed var(--border-color);
+      margin-top: 0.5rem;
+      flex-shrink: 0;
+    }
+
+    .memo-input-row {
+      display: flex;
+      gap: 0.5rem;
+      align-items: flex-end;
+    }
+
+    .memo-input-row textarea {
+      flex: 1;
+      min-height: 50px;
+      resize: vertical;
+    }
+
+    /* ===== Timeline ===== */
+    .timeline-controls {
+      padding: 0.75rem 0;
+      border-bottom: 1px dashed var(--border-color);
+    }
+
+    .timeline-filters {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    .timeline-filter {
+      padding: 0.3rem 0.6rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius);
+      background: transparent;
+      cursor: pointer;
+      font-size: 0.8rem;
+      font-weight: 600;
+    }
+
+    .timeline-filter.active {
+      background: var(--primary);
+      color: white;
+    }
+
+    .timeline-list {
+      overflow-y: auto;
+      flex: 1;
+      min-height: 0;
+      padding: 0.5rem 0;
+    }
+
+    /* ===== Timeline Items ===== */
+    .timeline-item {
+      padding: 0.75rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius);
+      margin-bottom: 0.5rem;
+      background: var(--card-bg);
+    }
+
+    .timeline-item.pinned {
+      border-color: var(--warning);
+      background: var(--cost-bg);
+    }
+
+    .timeline-item.todo.completed {
+      opacity: 0.6;
+    }
+
+    .timeline-item.todo.completed .timeline-item-content {
+      text-decoration: line-through;
+    }
+
+    .timeline-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.5rem;
+      gap: 0.5rem;
+    }
+
+    .timeline-item-meta {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+    }
+
+    .timeline-item-actions {
+      display: flex;
+      gap: 0.25rem;
+    }
+
+    .timeline-item-actions button {
+      padding: 0.2rem 0.4rem;
+      font-size: 0.75rem;
+      background: transparent;
+      border: 1px solid var(--border-color);
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .timeline-item-actions button:hover {
+      background: var(--surface-muted);
+    }
+
+    .timeline-item-content {
+      font-size: 0.9rem;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .timeline-item-quote {
+      margin-top: 0.5rem;
+      padding: 0.5rem;
+      background: var(--surface-muted);
+      border-left: 3px solid var(--primary);
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      white-space: pre-wrap;
+    }
+
     /* ===== Tabs: content panes ===== */
     .tab-content{
       display:none;
       padding:1rem;
-      max-height:300px;
       overflow:auto;
+      flex: 1;
+      min-height: 0;
     }
     .tab-content.active{ display:block; }
+
+    /* ===== AI Section ===== */
+    .ai-section {
+      flex-shrink: 0;
+    }
+
+    .custom-question {
+      display: flex;
+      gap: 0.75rem;
+      padding-top: 0.75rem;
+      margin-top: 0.5rem;
+      border-top: 1px dashed var(--border-color);
+      align-items: flex-end;
+    }
+
+    .custom-question textarea {
+      flex: 1;
+      min-height: 60px;
+    }
 
     /* ===== Modal overlays ===== */
     .modal-overlay{
@@ -658,6 +971,7 @@
   </style>
 </head>
 <body>
+  <div class="app-wrapper">
   <header class="header">
     <!-- Row 1: ブランド + 設定 -->
     <div class="header-row-1">
@@ -692,6 +1006,9 @@
         <span class="status-badge status-ready" id="statusBadge">
           <span data-i18n="app.recording.statusReady">待機中</span>
         </span>
+        <button type="button" class="meeting-mode-chip" id="meetingModeChip">
+          🎯 <span id="meetingModeLabel" data-i18n="app.meeting.meetingMode">会議モード</span>
+        </button>
         <button type="button" class="btn btn-ghost context-btn" id="openContextModalBtn">
           📝 <span data-i18n="context.trigger">会議情報を入力</span>
         </button>
@@ -856,7 +1173,16 @@
       <div class="panel-body" id="transcriptBody">
         <div class="transcript-text" id="transcriptText"><span class="transcript-placeholder" id="transcriptPlaceholder" data-i18n="app.transcript.placeholder">録音を開始すると、ここに文字起こしが表示されます...</span></div>
       </div>
-      <div class="cost-display" id="transcriptCostPanel">
+      <!-- Cost Chip Bar (compact) -->
+      <div class="cost-chip-bar">
+        <button class="cost-chip" id="transcriptCostChip" type="button">
+          <span>STT</span>
+          <span class="chip-cost-value" data-mirror="transcriptCostTotal">¥0</span>
+          <span class="chip-cost-badge" data-mirror-class="transcriptCostBadge">低</span>
+        </button>
+      </div>
+      <!-- Original cost display (hidden, kept for JS compatibility) -->
+      <div class="cost-display" id="transcriptCostPanel" style="display:none">
         <div class="cost-header" data-cost-target="transcript">
           <span>💰 <span data-i18n="app.cost.transcriptCost">文字起こしコスト</span></span>
           <span><span id="transcriptCostTotal">¥0</span> <span id="transcriptCostBadge" class="cost-badge cost-badge-low" data-i18n="app.cost.low">低</span></span>
@@ -909,43 +1235,70 @@
       <div class="ai-section" style="padding: 1rem; padding-bottom: 0;">
         <div class="ai-buttons">
           <button class="btn btn-primary ask-ai-btn" data-ai-type="summary">📋 <span data-i18n="app.ai.summary">要約</span></button>
-          <button class="btn btn-secondary ask-ai-btn" data-ai-type="opinion">💭 <span data-i18n="app.ai.opinion">意見を聞く</span></button>
-          <button class="btn btn-secondary ask-ai-btn" data-ai-type="idea">💡 <span data-i18n="app.ai.idea">アイデア</span></button>
-          <button class="btn btn-secondary ask-ai-btn" data-ai-type="minutes" id="minutesBtn" disabled data-i18n-title="toast.qa.minutesAfterStop">📝 <span data-i18n="app.ai.minutes">議事録</span></button>
+          <button class="btn ask-ai-btn" data-ai-type="consult">💭 <span data-i18n="app.ai.consult">相談</span></button>
+          <button class="btn ask-ai-btn" id="addMemoBtn">📝 <span data-i18n="app.ai.memo">メモ</span></button>
+          <button class="btn ask-ai-btn" data-ai-type="minutes" id="minutesBtn" disabled data-i18n-title="toast.qa.minutesAfterStop">📄 <span data-i18n="app.ai.minutes">議事録</span></button>
         </div>
         <div class="custom-question">
           <textarea id="customQuestion" data-i18n-placeholder="app.ai.customPlaceholder" placeholder="自由に質問...（文字起こしをコピペして該当箇所を聞くことも可能）" rows="2"></textarea>
           <button type="button" class="btn btn-primary" id="askCustomBtn" data-i18n="common.send">送信</button>
         </div>
+        <div class="memo-input-section" id="memoInputSection" style="display:none;">
+          <div class="memo-input-row">
+            <textarea id="memoInput" rows="2" data-i18n-placeholder="app.ai.memoPlaceholder" placeholder="メモを追加...（選択テキストがあれば引用付き）"></textarea>
+            <button type="button" class="btn btn-primary" id="submitMemoBtn">📝</button>
+          </div>
+        </div>
       </div>
 
       <div class="tabs">
         <button class="tab active" data-tab="summary" data-i18n="app.ai.summary">要約</button>
-        <button class="tab" data-tab="opinion" data-i18n="app.ai.opinion">意見</button>
-        <button class="tab" data-tab="idea" data-i18n="app.ai.idea">アイデア</button>
+        <button class="tab" data-tab="consult" data-i18n="app.ai.consult">相談</button>
         <button class="tab" data-tab="minutes" data-i18n="app.ai.minutes">議事録</button>
         <button class="tab" data-tab="custom" data-i18n="app.ai.qa">Q&A</button>
+        <button class="tab" data-tab="timeline" data-i18n="app.ai.timeline">タイムライン</button>
       </div>
 
       <div class="tab-content active" id="tab-summary">
         <div class="ai-response" id="response-summary"></div>
       </div>
-      <div class="tab-content" id="tab-opinion">
-        <div class="ai-response" id="response-opinion"></div>
-      </div>
-      <div class="tab-content" id="tab-idea">
-        <div class="ai-response" id="response-idea"></div>
+      <div class="tab-content" id="tab-consult">
+        <div class="ai-response" id="response-consult"></div>
       </div>
       <div class="tab-content" id="tab-minutes">
         <div class="ai-response" id="response-minutes">
-          <p class="placeholder-text" data-i18n="app.aiResponse.minutesPlaceholder">録音停止後に「📝 議事録」ボタンを押すと、構造化された議事録が生成されます。</p>
+          <p class="placeholder-text" data-i18n="app.aiResponse.minutesPlaceholder">録音停止後に「📄 議事録」ボタンを押すと、構造化された議事録が生成されます。</p>
         </div>
       </div>
       <div class="tab-content" id="tab-custom">
         <div id="qa-history"></div>
       </div>
+      <div class="tab-content" id="tab-timeline">
+        <div class="timeline-controls">
+          <div class="timeline-filters">
+            <button class="timeline-filter active" data-filter="all" data-i18n="app.timeline.filterAll">全部</button>
+            <button class="timeline-filter" data-filter="memo" data-i18n="app.timeline.filterMemo">メモ</button>
+            <button class="timeline-filter" data-filter="todo" data-i18n="app.timeline.filterTodo">TODO</button>
+            <button class="timeline-filter" data-filter="ai" data-i18n="app.timeline.filterAI">AI</button>
+            <button class="timeline-filter" data-filter="qa" data-i18n="app.timeline.filterQA">Q&A</button>
+          </div>
+          <input type="text" id="timelineSearch" class="input" data-i18n-placeholder="app.timeline.searchPlaceholder" placeholder="キーワード検索..." style="margin-top:0.5rem;">
+        </div>
+        <div class="timeline-list" id="timelineList"></div>
+      </div>
 
-      <div class="cost-display" id="llmCostPanel">
+      <!-- Cost Chip Bar (compact) -->
+      <div class="cost-chip-bar">
+        <button class="cost-chip" id="llmCostChip" type="button">
+          <span>LLM</span>
+          <span class="chip-cost-value" data-mirror="llmCostTotal">¥0</span>
+          <span class="chip-cost-badge" data-mirror-class="llmCostBadge">低</span>
+        </button>
+        <span class="cost-total-inline">合計: <span data-mirror="totalCost">¥0</span></span>
+        <span id="costWarningInline"></span>
+      </div>
+      <!-- Original cost display (hidden, kept for JS compatibility) -->
+      <div class="cost-display" id="llmCostPanel" style="display:none">
         <div class="cost-header" data-cost-target="llm">
           <span>💰 <span data-i18n="app.cost.llmCost">LLMコスト</span></span>
           <span><span id="llmCostTotal">¥0</span> <span id="llmCostBadge" class="cost-badge cost-badge-low" data-i18n="app.cost.low">低</span></span>
@@ -1008,6 +1361,7 @@
       © 2024 AI参加会議 | MITライセンス
     </div>
   </footer>
+  </div><!-- /.app-wrapper -->
 
   <!-- ウェルカムモーダル -->
   <div class="modal-overlay" id="welcomeModal">
@@ -1066,31 +1420,35 @@
           <div class="export-options">
             <label class="export-option">
               <input type="checkbox" id="exportMinutes" checked>
-              <span>📝 議事録</span>
+              <span>📄 <span data-i18n="export.items.minutes">議事録</span></span>
             </label>
             <label class="export-option">
               <input type="checkbox" id="exportSummary" checked>
-              <span>📋 要約</span>
+              <span>📋 <span data-i18n="export.items.summary">要約</span></span>
             </label>
             <label class="export-option">
-              <input type="checkbox" id="exportOpinion" checked>
-              <span>💭 意見</span>
+              <input type="checkbox" id="exportConsult" checked>
+              <span>💭 <span data-i18n="export.items.consult">相談</span></span>
             </label>
             <label class="export-option">
-              <input type="checkbox" id="exportIdea" checked>
-              <span>💡 アイデア</span>
+              <input type="checkbox" id="exportMemos" checked>
+              <span>📝 <span data-i18n="export.items.memos">メモ</span></span>
+            </label>
+            <label class="export-option">
+              <input type="checkbox" id="exportTodos" checked>
+              <span>☑️ <span data-i18n="export.items.todos">TODO</span></span>
             </label>
             <label class="export-option">
               <input type="checkbox" id="exportQA" checked>
-              <span>❓ Q&A</span>
+              <span>❓ <span data-i18n="export.items.qa">Q&A</span></span>
             </label>
             <label class="export-option">
               <input type="checkbox" id="exportTranscript" checked>
-              <span>📜 文字起こし</span>
+              <span>📜 <span data-i18n="export.items.transcript">文字起こし</span></span>
             </label>
             <label class="export-option">
               <input type="checkbox" id="exportCost" checked>
-              <span>💰 コスト詳細</span>
+              <span>💰 <span data-i18n="export.items.cost">コスト詳細</span></span>
             </label>
           </div>
           <div class="export-presets">
@@ -1245,6 +1603,11 @@
     <button class="meeting-mode-exit-btn" id="meetingModeExitBtn">
       ← <span data-i18n="app.meeting.returnButton">通常画面に戻る</span>
     </button>
+  </div>
+
+  <!-- Cost Popover (shared) -->
+  <div class="cost-popover" id="costPopover">
+    <div id="costPopoverContent"></div>
   </div>
 
   <script src="js/i18n.js"></script>
