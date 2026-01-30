@@ -1,0 +1,8 @@
+{
+  "name": "ai-meeting-assistant",
+  "private": true,
+  "description": "CI dependencies for smoke tests",
+  "devDependencies": {
+    "playwright": "^1.50.0"
+  }
+}
