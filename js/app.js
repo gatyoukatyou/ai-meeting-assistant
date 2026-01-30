@@ -327,7 +327,10 @@ const PRICING = {
   },
   // LLM料金（$/1M tokens）
   gemini: {
-    'gemini-2.0-flash-exp': { input: 0.075, output: 0.3 },
+    'gemini-2.5-pro': { input: 1.25, output: 5.0 },
+    'gemini-2.5-flash': { input: 0.15, output: 0.6 },
+    'gemini-2.0-flash-exp': { input: 0.075, output: 0.3 },  // deprecated
+    'gemini-2.0-flash': { input: 0.075, output: 0.3 },      // deprecated
     'gemini-1.5-pro': { input: 1.25, output: 5.0 },
     'gemini-1.5-flash': { input: 0.075, output: 0.3 }
   },
@@ -505,12 +508,28 @@ async function migrateDeprecatedModels() {
   for (var i = 0; i < providers.length; i++) {
     var provider = providers[i];
     var deprecatedList = DEPRECATED_MODELS[provider] || [];
-    if (deprecatedList.length === 0) continue;
-
     var savedModel = SecureStorage.getModel(provider);
-    if (savedModel && deprecatedList.includes(savedModel)) {
+    if (!savedModel) continue;
+
+    var needsMigration = false;
+    var reason = '';
+
+    // Check if model is in deprecated list
+    if (deprecatedList.includes(savedModel)) {
+      needsMigration = true;
+      reason = 'deprecated';
+    }
+
+    // P0-5: Check if model's shutdown date has passed
+    var shutdownDate = MODEL_SHUTDOWN_DATES[savedModel];
+    if (shutdownDate && isShutdownDatePassed(shutdownDate)) {
+      needsMigration = true;
+      reason = 'shutdown (' + shutdownDate + ')';
+    }
+
+    if (needsMigration) {
       var newModel = getDefaultModel(provider);
-      console.warn('[Migration] Deprecated model detected:', provider, savedModel, '->', newModel);
+      console.warn('[Migration] Model', reason, ':', provider, savedModel, '->', newModel);
       await SecureStorage.setModel(provider, newModel);
       migrated = true;
     }
@@ -527,9 +546,61 @@ async function migrateDeprecatedModels() {
   }
 }
 
+/**
+ * Check if shutdown date has passed (P0-5)
+ */
+function isShutdownDatePassed(dateStr) {
+  if (!dateStr) return false;
+  try {
+    var shutdown = new Date(dateStr + 'T00:00:00Z');
+    var now = new Date();
+    return now > shutdown;
+  } catch (e) {
+    return false;
+  }
+}
+
 // 非推奨モデルリスト（API側で廃止されたモデル）- 起動時チェック用
 var DEPRECATED_MODELS = {
-  groq: ['llama-3.1-70b-versatile']
+  groq: ['llama-3.1-70b-versatile'],
+  gemini: [
+    // gemini-1.5-* は 2025年に廃止
+    'gemini-1.5-pro',
+    'gemini-1.5-pro-latest',
+    'gemini-1.5-flash',
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash-8b',
+    'gemini-pro',
+    'gemini-pro-latest',
+    // gemini-2.0-flash-exp は既に deprecated
+    'gemini-2.0-flash-exp'
+  ]
+};
+
+// モデルのshutdown日（P0-5: 日付を過ぎたら自動マイグレーション）
+// 出典: Gemini API Deprecations / Release notes
+// https://ai.google.dev/gemini-api/docs/deprecations
+// https://ai.google.dev/gemini-api/docs/changelog
+var MODEL_SHUTDOWN_DATES = {
+  // Gemini 1.5系: shutdown済み (Release notes 2025-09-29)
+  // 公式に明記: gemini-1.5-pro, gemini-1.5-flash, gemini-1.5-flash-8b
+  'gemini-1.5-pro': '2025-09-29',
+  'gemini-1.5-flash': '2025-09-29',
+  'gemini-1.5-flash-8b': '2025-09-29',
+
+  // Gemini 2.0 exp/thinking-exp: shutdown済み (Release notes)
+  'gemini-2.0-flash-thinking-exp': '2025-12-02',
+  'gemini-2.0-flash-thinking-exp-01-21': '2025-12-02',
+  'gemini-2.0-flash-exp': '2025-12-09',
+
+  // Gemini 2.0 Live API: shutdown済み (Release notes 2025-12-09)
+  'gemini-2.0-flash-live-001': '2025-12-09',
+
+  // Gemini 2.0 GA: 最短shutdown (models page / Deprecations表)
+  'gemini-2.0-flash': '2026-03-31',
+  'gemini-2.0-flash-001': '2026-03-31',
+  'gemini-2.0-flash-lite': '2026-03-31',
+  'gemini-2.0-flash-lite-001': '2026-03-31'
 };
 
 // =====================================
@@ -2261,6 +2332,83 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 }
 
 // =====================================
+// Gemini モデルID正規化（"models/" prefix除去で二重パス防止）
+// =====================================
+function normalizeGeminiModelId(model) {
+  if (!model) return model;
+  if (model.startsWith('models/')) {
+    return model.slice(7); // "models/".length === 7
+  }
+  return model;
+}
+
+// =====================================
+// Gemini API呼び出しヘルパー（v1 → v1beta, header → query フォールバック）
+// =====================================
+async function callGeminiApi(model, apiKey, body) {
+  // Normalize model ID to prevent /models/models/... bug
+  const normalizedModel = normalizeGeminiModelId(model);
+
+  const apiVersions = ['v1', 'v1beta'];
+  const authMethods = ['header', 'query'];
+  let lastError = null;
+  let lastResponse = null;
+
+  for (const version of apiVersions) {
+    for (const authMethod of authMethods) {
+      try {
+        let url = `https://generativelanguage.googleapis.com/${version}/models/${normalizedModel}:generateContent`;
+        const options = {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body)
+        };
+
+        if (authMethod === 'header') {
+          options.headers['x-goog-api-key'] = apiKey;
+        } else {
+          url = `${url}?key=${encodeURIComponent(apiKey)}`;
+        }
+
+        console.log(`[Gemini] Trying ${version} with ${authMethod} auth`);
+        // Use fetchWithRetry for network resilience (429, CORS, transient errors)
+        const response = await fetchWithRetry(url, options, 2); // 2 retries per attempt
+
+        if (response.ok) {
+          console.log(`[Gemini] Success with ${version} ${authMethod}`);
+          return response;
+        }
+
+        // 認証エラー（401/403）の場合はauth methodを変えて再試行
+        if (response.status === 401 || response.status === 403) {
+          console.warn(`[Gemini] Auth failed with ${version} ${authMethod}:`, response.status);
+          lastResponse = response;
+          continue;
+        }
+
+        // モデル関連エラー（404等）の場合はバージョンを変えて再試行
+        if (response.status === 404) {
+          console.warn(`[Gemini] Model not found in ${version}, trying next version`);
+          lastResponse = response;
+          break; // 次のバージョンへ
+        }
+
+        // その他のエラーはそのまま返す（rate limit等）
+        return response;
+      } catch (e) {
+        console.warn(`[Gemini] ${version} ${authMethod} failed:`, e.message);
+        lastError = e;
+      }
+    }
+  }
+
+  // 全て失敗した場合
+  if (lastResponse) return lastResponse;
+  if (lastError) throw lastError;
+  throw new Error('Gemini API call failed with all fallback methods');
+}
+
+// =====================================
 // ヘルパー関数
 // =====================================
 // 使用可能なLLMを取得
@@ -2287,16 +2435,7 @@ function getAvailableLlm() {
   return null; // 使用可能なLLMなし
 }
 
-function getDefaultModel(provider) {
-  const defaults = {
-    gemini: 'gemini-2.0-flash-exp',
-    claude: 'claude-sonnet-4-20250514',
-    openai: 'gpt-4o',
-    openai_llm: 'gpt-4o',
-    groq: 'llama-3.3-70b-versatile'
-  };
-  return defaults[provider];
-}
+// Note: getDefaultModel is defined later in the file (see line ~2820)
 
 // =====================================
 // AI質問機能
@@ -2548,10 +2687,55 @@ function disableAIButtons(disabled) {
 async function callLLM(provider, prompt) {
   // カスタムモデル > プリセット > デフォルトの優先順位
   var model = SecureStorage.getEffectiveModel(provider, getDefaultModel(provider));
+  var apiKey = SecureStorage.getApiKey(provider);
+
+  // Check model health from ModelRegistry (if available)
+  if (window.ModelRegistry) {
+    var health = ModelRegistry.getModelHealth(provider, model);
+
+    // If model is marked dead, skip directly to fallback
+    if (health && health.status === 'dead') {
+      console.log('[LLM] Model marked as dead, getting fallback:', model);
+      var fallbackModel = await ModelRegistry.getFallbackModel(provider, model, apiKey);
+      if (fallbackModel) {
+        showToast(
+          t('toast.model.fallback', { from: model, to: fallbackModel.id }) ||
+            model + ' は利用不可、' + fallbackModel.id + ' にフォールバック',
+          'warning'
+        );
+        model = fallbackModel.id;
+      }
+    }
+
+    // If model is flaky and still in cooldown, try fallback
+    if (health && health.status === 'flaky' && health.retryAfter && Date.now() < health.retryAfter) {
+      console.log('[LLM] Model in flaky cooldown, getting fallback:', model);
+      var fallbackModel2 = await ModelRegistry.getFallbackModel(provider, model, apiKey);
+      if (fallbackModel2) {
+        model = fallbackModel2.id;
+      }
+    }
+  }
 
   try {
-    return await callLLMOnce(provider, model, prompt);
+    var result = await callLLMOnce(provider, model, prompt);
+
+    // Mark model as working on success
+    if (window.ModelRegistry) {
+      ModelRegistry.setModelHealth(provider, model, 'working');
+    }
+
+    return result;
   } catch (e) {
+    // Classify error and update health
+    if (window.ModelRegistry) {
+      if (isModelNotFoundOrDeprecatedError(e)) {
+        ModelRegistry.setModelHealth(provider, model, 'dead', e.message);
+      } else if (isRateLimitOrServerError(e)) {
+        ModelRegistry.setModelHealth(provider, model, 'flaky', e.message);
+      }
+    }
+
     // モデル廃止エラーの場合は強制的に代替モデルを試す
     if (isModelDeprecatedError(e)) {
       console.warn('[LLM] Model deprecated detected:', model, e.message);
@@ -2564,14 +2748,17 @@ async function callLLM(provider, prompt) {
         for (var i = 0; i < alternatives.length; i++) {
           var alt = alternatives[i];
           try {
-            var result = await callLLMOnce(provider, alt, prompt);
+            var altResult = await callLLMOnce(provider, alt, prompt);
             // 成功したら設定を自動更新
             await autoUpdateSavedModel(provider, alt);
             showToast(
               t('toast.model.deprecated', {from: model, to: alt}) || 'モデルが廃止されたため自動変更しました: ' + model + ' → ' + alt,
               'warning'
             );
-            return result;
+            if (window.ModelRegistry) {
+              ModelRegistry.setModelHealth(provider, alt, 'working');
+            }
+            return altResult;
           } catch (altError) {
             console.warn('[LLM] Alternative model also failed:', alt, altError.message);
             continue;
@@ -2591,14 +2778,19 @@ async function callLLM(provider, prompt) {
 
     // フォールバック通知
     showToast(
-      '選択モデルでエラー。今回は ' + fb + ' に切替して再試行します（設定は変更しません）',
+      t('toast.model.fallbackRetry', { fallback: fb }) ||
+        '選択モデルでエラー。今回は ' + fb + ' に切替して再試行します（設定は変更しません）',
       'warning'
     );
     console.warn('[LLM] fallback', { provider: provider, from: model, to: fb, error: e.message });
 
     // 1回だけ再試行
     try {
-      return await callLLMOnce(provider, fb, prompt);
+      var fbResult = await callLLMOnce(provider, fb, prompt);
+      if (window.ModelRegistry) {
+        ModelRegistry.setModelHealth(provider, fb, 'working');
+      }
+      return fbResult;
     } catch (fbError) {
       // フォールバックも失敗：元のエラー情報を保持してデバッグしやすくする
       console.error('[LLM] Both original and fallback failed', {
@@ -2613,6 +2805,24 @@ async function callLLM(provider, prompt) {
       throw new Error(combinedMsg);
     }
   }
+}
+
+// Error classification helpers
+function isModelNotFoundOrDeprecatedError(error) {
+  var msg = (error.message || '').toLowerCase();
+  return msg.includes('not found')
+    || msg.includes('not supported')
+    || msg.includes('does not exist')
+    || msg.includes('model not available')
+    || msg.includes('invalid model')
+    || msg.includes('decommissioned')
+    || msg.includes('no longer supported')
+    || msg.includes('deprecated')
+    || error.status === 404;
+}
+
+function isRateLimitOrServerError(error) {
+  return error.status === 429 || (error.status >= 500 && error.status < 600);
 }
 
 // LLM呼び出し（1回のみ、フォールバックなし）
@@ -2654,16 +2864,10 @@ async function callLLMOnce(provider, model, prompt) {
       }
 
       try {
-        response = await fetchWithRetry(
-          'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              contents: [{ parts: geminiParts }]
-            })
-          }
-        );
+        // Use callGeminiApi for v1 → v1beta, header → query fallback (P0-4)
+        response = await callGeminiApi(model, apiKey, {
+          contents: [{ parts: geminiParts }]
+        });
         data = await response.json();
         if (!response.ok) {
           var errMsg = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
@@ -2675,16 +2879,9 @@ async function callLLMOnce(provider, model, prompt) {
           console.warn('[LLM] Native Docs failed, falling back to text extraction:', geminiErr.message);
           showToast(t('context.nativeDocsFallback') || 'Native Docsに失敗、テキスト抽出にフォールバック', 'warning');
           // テキストのみで再試行
-          response = await fetchWithRetry(
-            'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + apiKey,
-            {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
-              })
-            }
-          );
+          response = await callGeminiApi(model, apiKey, {
+            contents: [{ parts: [{ text: prompt }] }]
+          });
           data = await response.json();
           if (!response.ok) {
             var errMsg2 = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
@@ -2814,7 +3011,7 @@ async function callLLMOnce(provider, model, prompt) {
 
 function getDefaultModel(provider) {
   var defaults = {
-    gemini: 'gemini-2.0-flash-exp',
+    gemini: 'gemini-2.5-flash',
     claude: 'claude-sonnet-4-20250514',
     openai: 'gpt-4o',
     openai_llm: 'gpt-4o',
@@ -2871,7 +3068,7 @@ async function autoUpdateSavedModel(provider, newModel) {
 // フォールバック用モデルを取得（リクエストモデルと同じなら null を返す）
 function getFallbackModel(provider, requestedModel) {
   var fallbacks = {
-    gemini: 'gemini-2.0-flash-exp',
+    gemini: 'gemini-2.5-flash',
     claude: 'claude-sonnet-4-20250514',
     openai: 'gpt-4o',
     openai_llm: 'gpt-4o',
@@ -3314,13 +3511,15 @@ function showStorageMigrationModal() {
 // =====================================
 // LLM設定モーダル
 // =====================================
-const LLM_PROVIDERS = {
+// Fallback model list (used when API fetch fails or for quick modal)
+// Note: *-latest aliases removed per plan - they can change unexpectedly
+const LLM_PROVIDERS_FALLBACK = {
   gemini: {
     name: 'Gemini',
     models: [
-      { value: 'gemini-2.0-flash-exp', label: 'gemini-2.0-flash (推奨)' },
-      { value: 'gemini-1.5-flash-latest', label: 'gemini-1.5-flash' },
-      { value: 'gemini-1.5-pro-latest', label: 'gemini-1.5-pro' }
+      { value: 'gemini-2.5-flash', label: 'gemini-2.5-flash (推奨)' },
+      { value: 'gemini-2.5-pro', label: 'gemini-2.5-pro' },
+      { value: 'gemini-2.0-flash', label: 'gemini-2.0-flash (2026-03終了予定)', deprecated: true }
     ],
     hint: '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>でAPIキーを取得'
   },
@@ -3337,9 +3536,10 @@ const LLM_PROVIDERS = {
     models: [
       { value: 'gpt-4o', label: 'gpt-4o (推奨)' },
       { value: 'gpt-4o-mini', label: 'gpt-4o-mini (低コスト)' },
-      { value: 'gpt-4-turbo-2024-04-09', label: 'gpt-4-turbo' }
+      { value: 'gpt-4-turbo', label: 'gpt-4-turbo' }
     ],
-    hint: '<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a>でAPIキーを取得'
+    hint: '<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a>でAPIキーを取得',
+    allowCustomModel: true
   },
   groq: {
     name: 'Groq',
@@ -3350,6 +3550,9 @@ const LLM_PROVIDERS = {
     hint: '<a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a>でAPIキーを取得'
   }
 };
+
+// Alias for backward compatibility
+const LLM_PROVIDERS = LLM_PROVIDERS_FALLBACK;
 
 let currentLLMProvider = 'gemini';
 
@@ -3365,9 +3568,9 @@ function closeLLMSettingsModal() {
   document.getElementById('llmSettingsModal').classList.remove('active');
 }
 
-function switchLLMProvider(providerId) {
+async function switchLLMProvider(providerId) {
   currentLLMProvider = providerId;
-  const provider = LLM_PROVIDERS[providerId];
+  const provider = LLM_PROVIDERS_FALLBACK[providerId];
 
   // タブのアクティブ状態を更新
   document.querySelectorAll('.llm-provider-tab').forEach(tab => {
@@ -3387,10 +3590,34 @@ function switchLLMProvider(providerId) {
   // モデル選択肢を更新
   const modelSelect = document.getElementById('llmModalModel');
   modelSelect.innerHTML = '';
-  provider.models.forEach(model => {
+
+  // Try to fetch models from API if ModelRegistry is available
+  let models = provider.models; // fallback
+  if (window.ModelRegistry && savedKey) {
+    try {
+      const fetchedModels = await ModelRegistry.getModels(providerId, savedKey, {
+        forceRefresh: false,
+        showPreview: ModelRegistry.getShowPreview()
+      });
+      if (fetchedModels && fetchedModels.length > 0) {
+        models = fetchedModels.map(m => ({
+          value: m.id,
+          label: m.deprecated ? m.displayName + ' (' + (m.shutdownDate || 'deprecated') + ')' : m.displayName,
+          deprecated: m.deprecated
+        }));
+      }
+    } catch (e) {
+      console.warn('[LLM] Failed to fetch models for', providerId, ':', e.message);
+    }
+  }
+
+  models.forEach(model => {
     const option = document.createElement('option');
     option.value = model.value;
     option.textContent = model.label;
+    if (model.deprecated) {
+      option.style.color = '#999';
+    }
     modelSelect.appendChild(option);
   });
 
@@ -3398,6 +3625,14 @@ function switchLLMProvider(providerId) {
   const savedModel = SecureStorage.getModel(providerId);
   if (savedModel) {
     modelSelect.value = savedModel;
+    // If saved model not in list, add it as custom
+    if (modelSelect.value !== savedModel) {
+      const customOpt = document.createElement('option');
+      customOpt.value = savedModel;
+      customOpt.textContent = savedModel + ' (custom)';
+      modelSelect.appendChild(customOpt);
+      modelSelect.value = savedModel;
+    }
   }
 }
 
