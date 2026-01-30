@@ -19,6 +19,7 @@ jobs:
       - name: Install dependencies
         run: |
           npm install -g serve
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1 npm install --no-save playwright
           npx playwright install chromium --with-deps
 
       - name: Start local server
