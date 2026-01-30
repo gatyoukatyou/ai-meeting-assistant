@@ -128,7 +128,15 @@ function generateQARequestId() {
 
 function logQA(requestId, event, details = {}) {
   const timestamp = new Date().toISOString();
-  console.log(`[Q&A] ${event}: ${requestId}`, details);
+  const safeDetails = { ...details };
+  if (typeof safeDetails.question === 'string') {
+    safeDetails.questionLength = safeDetails.question.length;
+    delete safeDetails.question;
+  }
+  if (typeof safeDetails.error === 'string') {
+    safeDetails.errorLength = safeDetails.error.length;
+  }
+  DebugLogger.log('[Q&A]', `${event}: ${requestId}`, DebugLogger.sanitize(safeDetails));
   qaEventLog.push({ timestamp, requestId, event, ...details });
 }
 
@@ -2109,7 +2117,7 @@ async function processQueue() {
         // キャプチャしたproviderを使用（stopRecording後もnullにならない）
         if (providerSnapshot && typeof providerSnapshot.transcribeBlob === 'function') {
           const text = await providerSnapshot.transcribeBlob(audioBlob);
-          console.log(`[Transcription] id=${blobId}, result:`, text);
+          DebugLogger.log('[Transcription]', `id=${blobId} result`, { length: text.length });
           // handleTranscriptResultはprovider.emitTranscript経由で呼ばれる
           // ここでは重複呼び出しを避けるため、直接呼び出さない
 
@@ -2233,7 +2241,7 @@ function loadUserDictionary() {
     parts.push(userDict.trim());
   }
   whisperUserDictionary = parts.join(', ');
-  console.log('[STT] User dictionary loaded:', whisperUserDictionary.substring(0, 100) + (whisperUserDictionary.length > 100 ? '...' : ''));
+  DebugLogger.log('[STT]', 'User dictionary loaded', { length: whisperUserDictionary.length });
 }
 
 async function transcribeWithWhisper(audioBlob) {
@@ -2299,7 +2307,7 @@ async function transcribeWithWhisper(audioBlob) {
   }
   if (effectivePrompt) {
     formData.append('prompt', effectivePrompt);
-    console.log('Using Whisper prompt:', effectivePrompt.substring(0, 100) + (effectivePrompt.length > 100 ? '...' : ''));
+    DebugLogger.log('[STT]', 'Using Whisper prompt', { length: effectivePrompt.length });
   }
 
   const response = await fetchWithRetry('https://api.openai.com/v1/audio/transcriptions', {
@@ -5375,7 +5383,6 @@ function migrateMeetingContextStorage() {
   if (didSetPrimary) {
     primary.removeItem(LEGACY_MEETING_CONTEXT_STORAGE_KEY);
   }
-
   return primary.getItem(MEETING_CONTEXT_STORAGE_KEY);
 }
 
