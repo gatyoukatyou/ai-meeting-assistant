@@ -2,10 +2,10 @@
 
 [🇯🇵 日本語](README.md) | 🇺🇸 English
 
-[![Version](https://img.shields.io/badge/version-v1.2.1-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.2.1)
+[![Version](https://img.shields.io/badge/version-v1.3.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.3.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
-A lightweight, browser-based meeting assistant that records audio, transcribes speech, and generates summaries, opinions, ideas, and minutes using AI.
+A lightweight, browser-based meeting assistant that records audio, transcribes speech, and generates summaries, consult responses, minutes, and memos using AI.
 
 **🚀 Try it now**: https://gatyoukatyou.github.io/ai-meeting-assistant/
 
@@ -14,18 +14,19 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 ## Features
 
 - 🎤 **Real-time transcription** – Speech is automatically converted to text
-- 💬 **AI assistance** – Ask for summaries, opinions, ideas, or custom questions
+- 💬 **AI consultation** – One-tap summary, consult, minutes, and custom Q&A
+- 📝 **Memos & TODOs** – Add quoted memos, convert to TODOs, pin important items
+- 🗂️ **Timeline** – AI responses, Q&A, memos/TODOs in a searchable timeline
 - 🤖 **Multiple AI providers** – Choose from multiple AI providers (BYOK: Bring Your Own Key)
-- 💰 **Cost estimates** – View estimated costs (actual charges may vary by provider)
-- 📥 **Export to Markdown** – Save meeting content and AI responses as a file
-- 🔒 **Local storage** – API keys are stored only in your browser (obfuscated)
-- 🎨 **Theme switcher** – Dark mode support, 6 accent color themes
-- ⚡ **Custom models** – Specify any model name for each LLM provider (try new models immediately)
-- 🗂️ **Meeting history** – Auto-save past meeting records (up to 5), access later
-- 🔄 **History restore & MD import** – Resume from saved history or exported Markdown files
-- 📝 **Meeting context** – Set meeting goals and background info to improve AI responses
-- 📎 **Context file attachments** – Add TXT/MD materials for richer AI context (Enhanced Context)
 - ⚡ **Switch LLM while recording** – Change AI provider/model without stopping transcription
+- 💰 **Cost estimates** – View estimated costs (actual charges may vary by provider)
+- 📥 **Export to Markdown** – Save meeting content, AI responses, memos/TODOs
+- 🧠 **Richer meeting context** – Goals, participants, handoff notes, references
+- 📎 **Attachments & enhancements** – TXT/MD/PDF/DOCX/CSV + Native Docs/Thinking Boost
+- 🔒 **Local storage** – Obfuscated in-browser storage (session-only by default)
+- 🎨 **Theme/style switcher** – Light/Dark + 6 accents + Brutalism/Paper
+- 🗂️ **Meeting history** – Auto-save (up to 5), restore and MD import
+- 🎯 **Meeting mode** – Toggle focus view vs. edit mode
 
 ## Security
 
@@ -39,6 +40,8 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 ### Protection Features
 
 - ✅ Keys are **obfuscated** (XOR + device-specific key) and stored only in your browser
+- ✅ **Session-only by default** (keys are cleared when you close the tab)
+- ✅ Optional **persistent storage** (not recommended on shared devices)
 - ✅ **Never sent** to external servers (direct API calls only)
 - ✅ Optional **auto-delete** when browser closes (for shared PCs)
 - ✅ **Backup/restore** functionality with password protection (XOR)
@@ -50,7 +53,7 @@ See [Security Details](docs/SECURITY.md) for more information.
 - **Never enter your API key on unofficial URLs**
   - Official: https://gatyoukatyou.github.io/ai-meeting-assistant/
   - Fake sites or modified copies may steal your keys
-- **On shared PCs, enable "Delete on browser close"**
+- **On shared PCs, use "Session only" or enable "Delete on browser close"**
   - Settings > Security Settings
 - **Manually delete keys when finished** (recommended)
 
@@ -67,15 +70,18 @@ See [Security Details](docs/SECURITY.md) for more information.
 ### Speech-to-Text (STT)
 | Provider | Type | Notes |
 |----------|------|-------|
-| OpenAI Whisper | Chunk-based | Stable, pseudo-realtime |
-| Deepgram | WebSocket | True realtime, low latency |
+| OpenAI (Whisper/Transcribe) | Chunk-based | Stable, pseudo-realtime |
+| Deepgram (Nova) | WebSocket | True realtime, low latency |
+
+**OpenAI STT models**: whisper-1 / gpt-4o-transcribe / gpt-4o-mini-transcribe  
+**Deepgram models**: nova-3-general / nova-2-general / base
 
 ### Large Language Models (LLM)
 | Provider | Models |
 |----------|--------|
-| Google Gemini | gemini-2.0-flash-exp, gemini-1.5-flash-latest, gemini-1.5-pro-latest |
+| Google Gemini | gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash (2026-03 shutdown) |
 | Anthropic Claude | claude-sonnet-4-20250514, claude-3-5-sonnet-20241022 |
-| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo-2024-04-09 |
+| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo |
 | Groq | llama-3.3-70b-versatile, llama-3.1-8b-instant |
 
 Note: These are preset examples. Custom model names are supported.
@@ -162,16 +168,20 @@ For app-like experience on mobile:
 During or after the meeting, you can ask the AI:
 
 - **Summary** – Get a brief overview
-- **Opinion** – Hear the AI's perspective
-- **Ideas** – Get suggestions
+- **Consult** – Combine feedback, analysis, and ideas
+- **Minutes** – Generate structured minutes after stopping the recording
 - **Custom question** – Ask anything
+- **Memo** – Add a quoted memo from the transcript
+
+**🗂 Timeline**
+Review AI responses, Q&A, memos, and TODOs in chronological order with filters and search.
 
 **💡 Specification: Text Selection**
 Select specific text before asking to get responses about just that section. Useful when you want to ask about a specific part of a long meeting.
 
 ### 6. Export Your Notes
 
-Click "📥 Export" to save meeting content and AI responses as a Markdown file.
+Click "📥 Export" to save meeting content, AI responses, and memos/TODOs as a Markdown file.
 
 ## Settings Backup
 
@@ -203,7 +213,7 @@ This app is **free to use**, but the AI services have their own usage-based pric
 A: Yes. Transcription (OpenAI Whisper / Deepgram) and AI features (Gemini / Claude / OpenAI / Groq) require internet connections. This app uses BYOK (Bring Your Own Key) model – you bring your own API keys and pay each provider directly based on usage. The local version also requires internet (only the UI runs locally). Offline mode is not supported.
 
 **Q: What if I don't set up LLM keys?**
-A: Transcription will still work. AI features (summary, opinions, ideas) will be unavailable.
+A: Transcription will still work. AI features (summary, consult, minutes, Q&A) will be unavailable.
 
 **Q: What about privacy?**
 A: Audio and transcripts are sent only to your selected providers. Nothing is sent to the app developer.
@@ -260,13 +270,16 @@ MIT License – Free to use and modify
 
 ## Version
 
-**v1.2.1** – Enhanced Meeting Context (2026-01-10)
+**v1.3.0** – Timeline & Meeting Mode (2026-01-30)
 
-- Attach TXT/MD files to meeting context (Enhanced Context)
-- Inject goals/reference materials into every AI request
-- Use meeting title in export file names
+- Memo/TODO timeline with search and pinning
+- New **Consult** tab (combines opinions + ideas)
+- Meeting/Edit mode toggle for focus view
+- Meeting context expansion (participants, handoff notes)
+- Attachments support PDF/DOCX/CSV + Native Docs/Thinking Boost toggles
+- API keys are session-only by default (optional persistence)
 
-- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.2.1)
+- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.3.0)
 - [Change Log](docs/CHANGELOG.md)
 
 ## Support
