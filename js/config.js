@@ -37,6 +37,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   // テーマ選択の初期化
   if (window.AIMeetingTheme) {
     window.AIMeetingTheme.bindDisplayThemeSelect(document.getElementById('displayTheme'));
+    window.AIMeetingTheme.bindStyleSelect(document.getElementById('uiStyle'));
     window.AIMeetingTheme.bindThemeSelect(document.getElementById('colorTheme'));
   }
 

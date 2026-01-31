@@ -165,6 +165,7 @@
       "sessionNotice": "このキーはタブを閉じると消えます"
     },
     "stt": {
+      "clickToExpand": "クリックで設定を展開",
       "title": "文字起こし（STT）- プロバイダー選択",
       "provider": "STTプロバイダー",
       "providerHint": "STTプロバイダーを選択してください。WebSocket系はリアルタイム性に優れます。",
@@ -251,6 +252,7 @@
     "theme": {
       "title": "外観",
       "displayLabel": "表示テーマ",
+      "uiStyleLabel": "UIスタイル",
       "label": "アクセントカラー"
     },
     "backup": {
@@ -481,6 +483,8 @@
     "dark": "ダーク",
     "switchToLight": "ライトモードに切替",
     "switchToDark": "ダークモードに切替",
+    "brutalism": "📦 Brutalism",
+    "paper": "📄 Paper",
     "sky": "スカイブルー",
     "indigo": "インディゴ",
     "emerald": "エメラルド",

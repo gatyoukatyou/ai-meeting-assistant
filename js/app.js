@@ -293,6 +293,73 @@ function updateSTTProviderUI(providerId) {
       intervalHint.style.display = 'none';
     }
   }
+  // Also update the status chip
+  updateSTTStatusChip();
+}
+
+// =====================================
+// STT Status Chip (Progressive Disclosure)
+// =====================================
+let sttControlsExpanded = false;
+
+function initSTTStatusChip() {
+  const chip = document.getElementById('sttStatusChip');
+  const controls = document.getElementById('headerSttControls');
+
+  if (!chip || !controls) return;
+
+  // Initial update
+  updateSTTStatusChip();
+
+  // Click to toggle
+  chip.addEventListener('click', function() {
+    sttControlsExpanded = !sttControlsExpanded;
+
+    if (sttControlsExpanded) {
+      controls.classList.remove('collapsed');
+      controls.classList.add('expanded');
+      chip.classList.add('expanded');
+    } else {
+      controls.classList.add('collapsed');
+      controls.classList.remove('expanded');
+      chip.classList.remove('expanded');
+    }
+
+    console.log('[STT] Controls expanded:', sttControlsExpanded);
+  });
+
+  // Close when clicking outside
+  document.addEventListener('click', function(e) {
+    if (sttControlsExpanded &&
+        !chip.contains(e.target) &&
+        !controls.contains(e.target)) {
+      sttControlsExpanded = false;
+      controls.classList.add('collapsed');
+      controls.classList.remove('expanded');
+      chip.classList.remove('expanded');
+    }
+  });
+}
+
+function updateSTTStatusChip() {
+  const label = document.getElementById('sttStatusLabel');
+  if (!label) return;
+
+  const langSelect = document.getElementById('sttLanguage');
+  const intervalSelect = document.getElementById('transcriptInterval');
+  const providerSelect = document.getElementById('transcriptProvider');
+
+  // Get current values
+  const lang = langSelect ? langSelect.value.toUpperCase() : 'JA';
+  const interval = intervalSelect ? intervalSelect.value : '15';
+  const isStreaming = providerSelect && STREAMING_PROVIDERS.has(providerSelect.value);
+
+  // Format: "JA / 15s" or "JA / ⚡" for streaming
+  if (isStreaming) {
+    label.textContent = `${lang} / ⚡`;
+  } else {
+    label.textContent = `${lang} / ${interval}s`;
+  }
 }
 
 // コスト管理（詳細版）
@@ -760,8 +827,20 @@ document.addEventListener('DOMContentLoaded', async function() {
       var newLang = sttLanguageSelect.value;
       SecureStorage.setOption('sttLanguage', newLang);
       console.log('[Settings] STT language changed to:', newLang);
+      updateSTTStatusChip(); // Update chip when language changes
     });
   }
+
+  // STT Interval変更時もチップを更新
+  var transcriptIntervalSelect = document.getElementById('transcriptInterval');
+  if (transcriptIntervalSelect) {
+    transcriptIntervalSelect.addEventListener('change', function() {
+      updateSTTStatusChip();
+    });
+  }
+
+  // STT Status Chip: Progressive Disclosure
+  initSTTStatusChip();
 
   // ブラウザ互換性チェック（iOS Safari対応）
   checkBrowserCompatibility();

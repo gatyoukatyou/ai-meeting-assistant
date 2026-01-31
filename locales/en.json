@@ -165,6 +165,7 @@
       "sessionNotice": "This key will be lost when you close the tab"
     },
     "stt": {
+      "clickToExpand": "Click to expand settings",
       "title": "Transcription (STT) - Provider Selection",
       "provider": "STT Provider",
       "providerHint": "Select an STT provider. WebSocket-based providers offer better real-time performance.",
@@ -252,6 +253,7 @@
     "theme": {
       "title": "Appearance",
       "displayLabel": "Display theme",
+      "uiStyleLabel": "UI Style",
       "label": "Accent color"
     },
     "backup": {
@@ -482,6 +484,8 @@
     "dark": "Dark",
     "switchToLight": "Switch to light mode",
     "switchToDark": "Switch to dark mode",
+    "brutalism": "📦 Brutalism",
+    "paper": "📄 Paper",
     "sky": "Sky",
     "indigo": "Indigo",
     "emerald": "Emerald",

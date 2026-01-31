@@ -164,6 +164,23 @@
   }
 
   /**
+   * Bind UI Style select element (for config.html)
+   * @param {HTMLElement} selectEl
+   */
+  function bindStyleSelect(selectEl) {
+    if (!selectEl) return;
+
+    var style = getStyle();
+    selectEl.value = style;
+    applyStyle(style);
+
+    selectEl.addEventListener('change', function(e) {
+      var value = (e.target && e.target.value) ? e.target.value : DEFAULT_STYLE;
+      setStyle(value);
+    });
+  }
+
+  /**
    * Bind toggle button (for index.html)
    * @param {HTMLElement} btnEl
    */
@@ -328,6 +345,10 @@
     initTheme: initTheme,
     bindThemeToggle: bindThemeToggle,
     bindDisplayThemeSelect: bindDisplayThemeSelect,
+    // UI Style (brutalism/paper)
+    getStyle: getStyle,
+    setStyle: setStyle,
+    bindStyleSelect: bindStyleSelect,
     // Color palette (accent colors)
     colorPalettes: colorPalettes,
     applyColorPalette: applyColorPalette,

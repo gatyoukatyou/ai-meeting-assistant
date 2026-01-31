@@ -598,6 +598,47 @@
       background: var(--accent-green);
     }
 
+    /* ===== STT Status Chip (Progressive Disclosure) ===== */
+    .stt-status-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.3rem 0.65rem;
+      background: var(--surface-muted);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: 999px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+      box-shadow: var(--shadow-hard-sm);
+    }
+
+    .stt-status-chip:hover {
+      background: var(--accent-blue);
+      box-shadow: 2px 2px 0 0 var(--border-color);
+    }
+
+    .stt-status-chip.expanded {
+      background: var(--primary);
+      color: white;
+    }
+
+    /* STT Controls - collapsed by default */
+    .header-stt-controls.collapsed {
+      display: none;
+    }
+
+    .header-stt-controls.expanded {
+      display: flex;
+      animation: slideIn 0.15s ease-out;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-10px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
     /* ===== Memo Input ===== */
     .memo-input-section {
       padding: 0.75rem 0;
@@ -980,15 +1021,18 @@
         <h1 data-i18n="app.title">AI参加会議</h1>
       </div>
       <div class="header-preferences">
-        <button type="button" class="theme-toggle" id="themeToggleBtn" title="ダークモードに切替">🌙</button>
-        <select id="languageSwitcher" class="model-select lang-select">
-          <option value="ja">🇯🇵 Japanese</option>
-          <option value="en">🇺🇸 English</option>
-        </select>
-        <select id="styleSwitcher" class="model-select" style="font-size:0.85rem; min-width:120px;">
-          <option value="brutalism">📦 Brutalism</option>
-          <option value="paper">📄 Paper</option>
-        </select>
+        <!-- Hidden preferences (moved to settings) -->
+        <div class="hidden-preferences" style="display:none;">
+          <button type="button" class="theme-toggle" id="themeToggleBtn" title="ダークモードに切替">🌙</button>
+          <select id="languageSwitcher" class="model-select lang-select">
+            <option value="ja">🇯🇵 Japanese</option>
+            <option value="en">🇺🇸 English</option>
+          </select>
+          <select id="styleSwitcher" class="model-select" style="font-size:0.85rem; min-width:120px;">
+            <option value="brutalism">📦 Brutalism</option>
+            <option value="paper">📄 Paper</option>
+          </select>
+        </div>
         <button type="button" class="quick-settings-btn" id="openLLMSettingsBtn" data-i18n-title="llmModal.title" title="LLM設定">⚡</button>
         <button type="button" class="settings-link" id="openFullSettingsBtn" data-i18n-title="header.fullSettings" title="全設定">⚙️</button>
       </div>
@@ -1017,7 +1061,12 @@
         <div class="enhancement-badge" id="reasoningBoostBadge" style="display:none; background: var(--accent); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">Boost ON</div>
         <div class="enhancement-badge" id="nativeDocsBadge" style="display:none; background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">Native Docs ON</div>
       </div>
-      <div class="header-stt-controls">
+      <!-- STT Status Chip (clickable to expand settings) -->
+      <button type="button" class="stt-status-chip" id="sttStatusChip" data-i18n-title="config.stt.clickToExpand" title="クリックで設定を展開">
+        🎤 <span id="sttStatusLabel">JA / 15s</span>
+      </button>
+      <!-- STT Controls (hidden by default, shown when chip clicked) -->
+      <div class="header-stt-controls collapsed" id="headerSttControls">
         <select id="transcriptProvider" class="model-select" title="STTプロバイダー">
           <option value="openai_stt" selected>🎤 Whisper</option>
           <option value="deepgram_realtime">⚡ Deepgram</option>
