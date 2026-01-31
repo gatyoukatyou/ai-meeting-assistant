@@ -722,7 +722,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     console.log('[i18n] Language changed, re-rendering UI');
     updateUI();
     updateCosts();
-    updateLlmIndicator();
+    updateLLMIndicator();
   });
 
   // ユーザー辞書を読み込み
