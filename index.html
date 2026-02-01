@@ -570,8 +570,20 @@
     /* ===== Responsive ===== */
     @media (max-width: 767px){
       .header-row-1{ flex-direction:column; align-items:flex-start; }
-      .header-row-2{ flex-direction:column; align-items:stretch; }
-      .btn{ width:100%; justify-content:center; }
+      /* row-2は横並び維持（アイコンのみ表示で1行成立させる） */
+      .header-row-2{
+        flex-direction: row;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.35rem;
+      }
+      .header-record{
+        display: inline-flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 0.35rem;
+      }
+      .btn{ width:auto; justify-content:center; }
       .panel{ min-height:420px; height: auto; }
     }
 
@@ -1157,6 +1169,28 @@
       background: var(--surface-muted);
     }
 
+    /* ===== タブレット/ハーフ幅（768–1024px）での More 表示 ===== */
+    @media (min-width: 768px) and (max-width: 1024px) {
+      /* More ボタンを表示 */
+      .header-more-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      /* P2要素を More に格納 */
+      #openContextModalBtn,
+      #contextStatusBadge,
+      .header-export {
+        display: none !important;
+      }
+
+      /* ヘッダー2段目の gap を詰める */
+      .header-row-2 {
+        gap: 0.4rem;
+      }
+    }
+
     /* モバイルでの表示制御 */
     @media (max-width: 767px) {
       /* Moreボタンを表示 */
@@ -1191,6 +1225,30 @@
         font-size: 0.75rem;
         padding: 0.3rem 0.4rem;
         min-width: 70px;
+      }
+
+      /* ===== ボタンラベルを隠してアイコンのみ（1行成立） ===== */
+      .record-btn .btn-label {
+        display: none;
+      }
+
+      #meetingModeChip .btn-label {
+        display: none;
+      }
+
+      .export-btn .export-btn-text {
+        display: none;
+      }
+
+      /* ボタン幅を auto に（モバイルで100%解除） */
+      .header-row-2 .btn,
+      .header-row-2 .record-btn {
+        width: auto;
+      }
+
+      /* Enhancement バッジを隠す */
+      .enhancement-badge {
+        display: none;
       }
     }
 
@@ -1620,16 +1678,19 @@
     <div class="header-row-2">
       <div class="header-record">
         <button type="button" class="btn btn-primary record-btn" id="recordBtn">
-          <span data-i18n="app.recording.start">🎤 録音開始</span>
+          <span class="btn-icon">🎤</span>
+          <span class="btn-label" data-i18n="app.recording.start">録音開始</span>
         </button>
         <button type="button" class="btn btn-secondary record-btn" id="pauseBtn" style="display: none;">
-          <span data-i18n="app.recording.pause">Pause</span>
+          <span class="btn-icon">⏸</span>
+          <span class="btn-label" data-i18n="app.recording.pause">一時停止</span>
         </button>
         <span class="status-badge status-ready" id="statusBadge">
           <span data-i18n="app.recording.statusReady">待機中</span>
         </span>
         <button type="button" class="meeting-mode-chip" id="meetingModeChip">
-          🎯 <span id="meetingModeLabel" data-i18n="app.meeting.meetingMode">会議モード</span>
+          <span class="btn-icon">🎯</span>
+          <span class="btn-label" id="meetingModeLabel" data-i18n="app.meeting.meetingMode">会議モード</span>
         </button>
         <button type="button" class="btn btn-ghost context-btn" id="openContextModalBtn">
           📝 <span data-i18n="context.trigger">会議情報を入力</span>

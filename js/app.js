@@ -3314,19 +3314,33 @@ function getFallbackModel(provider, requestedModel) {
  */
 function updateLabelSpan(parentEl, i18nKey, iconPrefix) {
   if (!parentEl) return;
-  const span = parentEl.querySelector('[data-i18n]');
-  if (span) {
-    span.setAttribute('data-i18n', i18nKey);
-    span.textContent = t(i18nKey);
+
+  // New structure: separate .btn-icon and .btn-label spans
+  const iconSpan = parentEl.querySelector('.btn-icon');
+  const labelSpan = parentEl.querySelector('.btn-label');
+
+  if (iconSpan && labelSpan) {
+    // Update icon (strip trailing space from iconPrefix)
+    iconSpan.textContent = iconPrefix.trim();
+    // Update label
+    labelSpan.setAttribute('data-i18n', i18nKey);
+    labelSpan.textContent = t(i18nKey);
   } else {
-    // Fallback: if no span, create one (XSS防止: createElementを使用)
-    parentEl.textContent = '';
-    const iconNode = document.createTextNode(iconPrefix);
-    const newSpan = document.createElement('span');
-    newSpan.setAttribute('data-i18n', i18nKey);
-    newSpan.textContent = t(i18nKey);
-    parentEl.appendChild(iconNode);
-    parentEl.appendChild(newSpan);
+    // Legacy structure: single span with data-i18n
+    const span = parentEl.querySelector('[data-i18n]');
+    if (span) {
+      span.setAttribute('data-i18n', i18nKey);
+      span.textContent = t(i18nKey);
+    } else {
+      // Fallback: if no span, create one (XSS防止: createElementを使用)
+      parentEl.textContent = '';
+      const iconNode = document.createTextNode(iconPrefix);
+      const newSpan = document.createElement('span');
+      newSpan.setAttribute('data-i18n', i18nKey);
+      newSpan.textContent = t(i18nKey);
+      parentEl.appendChild(iconNode);
+      parentEl.appendChild(newSpan);
+    }
   }
 }
 
@@ -3346,7 +3360,7 @@ function updateUI() {
     btn.classList.add('btn-danger');
     if (pauseBtn) {
       pauseBtn.style.display = 'inline-flex';
-      updateLabelSpan(pauseBtn, isPaused ? 'app.recording.resume' : 'app.recording.pause', '');
+      updateLabelSpan(pauseBtn, isPaused ? 'app.recording.resume' : 'app.recording.pause', isPaused ? '▶' : '⏸');
     }
     // Update status badge via inner span
     if (isPaused) {
