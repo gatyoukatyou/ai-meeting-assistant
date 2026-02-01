@@ -335,9 +335,25 @@ async function saveSettings() {
 
   showSuccess(t('config.messages.saved'));
 
-  // 3秒後にメイン画面に自動遷移
+  // 3秒後にメイン画面に戻る（増殖防止対応）
   setTimeout(() => {
-    navigateTo('index.html');
+    // handleBackToMain はconfig.html側で定義（window.name判定で増殖防止）
+    if (typeof handleBackToMain === 'function') {
+      handleBackToMain();
+    } else {
+      // フォールバック：関数が見つからない場合も増殖防止を維持
+      const hasOpener = (window.opener && !window.opener.closed);
+      const openedAsSettingsTab = (window.name === 'settings') || hasOpener;
+
+      if (openedAsSettingsTab) {
+        // 別タブの場合：遷移しない（増殖防止）
+        const hint = document.getElementById('closeTabHint');
+        if (hint) hint.style.display = 'block';
+      } else {
+        // 同一タブの場合：通常遷移
+        navigateTo('index.html');
+      }
+    }
   }, 3000);
 }
 

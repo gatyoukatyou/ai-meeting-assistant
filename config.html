@@ -456,6 +456,17 @@
       margin-bottom: 1.5rem;
       display: none;
     }
+
+    .close-tab-hint {
+      display: none;
+      margin: 0;
+      padding: 10px 16px;
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      background: var(--card-bg);
+      border-bottom: 1px solid var(--border);
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -469,6 +480,9 @@
         </select>
         <button type="button" class="btn btn-secondary" id="backToMainBtn" onclick="handleBackToMain()">← <span data-i18n="config.backToMain">Back to main</span></button>
       </div>
+    </div>
+    <div id="closeTabHint" class="close-tab-hint">
+      元のタブ（会議画面）をクリックしてください。このタブは Cmd/Ctrl+W で閉じてOKです。
     </div>
   </header>
 
@@ -820,7 +834,7 @@
       </div>
 
       <div class="action-buttons">
-        <a href="index.html" class="btn btn-secondary" data-i18n="common.cancel">Cancel</a>
+        <button type="button" class="btn btn-secondary" onclick="handleBackToMain()" data-i18n="common.cancel">Cancel</button>
         <button class="btn btn-primary" id="saveSettingsBtn">💾 <span data-i18n="common.save">Save</span></button>
       </div>
     </div>
@@ -830,26 +844,32 @@
   <script src="js/secure-storage.js" defer></script>
   <script src="js/config.js" defer></script>
   <script>
-    // PR-3 Task F-5: 戻るボタンで確実に閉じる
+    // PR-3 Task F-5: 戻るボタンで確実に閉じる（増殖防止強化版）
     function handleBackToMain() {
-      // window.openで開かれた場合
-      if (window.opener && !window.opener.closed) {
-        try {
-          // 元のウィンドウにフォーカスを戻す
-          window.opener.focus();
-          // このウィンドウを閉じる
-          window.close();
-          // closeが成功したかチェック（100ms後にまだ開いていたら遷移）
-          setTimeout(() => {
-            // まだこのコードが実行されている = closeが失敗した
-            window.location.href = 'index.html';
-          }, 100);
-        } catch (e) {
-          window.location.href = 'index.html';
+      // window.name または opener で判定（両方使うのが最も堅牢）
+      const hasOpener = (window.opener && !window.opener.closed);
+      const openedAsSettingsTab = (window.name === 'settings') || hasOpener;
+
+      // 別タブ（settings）として開かれた場合は「増殖防止」を最優先
+      if (openedAsSettingsTab) {
+        if (hasOpener) {
+          try { window.opener.focus(); } catch (_) {}
         }
+
+        // 閉じる（ブラウザが許せば閉じる）
+        try { window.close(); } catch (_) {}
+
+        // closeできなかった場合：遷移しない（増殖防止）
+        // 代わりにヒントを表示
+        setTimeout(() => {
+          const hint = document.getElementById('closeTabHint');
+          if (hint) hint.style.display = 'block';
+        }, 150);
+
         return;
       }
-      // それ以外は通常遷移
+
+      // 同一タブで開かれた場合は通常遷移（増殖しない）
       window.location.href = 'index.html';
     }
   </script>
