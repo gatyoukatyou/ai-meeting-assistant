@@ -109,9 +109,10 @@
     }
   }
 
-  // ========== Style Switcher (Brutalism / Paper) ==========
+  // ========== Style Switcher (Brutalism / Paper / Clean) ==========
   function normalizeStyle(value) {
-    return (value === 'paper') ? 'paper' : 'brutalism';
+    if (value === 'paper' || value === 'clean') return value;
+    return 'brutalism';
   }
 
   function getStyle() {

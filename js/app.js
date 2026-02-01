@@ -1253,6 +1253,51 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Timeline filters
   initTimelineFilters();
 
+  // PR-1: More menu handlers (Task B)
+  initMoreMenu();
+
+  // PR-1: Ensure panel visibility on tablet/mobile (Task C)
+  requestAnimationFrame(ensureMainTabActive);
+
+  // PR-1: Memo tab submit handler
+  const submitMemoInTabBtn = document.getElementById('submitMemoInTabBtn');
+  if (submitMemoInTabBtn) {
+    submitMemoInTabBtn.addEventListener('click', () => {
+      const input = document.getElementById('memoInputInTab');
+      const content = input?.value.trim();
+      if (content) {
+        createMemo(content);
+        input.value = '';
+        // Re-render the memo list in the memo tab
+        renderMemoListInTab();
+      }
+    });
+  }
+
+  // Ctrl+Enter for memo input in tab
+  const memoInputInTab = document.getElementById('memoInputInTab');
+  if (memoInputInTab) {
+    memoInputInTab.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        e.preventDefault();
+        submitMemoInTabBtn?.click();
+      }
+    });
+  }
+
+  // PR-2: Mobile fixed bars and scroll shrink
+  initMobileHeaderShrink();
+  initKeyboardAvoidance();
+
+  // PR-2: Dynamic bar heights (on load and resize)
+  window.addEventListener('load', syncMobileBarHeights);
+  window.addEventListener('resize', () => setTimeout(syncMobileBarHeights, 150));
+
+  // PR-3: Quick action bar and tab action buttons
+  initQuickActionBar();
+  initQAInputInTab();
+  initRegenerateButtons();
+
   // 言語変更時の再レンダリング
   window.addEventListener('languagechange', function() {
     // 動的コンテンツの再レンダリング
@@ -1344,6 +1389,7 @@ async function startRecording() {
 
     isRecording = true;
     updateUI();
+    syncMinutesButtonState(); // PR-3: 議事録ボタン無効化
 
     // Wake Lockを取得（Issue #18: スリープ抑止）
     await startWakeLock();
@@ -1779,6 +1825,7 @@ async function cleanupRecording() {
 
   // 2. 録音フラグをオフにして新しいblobの生成を止める
   isRecording = false;
+  syncMinutesButtonState(); // PR-3: 議事録ボタン有効化
 
   // 3. インターバルをクリア（stop→restart の繰り返しを止める）
   if (transcriptIntervalId) {
@@ -2772,6 +2819,7 @@ async function askAI(type) {
       // 議事録は上書き（単一）
       document.getElementById(`response-${type}`).textContent = response;
       aiResponses.minutes = response;
+      hideEmptyState('minutes'); // PR-3: エンプティステート非表示
     } else {
       // 要約・意見・アイデアは配列で蓄積
       const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
@@ -2782,6 +2830,7 @@ async function askAI(type) {
         return `━━━ #${i + 1}（${entry.timestamp}）━━━\n\n${entry.content}`;
       }).join('\n\n');
       document.getElementById(`response-${type}`).textContent = displayText;
+      hideEmptyState(type); // PR-3: エンプティステート非表示
     }
   } catch (err) {
     clearTimeout(timeoutId);
@@ -3572,6 +3621,11 @@ function switchTab(tabName) {
   if (tabName === 'timeline') {
     renderTimeline();
   }
+
+  // メモタブに切り替えた時はメモリストを再レンダリング
+  if (tabName === 'memo') {
+    renderMemoListInTab();
+  }
 }
 
 // Phase 3: メインパネル切り替え（スマホ用）
@@ -3598,6 +3652,7 @@ function enterMeetingMode() {
   if (!isRecording) return;
 
   isMeetingMode = true;
+  updateMeetingModeBodyClass(); // PR-3: body class for wider layout
   const overlay = document.getElementById('meetingModeOverlay');
   if (overlay) {
     overlay.classList.add('active');
@@ -3610,6 +3665,7 @@ function enterMeetingMode() {
 
 function exitMeetingMode() {
   isMeetingMode = false;
+  updateMeetingModeBodyClass(); // PR-3: body class for wider layout
   const overlay = document.getElementById('meetingModeOverlay');
   if (overlay) {
     overlay.classList.remove('active');
@@ -5309,10 +5365,10 @@ function updateEnhancementBadges() {
     // P1-4: ONかつcapabilitiesで対応している場合のみ表示
     const boostEffective = meetingContext.reasoningBoostEnabled && caps.supportsReasoningControl;
     if (boostEffective) {
-      boostBadge.style.display = 'inline-flex';
+      boostBadge.classList.add('active');
       boostBadge.textContent = t('context.badgeReasoningBoost') || 'Boost ON';
     } else {
-      boostBadge.style.display = 'none';
+      boostBadge.classList.remove('active');
     }
   }
 
@@ -5322,10 +5378,10 @@ function updateEnhancementBadges() {
                                 caps.supportsNativeDocs &&
                                 hasNativeDocsPayload();
     if (nativeDocsEffective) {
-      nativeDocsBadge.style.display = 'inline-flex';
+      nativeDocsBadge.classList.add('active');
       nativeDocsBadge.textContent = t('context.badgeNativeDocs') || 'Native Docs ON';
     } else {
-      nativeDocsBadge.style.display = 'none';
+      nativeDocsBadge.classList.remove('active');
     }
   }
 }
@@ -5997,4 +6053,308 @@ function updateLLMButtonsState() {
       btn.title = '';
     }
   }
+}
+
+// =====================================
+// PR-1: More menu handlers (Task B)
+// =====================================
+function initMoreMenu() {
+  const btn = document.getElementById('headerMoreBtn');
+  const menu = document.getElementById('headerMoreMenu');
+  if (!btn || !menu) return;
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const isOpen = menu.classList.toggle('open');
+    btn.setAttribute('aria-expanded', isOpen);
+    // Position menu below button
+    const rect = btn.getBoundingClientRect();
+    menu.style.top = (rect.bottom + 8) + 'px';
+    menu.style.right = (window.innerWidth - rect.right) + 'px';
+  });
+
+  // Close on outside click
+  document.addEventListener('click', (e) => {
+    if (!menu.contains(e.target) && e.target !== btn) {
+      menu.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // Close on Escape
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && menu.classList.contains('open')) {
+      menu.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  // Menu item actions - 既存ボタンを .click() で叩く
+  menu.querySelectorAll('[data-action]').forEach(item => {
+    item.addEventListener('click', () => {
+      menu.classList.remove('open');
+      btn.setAttribute('aria-expanded', 'false');
+      const action = item.dataset.action;
+      // 既存ボタンのクリックに委譲（イベント・状態管理を既存実装に任せる）
+      if (action === 'context') document.getElementById('openContextModalBtn')?.click();
+      if (action === 'export') document.getElementById('openExportBtn')?.click();
+      if (action === 'history') document.getElementById('openHistoryBtn')?.click();
+      if (action === 'settings') document.getElementById('openFullSettingsBtn')?.click();
+    });
+  });
+}
+
+// =====================================
+// PR-1: Ensure panel visibility on tablet/mobile (Task C)
+// =====================================
+function ensureMainTabActive() {
+  // 画面幅がタブレット/モバイル帯の場合のみ
+  const width = window.innerWidth;
+  if (width >= 1025) return; // デスクトップは2カラムなので不要
+
+  // .main-tabs が存在する場合のみ処理
+  const mainTabs = document.querySelector('.main-tabs');
+  if (!mainTabs) return;
+
+  // activeなメインタブがあるかチェック
+  const activeTab = mainTabs.querySelector('.main-tab.active');
+  if (activeTab) return; // 既にactiveがあればOK
+
+  // activeが無ければ、デフォルト（AI回答）を .click() で選択
+  const defaultTab = mainTabs.querySelector('.main-tab[data-main-tab="ai"]')
+                  || mainTabs.querySelector('.main-tab:last-child');
+  if (defaultTab) {
+    defaultTab.click(); // 既存の切替ロジックに委譲
+  }
+}
+
+// =====================================
+// PR-1: Render memo list in memo tab
+// =====================================
+function renderMemoListInTab() {
+  const container = document.getElementById('memoListInTab');
+  if (!container) return;
+
+  // Filter to only show memos and todos (same as timeline with memo filter)
+  const memoItems = meetingMemos.items.filter(m => m.type === 'memo' || m.type === 'todo');
+
+  if (memoItems.length === 0) {
+    container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 1rem;">' +
+      (t('app.timeline.empty') || 'メモがありません') + '</p>';
+    return;
+  }
+
+  // Sort by pinned first, then by createdAt
+  const sorted = [...memoItems].sort((a, b) => {
+    if (a.pinned !== b.pinned) return b.pinned ? 1 : -1;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
+
+  container.innerHTML = sorted.map(item => renderTimelineItem(item)).join('');
+}
+
+// =====================================
+// PR-2: Mobile Header Shrink on Scroll (Task C)
+// =====================================
+function initMobileHeaderShrink() {
+  const mq = window.matchMedia('(max-width: 767px)');
+  if (!mq.matches) return;
+
+  let ticking = false;
+  const onScroll = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      const scrolled = window.scrollY > 8;
+      document.body.classList.toggle('is-scrolled', scrolled);
+      ticking = false;
+    });
+  };
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+}
+
+// =====================================
+// PR-2: Dynamic Bar Height Measurement (Task D)
+// =====================================
+function syncMobileBarHeights() {
+  const mq = window.matchMedia('(max-width: 767px)');
+  if (!mq.matches) return;
+
+  const header = document.querySelector('.header');
+  const mainTabs = document.querySelector('.main-tabs');
+  if (header) {
+    const h = Math.ceil(header.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--mobile-topbar-h', `${h}px`);
+  }
+  if (mainTabs) {
+    const h = Math.ceil(mainTabs.getBoundingClientRect().height);
+    document.documentElement.style.setProperty('--mobile-bottombar-h', `${h}px`);
+  }
+}
+
+// =====================================
+// PR-2: Keyboard Avoidance for iPhone (Task E)
+// =====================================
+function initKeyboardAvoidance() {
+  const mq = window.matchMedia('(max-width: 767px)');
+  if (!mq.matches) return;
+
+  const inputs = document.querySelectorAll('textarea, input[type="text"]');
+  inputs.forEach(el => {
+    el.addEventListener('focus', () => document.body.classList.add('keyboard-open'));
+    el.addEventListener('blur', () => document.body.classList.remove('keyboard-open'));
+  });
+}
+
+// =====================================
+// PR-3: Quick Action Bar & Tab Action Buttons (Task A)
+// =====================================
+function initQuickActionBar() {
+  // クイック実行バーのボタン
+  const quickButtons = document.querySelectorAll('#quickActionBar .ask-ai-btn[data-ai-type]');
+  quickButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!getAvailableLlm()) {
+        showToast(t('toast.llm.notConfigured'), 'warning');
+        return;
+      }
+      const type = btn.getAttribute('data-ai-type');
+      if (type) {
+        // タブ切替してから生成を実行
+        switchTab(type === 'custom' ? 'custom' : type);
+        askAI(type);
+      }
+    });
+  });
+
+  // タブ内の生成ボタン
+  const tabActionButtons = document.querySelectorAll('.tab-action-bar .btn[data-ai-type]');
+  tabActionButtons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!getAvailableLlm()) {
+        showToast(t('toast.llm.notConfigured'), 'warning');
+        return;
+      }
+      const type = btn.getAttribute('data-ai-type');
+      if (type) {
+        askAI(type);
+      }
+    });
+  });
+}
+
+// =====================================
+// PR-3: Q&A Input in Tab (Task B)
+// =====================================
+function initQAInputInTab() {
+  const input = document.getElementById('qaInputInTab');
+  const submitBtn = document.getElementById('qaSubmitInTabBtn');
+  if (!input || !submitBtn) return;
+
+  // 送信ボタンクリック
+  submitBtn.addEventListener('click', () => {
+    submitQAFromTab();
+  });
+
+  // IME変換中フラグ
+  let isComposing = false;
+  input.addEventListener('compositionstart', () => { isComposing = true; });
+  input.addEventListener('compositionend', () => { isComposing = false; });
+
+  // Ctrl+Enter / Cmd+Enter で送信
+  input.addEventListener('keydown', (e) => {
+    if (isComposing || e.isComposing) return;
+    if (e.key === 'Enter' && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      submitQAFromTab();
+    }
+  });
+}
+
+function submitQAFromTab() {
+  const input = document.getElementById('qaInputInTab');
+  const legacyInput = document.getElementById('customQuestion');
+  if (!input) return;
+
+  const question = input.value.trim();
+  if (!question) {
+    showToast(t('toast.qa.enterQuestion') || '質問を入力してください', 'warning');
+    return;
+  }
+
+  // 既存のcustomQuestion入力欄に値をセットしてaskAIを呼び出す
+  if (legacyInput) {
+    legacyInput.value = question;
+  }
+  input.value = '';
+  askAI('custom');
+}
+
+// =====================================
+// PR-3: Meeting Mode Body Class (Task D)
+// =====================================
+function updateMeetingModeBodyClass() {
+  document.body.classList.toggle('meeting-mode', isMeetingMode);
+}
+
+// =====================================
+// PR-3: Sync Minutes Button State
+// =====================================
+function syncMinutesButtonState() {
+  // 録音中は議事録ボタン無効、停止後に有効
+  const disabled = isRecording;
+  const buttons = [
+    document.getElementById('quickMinutesBtn'),
+    document.getElementById('tabMinutesBtn'),
+    document.getElementById('minutesBtn')
+  ];
+  buttons.forEach(btn => {
+    if (btn) btn.disabled = disabled;
+  });
+}
+
+// =====================================
+// PR-3: Empty State & Regenerate Button Management
+// =====================================
+function hideEmptyState(type) {
+  const emptyStateMap = {
+    'summary': 'emptySummary',
+    'consult': 'emptyConsult',
+    'minutes': 'emptyMinutes'
+  };
+  const regenerateMap = {
+    'summary': 'regenerateSummaryBtn',
+    'consult': 'regenerateConsultBtn',
+    'minutes': 'regenerateMinutesBtn'
+  };
+
+  const emptyId = emptyStateMap[type];
+  const regenId = regenerateMap[type];
+
+  if (emptyId) {
+    const el = document.getElementById(emptyId);
+    if (el) el.style.display = 'none';
+  }
+  if (regenId) {
+    const btn = document.getElementById(regenId);
+    if (btn) btn.style.display = 'block';
+  }
+}
+
+function initRegenerateButtons() {
+  const buttons = document.querySelectorAll('.regenerate-btn[data-ai-type]');
+  buttons.forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!getAvailableLlm()) {
+        showToast(t('toast.llm.notConfigured'), 'warning');
+        return;
+      }
+      const type = btn.getAttribute('data-ai-type');
+      if (type) {
+        askAI(type);
+      }
+    });
+  });
 }

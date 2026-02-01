@@ -23,7 +23,8 @@
     "header": {
       "title": "AI参加会議",
       "settings": "設定",
-      "detailSettings": "詳細設定"
+      "detailSettings": "詳細設定",
+      "more": "その他"
     },
     "recording": {
       "start": "録音開始",
@@ -56,7 +57,35 @@
       "minutes": "議事録",
       "qa": "Q&A",
       "customPlaceholder": "自由に質問...（文字起こしをコピペして該当箇所を聞くことも可能）",
-      "send": "送信"
+      "send": "送信",
+      "doSummary": "要約する",
+      "doConsult": "相談する",
+      "doMinutes": "議事録を作る",
+      "generateSummary": "要約を生成",
+      "generateConsult": "相談を生成",
+      "generateMinutes": "議事録を生成",
+      "hints": {
+        "summary": "現在の文字起こしを要約します",
+        "consult": "AIに議論のアドバイスを求めます",
+        "minutes": "録音停止後に生成できます"
+      },
+      "empty": {
+        "summaryTitle": "まだ要約がありません",
+        "summaryDesc": "現在までの会話内容から要約を作成します",
+        "consultTitle": "AIに相談する",
+        "consultDesc": "会議の内容についてAIにアドバイスを求めます",
+        "minutesTitle": "議事録を作成",
+        "minutesDesc": "フォーマットに沿って議事録を出力します。録音停止後に生成できます。"
+      },
+      "regenerate": "再生成",
+      "tabs": {
+        "summary": "要約",
+        "consult": "相談",
+        "memo": "メモ",
+        "minutes": "議事録",
+        "qa": "Q&A",
+        "timeline": "タイムライン"
+      }
     },
     "timeline": {
       "filterAll": "全部",
@@ -152,8 +181,8 @@
       "httpsOnly": "API呼び出し時のみHTTPS経由で送信",
       "isolated": "他のWebサイトからはアクセス不可",
       "exportable": "設定のエクスポート/インポート対応",
-      "clientWarningTitle": "クライアントサイドAPI警告",
-      "clientWarningText": "このアプリはブラウザから直接APIを呼び出します。APIキーがクライアントサイドに露出するため、個人利用・自己責任でご使用ください。公開環境での運用は推奨されません。"
+      "clientWarningTitle": "APIキーの取り扱いに関する注意",
+      "clientWarningText": "このアプリはブラウザから直接APIを呼び出します。共有PC・公共端末での利用は非推奨です。端末のロックやユーザー分離を推奨します。不安な場合は「キーを保存しない」設定をご検討ください。"
     },
     "storage": {
       "migrationTitle": "APIキー保存方式が変わりました",
@@ -174,7 +203,7 @@
       "model": "モデル",
       "apiKey": "APIキー",
       "getApiKey": "APIキーを取得",
-      "validate": "🔍 認証チェック",
+      "validate": "🔍 疎通テスト",
       "clear": "🗑️ クリア",
       "getFromOpenAI": "OpenAI Platform から取得",
       "getFromDeepgram": "Deepgram Console から取得 - WebSocketでリアルタイム送信",
@@ -198,7 +227,7 @@
     },
     "llm": {
       "title": "AI回答・要約（任意）- LLMを選択",
-      "validate": "🔍 認証チェック",
+      "validate": "🔍 疎通テスト",
       "clear": "🗑️ クリア",
       "priority": "LLM優先順位",
       "priorityAuto": "自動選択（設定されたAPIを順に使用）",
@@ -439,7 +468,7 @@
     "welcome": {
       "title": "AI参加会議へようこそ",
       "description": "会議中にAIがリアルタイムで参加し、文字起こし・要約・意見・アイデア提案を行います",
-      "feature1": "高精度な音声文字起こし（OpenAI Whisper）",
+      "feature1": "高精度な音声文字起こし（OpenAI Whisper / Deepgram）",
       "feature2": "複数のAIモデルに対応",
       "feature3": "APIキーは難読化してローカル保存",
       "feature4": "利用料金の概算をリアルタイム表示",
@@ -485,6 +514,7 @@
     "switchToDark": "ダークモードに切替",
     "brutalism": "📦 Brutalism",
     "paper": "📄 Paper",
+    "clean": "🧹 Clean",
     "sky": "スカイブルー",
     "indigo": "インディゴ",
     "emerald": "エメラルド",

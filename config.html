@@ -467,7 +467,7 @@
           <option value="ja" data-i18n="language.ja">Japanese</option>
           <option value="en" data-i18n="language.en">English</option>
         </select>
-        <a href="index.html" class="btn btn-secondary">← <span data-i18n="config.backToMain">Back to main</span></a>
+        <button type="button" class="btn btn-secondary" id="backToMainBtn" onclick="handleBackToMain()">← <span data-i18n="config.backToMain">Back to main</span></button>
       </div>
     </div>
   </header>
@@ -481,10 +481,10 @@
       <div class="security-notice" style="background: #fef3c7; border-color: #fef08a; margin-bottom: 1rem;">
         <div class="security-notice-title" style="color: #92400e;">
           <span>⚠️</span>
-          <span data-i18n="config.security.clientWarningTitle">Client-Side API Warning</span>
+          <span data-i18n="config.security.clientWarningTitle">APIキーの取り扱いに関する注意</span>
         </div>
         <div class="security-notice-text" style="color: #92400e;" data-i18n="config.security.clientWarningText">
-          This app calls APIs directly from your browser. API keys are exposed in client-side code. For personal use and self-responsibility only. Not recommended for public/production deployments.
+          このアプリはブラウザから直接APIを呼び出します。共有PC/公共端末での利用は非推奨です。端末のロックやユーザー分離を推奨します。
         </div>
       </div>
 
@@ -790,6 +790,7 @@
           <select class="setting-input" id="uiStyle" style="max-width: 200px;">
             <option value="brutalism" data-i18n="theme.brutalism">📦 Brutalism</option>
             <option value="paper" data-i18n="theme.paper">📄 Paper</option>
+            <option value="clean" data-i18n="theme.clean">🧹 Clean</option>
           </select>
         </div>
         <div class="setting-group" style="margin-bottom: 0;">
@@ -828,5 +829,29 @@
   <script src="js/theme.js"></script>
   <script src="js/secure-storage.js" defer></script>
   <script src="js/config.js" defer></script>
+  <script>
+    // PR-3 Task F-5: 戻るボタンで確実に閉じる
+    function handleBackToMain() {
+      // window.openで開かれた場合
+      if (window.opener && !window.opener.closed) {
+        try {
+          // 元のウィンドウにフォーカスを戻す
+          window.opener.focus();
+          // このウィンドウを閉じる
+          window.close();
+          // closeが成功したかチェック（100ms後にまだ開いていたら遷移）
+          setTimeout(() => {
+            // まだこのコードが実行されている = closeが失敗した
+            window.location.href = 'index.html';
+          }, 100);
+        } catch (e) {
+          window.location.href = 'index.html';
+        }
+        return;
+      }
+      // それ以外は通常遷移
+      window.location.href = 'index.html';
+    }
+  </script>
 </body>
 </html>

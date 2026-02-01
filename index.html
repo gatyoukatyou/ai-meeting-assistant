@@ -22,6 +22,18 @@
       --warning:#F59E0B;
       --success:#10B981;
 
+      /* 背景色上の文字色（white固定排除用） */
+      --on-primary:#ffffff;
+      --on-danger:#ffffff;
+      --modal-header-fg:var(--on-primary);
+      --modal-bg:#ffffff;
+      --modal-text:#1f2937;
+
+      /* 統一コントロールサイズ */
+      --control-h:34px;
+      --control-fs:0.85rem;
+      --control-px:0.75rem;
+
       --font-sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,"Noto Sans JP",sans-serif;
       --font-serif:"Noto Serif JP","Hiragino Mincho ProN","Yu Mincho","Times New Roman",serif;
       --font-mono:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Courier New",monospace;
@@ -49,6 +61,7 @@
       --shadow-hard-sm:2px 2px 0 0 #000;
       --shadow-modal:8px 8px 0 0 #000;
       --radius:10px;
+      --btn-radius:0px; /* Brutalism: 直角 */
 
       --pattern-dot:rgba(71,85,105,.25);
       --pattern-image:radial-gradient(var(--pattern-dot) 1px, transparent 1px);
@@ -96,6 +109,7 @@
       --shadow-hard-sm:none;
       --shadow-modal:0 8px 20px rgba(0,0,0,0.12);
       --radius:10px;
+      --btn-radius:10px; /* Paper: ソフト四角 */
 
       --pattern-dot:transparent;
       --pattern-image:none;
@@ -129,6 +143,8 @@
     html[data-style="brutalism"][data-display-theme="dark"]{
       --bg:#0F172A;
       --card-bg:#111C2F;
+      --modal-bg:#111C2F;
+      --modal-text:#F8FAFC;
       --text:#F8FAFC;
       --text-secondary:#94A3B8;
       --border-color:#F8FAFC;
@@ -149,6 +165,8 @@
     html[data-style="paper"][data-display-theme="dark"]{
       --bg:#1F1B16;
       --card-bg:#26211B;
+      --modal-bg:#26211B;
+      --modal-text:#F5F1E8;
       --text:#F5F1E8;
       --text-secondary:#C9C1B5;
       --border-color:#5C5348;
@@ -247,7 +265,7 @@
       text-transform:uppercase;
       letter-spacing:-.04em;
       background:var(--primary);
-      color:#fff;
+      color:var(--on-primary);
       padding:.25rem .6rem;
       transform:rotate(-1.5deg);
       border:var(--border-width) solid var(--border-color);
@@ -320,8 +338,9 @@
     .btn{
       border:var(--border-width) solid var(--border-color);
       border-radius:var(--radius);
-      padding:0.6rem 1rem;
-      min-height:42px;
+      height:var(--control-h);
+      padding:0 var(--control-px);
+      font-size:var(--control-fs);
       font-weight:800;
       cursor:pointer;
       box-shadow:var(--shadow-hard-sm);
@@ -342,16 +361,17 @@
       transform:translate(0,0);
       box-shadow:none;
     }
-    .btn-primary{ background:var(--primary); color:#fff; }
+    .btn-primary{ background:var(--primary); color:var(--on-primary); }
     .btn-primary:hover{ background:var(--primary-hover); }
-    .btn-danger{ background:var(--danger); color:#fff; }
+    .btn-danger{ background:var(--danger); color:var(--on-danger); }
 
     /* ===== Inputs ===== */
     input, select, textarea{
       border:var(--border-width) solid var(--border-color);
       border-radius:var(--radius);
-      padding:0.6rem 0.8rem;
-      min-height:42px;
+      padding:0 var(--control-px);
+      min-height:var(--control-h);
+      font-size:var(--control-fs);
       background:var(--card-bg);
       color:var(--text);
       font-family:inherit;
@@ -524,11 +544,13 @@
       border:var(--border-width) solid var(--border-color);
       box-shadow:var(--shadow-modal);
       border-radius:var(--radius);
-      background:var(--card-bg);
+      background:var(--modal-bg);
+      color:var(--modal-text);
+      opacity:1; /* 明示的に不透明 */
     }
     .modal-header{
       background:var(--modal-header-bg);
-      color:#fff;
+      color:var(--modal-header-fg);
       border-bottom:var(--border-width) solid var(--border-color);
     }
     .modal-close{ color:var(--modal-close-color); }
@@ -570,6 +592,10 @@
     @media (min-width: 1025px) {
       .main-container.meeting-mode {
         grid-template-columns: 1fr;
+        max-width: none;
+        width: 100%;
+        padding-left: 2.5rem;
+        padding-right: 2.5rem;
       }
     }
 
@@ -578,20 +604,22 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      padding: 0.3rem 0.65rem;
+      height: var(--control-h);
+      padding: 0 var(--control-px);
       background: var(--accent-blue);
+      color: var(--text);
       border: var(--border-width) solid var(--border-color);
       border-radius: 999px;
-      font-size: 0.8rem;
+      font-size: var(--control-fs);
       font-weight: 700;
       cursor: pointer;
-      transition: background 0.15s;
+      transition: background 0.15s, color 0.15s;
       box-shadow: var(--shadow-hard-sm);
     }
 
     .meeting-mode-chip:hover {
       background: var(--primary);
-      color: white;
+      color: var(--on-primary);
     }
 
     .meeting-mode-chip.edit-mode {
@@ -603,14 +631,16 @@
       display: inline-flex;
       align-items: center;
       gap: 0.35rem;
-      padding: 0.3rem 0.65rem;
+      height: var(--control-h);
+      padding: 0 var(--control-px);
       background: var(--surface-muted);
+      color: var(--text);
       border: var(--border-width) solid var(--border-color);
       border-radius: 999px;
-      font-size: 0.8rem;
+      font-size: var(--control-fs);
       font-weight: 700;
       cursor: pointer;
-      transition: background 0.15s, box-shadow 0.15s;
+      transition: background 0.15s, box-shadow 0.15s, color 0.15s;
       box-shadow: var(--shadow-hard-sm);
     }
 
@@ -621,7 +651,7 @@
 
     .stt-status-chip.expanded {
       background: var(--primary);
-      color: white;
+      color: var(--on-primary);
     }
 
     /* STT Controls - collapsed by default */
@@ -637,6 +667,27 @@
     @keyframes slideIn {
       from { opacity: 0; transform: translateX(-10px); }
       to { opacity: 1; transform: translateX(0); }
+    }
+
+    /* ===== Enhancement Badges ===== */
+    .enhancement-badge {
+      display: none;
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      margin-left: 0.5rem;
+      color: var(--on-primary);
+    }
+    .enhancement-badge.active {
+      display: inline-flex;
+      align-items: center;
+    }
+    .enhancement-badge.boost {
+      background: var(--accent);
+    }
+    .enhancement-badge.native-docs {
+      background: #10b981;
     }
 
     /* ===== Memo Input ===== */
@@ -672,18 +723,22 @@
     }
 
     .timeline-filter {
-      padding: 0.3rem 0.6rem;
+      height: var(--control-h);
+      padding: 0 var(--control-px);
       border: var(--border-width) solid var(--border-color);
       border-radius: var(--radius);
       background: transparent;
+      color: var(--text);
       cursor: pointer;
-      font-size: 0.8rem;
+      font-size: var(--control-fs);
       font-weight: 600;
+      display: inline-flex;
+      align-items: center;
     }
 
     .timeline-filter.active {
       background: var(--primary);
-      color: white;
+      color: var(--on-primary);
     }
 
     .timeline-list {
@@ -923,7 +978,7 @@
     .meeting-mode-overlay.active{ display:flex; }
     .meeting-mode-status{
       text-align:center;
-      color:#fff;
+      color:var(--on-primary);
       margin-bottom:3rem;
     }
     .meeting-mode-icon{
@@ -1009,6 +1064,529 @@
     .toast.success{ border-left-color:var(--success); }
     .toast.warning{ border-left-color:var(--warning); }
     .toast-message{ font-size:.9rem; line-height:1.4; }
+
+    /* ===== Task A: AI Buttons をタブに統合 ===== */
+    /* AI Buttonsを非表示化（タブに統合） */
+    .ai-buttons {
+      display: none;
+    }
+
+    /* タブを横スクロール可能に */
+    .tabs {
+      padding: 0 1rem;
+      gap: 0.25rem;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: none;
+    }
+    .tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    /* タブのスタイル調整 */
+    .tab {
+      white-space: nowrap;
+      padding: 0.65rem 0.85rem;
+      font-size: 0.85rem;
+      line-height: 1.2;
+    }
+
+    /* Custom Question セクションを調整 */
+    .custom-question {
+      padding: 0.75rem 1rem;
+      border-top: var(--border-width) dashed var(--border-color);
+      margin-top: 0;
+    }
+
+    .custom-question textarea {
+      min-height: 42px;
+      max-height: 120px;
+    }
+
+    /* ===== Task B: モバイルヘッダー縮約 ===== */
+    /* Moreボタン */
+    .header-more-btn {
+      display: none;
+      height: var(--control-h);
+      padding: 0 var(--control-px);
+      background: var(--surface-muted);
+      color: var(--text);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius);
+      font-size: var(--control-fs);
+      cursor: pointer;
+      align-items: center;
+    }
+
+    /* Moreメニュー（popover風） */
+    .header-more-menu {
+      display: none;
+      position: fixed;
+      top: auto;
+      right: 1rem;
+      bottom: auto;
+      z-index: 1100;
+      background: var(--card-bg);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-hard);
+      padding: 0.5rem;
+      min-width: 200px;
+    }
+
+    .header-more-menu.open {
+      display: block;
+    }
+
+    .header-more-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.6rem 0.75rem;
+      border: none;
+      background: transparent;
+      width: 100%;
+      text-align: left;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border-radius: calc(var(--radius) - 2px);
+      color: var(--text);
+    }
+
+    .header-more-menu-item:hover {
+      background: var(--surface-muted);
+    }
+
+    /* モバイルでの表示制御 */
+    @media (max-width: 767px) {
+      /* Moreボタンを表示 */
+      .header-more-btn {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+      }
+
+      /* 以下をMoreに格納（非表示） */
+      #openContextModalBtn,
+      #contextStatusBadge,
+      .header-export,
+      #openLLMSettingsBtn,
+      #openFullSettingsBtn {
+        display: none !important;
+      }
+
+      /* STTステータスチップは維持（省スペース表示） */
+      #sttStatusChip {
+        font-size: 0.75rem;
+        padding: 0.25rem 0.5rem;
+      }
+
+      /* 展開時のSTT設定も圧縮 */
+      #headerSttControls.expanded {
+        flex-wrap: wrap;
+        gap: 0.5rem;
+      }
+
+      #headerSttControls select {
+        font-size: 0.75rem;
+        padding: 0.3rem 0.4rem;
+        min-width: 70px;
+      }
+    }
+
+    /* ===== Task D: STT設定の展開改善 ===== */
+    /* ヘッダーrow-2をrelativeに（必須） */
+    .header-row-2 {
+      position: relative;
+      overflow: visible;
+    }
+
+    /* ヘッダー全体もoverflowをvisibleに（念のため） */
+    .header {
+      overflow: visible;
+    }
+
+    /* 展開時にヘッダーを破壊しないよう制御 */
+    #headerSttControls.expanded {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--card-bg);
+      border-top: var(--border-width) solid var(--border-color);
+      padding: 0.75rem 1rem;
+      box-shadow: var(--shadow-hard);
+      z-index: 95;
+      animation: slideDown 150ms ease-out;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-8px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== Clean Theme (Monochrome) ===== */
+    html[data-style="clean"] {
+      --border-width: 1px;
+      --radius: 6px;
+      --btn-radius: 6px; /* Clean: 微小な角丸 */
+      --shadow: none;
+      --shadow-hard: 0 1px 3px rgba(0,0,0,0.08);
+      --shadow-hard-sm: 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-modal: 0 4px 12px rgba(0,0,0,0.15);
+      --border-color: #e5e7eb;
+      --overlay-bg: rgba(0,0,0,0.62);
+      --modal-bg: #ffffff;
+      --modal-text: #1f2937;
+    }
+
+    html[data-style="clean"] .btn {
+      box-shadow: none;
+      border-width: 1px;
+    }
+
+    html[data-style="clean"] .btn-primary {
+      background: #111827;
+      border-color: #111827;
+    }
+
+    html[data-style="clean"] .btn-primary:hover {
+      background: #374151;
+      border-color: #374151;
+    }
+
+    html[data-style="clean"] .panel {
+      box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+      border-width: 1px;
+    }
+
+    html[data-style="clean"] .card {
+      box-shadow: none;
+      border-width: 1px;
+    }
+
+    /* Dark mode clean */
+    html[data-style="clean"][data-display-theme="dark"] {
+      --bg:#111827;
+      --card-bg:#1F2937;
+      --modal-bg:#1F2937;
+      --modal-text:#F9FAFB;
+      --text:#F9FAFB;
+      --text-secondary:#9CA3AF;
+      --border-color:#374151;
+      --surface-muted:#1F2937;
+      --ai-response-bg:#1F2937;
+      --cost-bg:color-mix(in srgb, var(--warning) 70%, #111827 30%);
+      --cost-text:#F9FAFB;
+      --accent-blue:#1E3A5F;
+      --accent-green:#14532D;
+      --accent-border-blue:#1E40AF;
+      --accent-border-green:#166534;
+      --overlay-bg:rgba(0,0,0,0.7);
+      --meeting-mode-bg:linear-gradient(135deg, #0f172a 0%, #111827 100%);
+      --focus-ring:0 0 0 3px rgba(129,140,248,.45);
+    }
+
+    /* ===== PR-2: Mobile Fixed Top Bar (Task A) ===== */
+    @media (max-width: 767px) {
+      :root {
+        --mobile-topbar-h: 64px;
+        --mobile-bottombar-h: 64px;
+      }
+
+      /* ヘッダー固定 */
+      .header {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 1200;
+        background: var(--card-bg);
+      }
+
+      /* 1段目（ブランド行）は非表示 */
+      .header-row-1 {
+        display: none;
+      }
+
+      /* 2段目をTop Barとしてコンパクトに */
+      .header-row-2 {
+        padding: 0.35rem 0.5rem;
+        gap: 0.5rem;
+        align-items: center;
+      }
+
+      /* 本文が固定ヘッダーに潜り込まないように */
+      .app-wrapper {
+        padding-top: var(--mobile-topbar-h);
+      }
+
+      /* STT展開はheader-row-2がfixedでも見えるように */
+      #headerSttControls.expanded {
+        z-index: 1250;
+      }
+    }
+
+    /* ===== PR-2: Mobile Fixed Bottom Tab Bar (Task B) ===== */
+    @media (max-width: 767px) {
+      .main-tabs {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        bottom: env(safe-area-inset-bottom, 0);
+        z-index: 1200;
+        background: var(--card-bg);
+        border-top: var(--border-width) solid var(--border-color);
+        padding: 0.35rem 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.35rem);
+        display: flex;
+        justify-content: space-around;
+        gap: 0.5rem;
+      }
+
+      .main-tab {
+        flex: 1;
+        max-width: 240px;
+        text-align: center;
+        padding: 0.6rem 0.5rem;
+      }
+
+      .app-wrapper {
+        padding-bottom: calc(var(--mobile-bottombar-h) + env(safe-area-inset-bottom, 0px));
+      }
+
+      /* フッターがBottomバーと干渉するのでモバイルで非表示 */
+      footer {
+        display: none;
+      }
+    }
+
+    /* ===== PR-2: Scroll Header Shrink (Task C) ===== */
+    @media (max-width: 767px) {
+      body.is-scrolled .header-row-2 {
+        padding: 0.2rem 0.45rem;
+      }
+
+      /* チップ類の縮小 */
+      body.is-scrolled #sttStatusChip {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.45rem;
+      }
+
+      /* Moreボタンもコンパクトに */
+      body.is-scrolled .header-more-btn {
+        padding: 0.25rem 0.45rem;
+      }
+
+      /* 録音ボタンの縮小 */
+      body.is-scrolled .record-btn {
+        padding: 0.4rem 0.7rem;
+        font-size: 0.85rem;
+        min-height: 36px;
+      }
+
+      /* ステータスバッジの縮小 */
+      body.is-scrolled .status-badge {
+        font-size: 0.7rem;
+        padding: 0.15rem 0.4rem;
+      }
+
+      /* モードチップの縮小 */
+      body.is-scrolled .meeting-mode-chip {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.45rem;
+      }
+    }
+
+    /* ===== PR-2: Keyboard Avoidance (Task E) ===== */
+    @media (max-width: 767px) {
+      body.keyboard-open .main-tabs {
+        display: none;
+      }
+
+      body.keyboard-open .app-wrapper {
+        padding-bottom: 0;
+      }
+    }
+
+    /* ===== PR-3: エンプティステート (Empty State) ===== */
+    .empty-state {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 2rem 1rem;
+      min-height: 200px;
+    }
+
+    .empty-state-icon {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      opacity: 0.7;
+    }
+
+    .empty-state-title {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
+
+    .empty-state-desc {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      margin-bottom: 1.25rem;
+      max-width: 280px;
+      line-height: 1.5;
+    }
+
+    .empty-state .btn {
+      padding: 0.75rem 1.5rem;
+      font-size: 0.95rem;
+    }
+
+    /* 生成後は非表示 */
+    .empty-state.has-content {
+      display: none;
+    }
+
+    /* 再生成ボタン */
+    .regenerate-btn {
+      position: absolute;
+      top: 0.5rem;
+      right: 0.5rem;
+      padding: 0.4rem 0.6rem;
+      font-size: 0.75rem;
+      background: var(--surface-muted);
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--btn-radius, 6px);
+      cursor: pointer;
+      opacity: 0.7;
+      transition: opacity 0.15s;
+    }
+
+    .regenerate-btn:hover {
+      opacity: 1;
+    }
+
+    .tab-content {
+      position: relative;
+    }
+
+    /* ===== PR-3: 自由入力欄をタブ内に限定 (Task B) ===== */
+    /* AIパネル上部の自由質問フォームを非表示 */
+    .ai-section > .custom-question {
+      display: none;
+    }
+
+    /* AIパネル上部のメモ入力も非表示（タブ内のみ） */
+    .ai-section > .memo-input-section {
+      display: none !important;
+    }
+
+    /* Q&Aタブ内の質問フォーム */
+    .qa-input-section {
+      padding: 0.75rem;
+      background: var(--surface-muted);
+      border-radius: var(--radius);
+      margin-bottom: 0.75rem;
+    }
+
+    .qa-input-section textarea {
+      width: 100%;
+      min-height: 60px;
+      padding: 0.6rem;
+      border: var(--border-width) solid var(--border-color);
+      border-radius: var(--radius);
+      font-size: 0.9rem;
+      resize: vertical;
+      background: var(--card-bg);
+      color: var(--text);
+    }
+
+    .qa-input-section .qa-input-actions {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+      align-items: center;
+    }
+
+    .qa-input-section .qa-input-hint {
+      font-size: 0.7rem;
+      color: var(--muted);
+      margin-left: auto;
+    }
+
+    /* ===== PR-3: 会議モード時の2カラム幅拡大 (Task D) ===== */
+    body.meeting-mode .main-content {
+      max-width: 1600px;
+    }
+
+    /* ===== PR-3: ヘッダー統一感 (Task E) ===== */
+    :root {
+      --control-h: 42px;
+      --control-h-mobile: 38px;
+      --btn-radius: 6px; /* デフォルト（テーマで上書き） */
+    }
+
+    /* 共通コントロール高さ・角丸 */
+    .hdr-btn,
+    .header-record .record-btn,
+    .meeting-mode-chip,
+    .stt-status-chip,
+    .header-export .export-btn,
+    .header-more-btn,
+    .context-btn {
+      height: var(--control-h) !important;
+      min-height: var(--control-h);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: var(--btn-radius) !important;
+      padding-left: 0.75rem;
+      padding-right: 0.75rem;
+    }
+
+    /* ステータスバッジはボタンより少し小さく */
+    .header-record .status-badge {
+      height: calc(var(--control-h) - 8px) !important;
+      min-height: calc(var(--control-h) - 8px);
+      border-radius: var(--btn-radius) !important;
+    }
+
+    /* ヘッダーrow-2のアイテム整列 */
+    .header-row-2 {
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .header-record {
+      gap: 0.5rem;
+      align-items: center;
+    }
+
+    @media (max-width: 767px) {
+      .hdr-btn,
+      .header-record .record-btn,
+      .meeting-mode-chip,
+      .stt-status-chip,
+      .header-export .export-btn,
+      .header-more-btn,
+      .context-btn {
+        height: var(--control-h-mobile) !important;
+        min-height: var(--control-h-mobile);
+      }
+
+      .header-record .status-badge {
+        height: calc(var(--control-h-mobile) - 6px) !important;
+        min-height: calc(var(--control-h-mobile) - 6px);
+      }
+    }
   </style>
 </head>
 <body>
@@ -1058,8 +1636,8 @@
         </button>
         <div class="context-status" id="contextStatusBadge" style="display:none;" data-i18n="context.saved">会議情報を使用中</div>
         <!-- Enhancement バッジ（v3: Issue #14） -->
-        <div class="enhancement-badge" id="reasoningBoostBadge" style="display:none; background: var(--accent); color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">Boost ON</div>
-        <div class="enhancement-badge" id="nativeDocsBadge" style="display:none; background: #10b981; color: white; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; margin-left: 0.5rem;">Native Docs ON</div>
+        <div class="enhancement-badge boost" id="reasoningBoostBadge">Boost ON</div>
+        <div class="enhancement-badge native-docs" id="nativeDocsBadge">Native Docs ON</div>
       </div>
       <!-- STT Status Chip (clickable to expand settings) -->
       <button type="button" class="stt-status-chip" id="sttStatusChip" data-i18n-title="config.stt.clickToExpand" title="クリックで設定を展開">
@@ -1090,6 +1668,25 @@
         <button class="btn btn-secondary export-btn" id="openExportBtn" title="エクスポート">
           <span>📥</span>
           <span class="export-btn-text" data-i18n="common.export">Export</span>
+        </button>
+      </div>
+      <!-- More Menu (Mobile) -->
+      <button type="button" class="header-more-btn" id="headerMoreBtn" aria-expanded="false">
+        <span>⋯</span>
+        <span data-i18n="app.header.more">その他</span>
+      </button>
+      <div class="header-more-menu" id="headerMoreMenu">
+        <button type="button" class="header-more-menu-item" data-action="context">
+          📝 <span data-i18n="context.trigger">会議情報を入力</span>
+        </button>
+        <button type="button" class="header-more-menu-item" data-action="export">
+          📥 <span data-i18n="common.export">エクスポート</span>
+        </button>
+        <button type="button" class="header-more-menu-item" data-action="history">
+          📚 <span data-i18n="history.open">履歴</span>
+        </button>
+        <button type="button" class="header-more-menu-item" data-action="settings">
+          ⚙️ <span data-i18n="common.settings">設定</span>
         </button>
       </div>
     </div>
@@ -1280,46 +1877,70 @@
         <span class="panel-title">💬 <span data-i18n="app.panel.aiResponse">AI回答</span></span>
         <span class="llm-indicator" id="llmIndicator" title="使用中のLLM">🤖 未設定</span>
       </div>
-      
-      <div class="ai-section" style="padding: 1rem; padding-bottom: 0;">
-        <div class="ai-buttons">
-          <button class="btn btn-primary ask-ai-btn" data-ai-type="summary">📋 <span data-i18n="app.ai.summary">要約</span></button>
-          <button class="btn ask-ai-btn" data-ai-type="consult">💭 <span data-i18n="app.ai.consult">相談</span></button>
-          <button class="btn ask-ai-btn" id="addMemoBtn">📝 <span data-i18n="app.ai.memo">メモ</span></button>
-          <button class="btn ask-ai-btn" data-ai-type="minutes" id="minutesBtn" disabled data-i18n-title="toast.qa.minutesAfterStop">📄 <span data-i18n="app.ai.minutes">議事録</span></button>
-        </div>
-        <div class="custom-question">
-          <textarea id="customQuestion" data-i18n-placeholder="app.ai.customPlaceholder" placeholder="自由に質問...（文字起こしをコピペして該当箇所を聞くことも可能）" rows="2"></textarea>
-          <button type="button" class="btn btn-primary" id="askCustomBtn" data-i18n="common.send">送信</button>
-        </div>
-        <div class="memo-input-section" id="memoInputSection" style="display:none;">
-          <div class="memo-input-row">
-            <textarea id="memoInput" rows="2" data-i18n-placeholder="app.ai.memoPlaceholder" placeholder="メモを追加...（選択テキストがあれば引用付き）"></textarea>
-            <button type="button" class="btn btn-primary" id="submitMemoBtn">📝</button>
-          </div>
-        </div>
+
+      <!-- 非表示の互換用要素（既存JSとの互換性維持） -->
+      <div style="display:none;">
+        <textarea id="customQuestion"></textarea>
+        <button id="askCustomBtn"></button>
+        <div id="memoInputSection"><textarea id="memoInput"></textarea><button id="submitMemoBtn"></button></div>
       </div>
 
       <div class="tabs">
-        <button class="tab active" data-tab="summary" data-i18n="app.ai.summary">要約</button>
-        <button class="tab" data-tab="consult" data-i18n="app.ai.consult">相談</button>
-        <button class="tab" data-tab="minutes" data-i18n="app.ai.minutes">議事録</button>
-        <button class="tab" data-tab="custom" data-i18n="app.ai.qa">Q&A</button>
-        <button class="tab" data-tab="timeline" data-i18n="app.ai.timeline">タイムライン</button>
+        <button class="tab active" data-tab="summary"><span data-i18n="app.ai.tabs.summary">要約</span></button>
+        <button class="tab" data-tab="consult"><span data-i18n="app.ai.tabs.consult">相談</span></button>
+        <button class="tab" data-tab="custom"><span data-i18n="app.ai.tabs.qa">Q&A</span></button>
+        <button class="tab" data-tab="memo"><span data-i18n="app.ai.tabs.memo">メモ</span></button>
+        <button class="tab" data-tab="timeline"><span data-i18n="app.ai.tabs.timeline">タイムライン</span></button>
+        <button class="tab" data-tab="minutes"><span data-i18n="app.ai.tabs.minutes">議事録</span></button>
       </div>
 
       <div class="tab-content active" id="tab-summary">
+        <button class="regenerate-btn" id="regenerateSummaryBtn" style="display:none;" data-ai-type="summary" title="再生成">↻ <span data-i18n="app.ai.regenerate">再生成</span></button>
+        <div class="empty-state" id="emptySummary">
+          <div class="empty-state-icon">📋</div>
+          <div class="empty-state-title" data-i18n="app.ai.empty.summaryTitle">まだ要約がありません</div>
+          <div class="empty-state-desc" data-i18n="app.ai.empty.summaryDesc">現在までの会話内容から要約を作成します</div>
+          <button class="btn btn-primary" id="tabSummaryBtn" data-ai-type="summary">📋 <span data-i18n="app.ai.generateSummary">要約を生成</span></button>
+        </div>
         <div class="ai-response" id="response-summary"></div>
       </div>
       <div class="tab-content" id="tab-consult">
+        <button class="regenerate-btn" id="regenerateConsultBtn" style="display:none;" data-ai-type="consult" title="再生成">↻ <span data-i18n="app.ai.regenerate">再生成</span></button>
+        <div class="empty-state" id="emptyConsult">
+          <div class="empty-state-icon">💭</div>
+          <div class="empty-state-title" data-i18n="app.ai.empty.consultTitle">AIに相談する</div>
+          <div class="empty-state-desc" data-i18n="app.ai.empty.consultDesc">会議の内容についてAIにアドバイスを求めます</div>
+          <button class="btn btn-primary" id="tabConsultBtn" data-ai-type="consult">💭 <span data-i18n="app.ai.generateConsult">相談を生成</span></button>
+        </div>
         <div class="ai-response" id="response-consult"></div>
       </div>
-      <div class="tab-content" id="tab-minutes">
-        <div class="ai-response" id="response-minutes">
-          <p class="placeholder-text" data-i18n="app.aiResponse.minutesPlaceholder">録音停止後に「📄 議事録」ボタンを押すと、構造化された議事録が生成されます。</p>
+      <div class="tab-content" id="tab-memo">
+        <div class="memo-input-section" style="display: block; border-top: none; margin-top: 0; padding-top: 0;">
+          <div class="memo-input-row">
+            <textarea id="memoInputInTab" rows="3" data-i18n-placeholder="app.ai.memoPlaceholder" placeholder="メモを追加...（選択テキストがあれば引用付き）"></textarea>
+            <button type="button" class="btn btn-primary" id="submitMemoInTabBtn" data-i18n="common.send">追加</button>
+          </div>
         </div>
+        <div id="memoListInTab" class="timeline-list"></div>
+      </div>
+      <div class="tab-content" id="tab-minutes">
+        <button class="regenerate-btn" id="regenerateMinutesBtn" style="display:none;" data-ai-type="minutes" title="再生成">↻ <span data-i18n="app.ai.regenerate">再生成</span></button>
+        <div class="empty-state" id="emptyMinutes">
+          <div class="empty-state-icon">📄</div>
+          <div class="empty-state-title" data-i18n="app.ai.empty.minutesTitle">議事録を作成</div>
+          <div class="empty-state-desc" data-i18n="app.ai.empty.minutesDesc">フォーマットに沿って議事録を出力します。録音停止後に生成できます。</div>
+          <button class="btn btn-primary" id="tabMinutesBtn" data-ai-type="minutes" disabled data-i18n-title="toast.qa.minutesAfterStop">📄 <span data-i18n="app.ai.generateMinutes">議事録を生成</span></button>
+        </div>
+        <div class="ai-response" id="response-minutes"></div>
       </div>
       <div class="tab-content" id="tab-custom">
+        <div class="qa-input-section">
+          <textarea id="qaInputInTab" data-i18n-placeholder="app.ai.customPlaceholder" placeholder="自由に質問...（文字起こしをコピペして該当箇所を聞くことも可能）" rows="3"></textarea>
+          <div class="qa-input-actions">
+            <button type="button" class="btn btn-primary" id="qaSubmitInTabBtn" data-i18n="common.send">送信</button>
+            <span class="qa-input-hint">Ctrl+Enter / Cmd+Enter</span>
+          </div>
+        </div>
         <div id="qa-history"></div>
       </div>
       <div class="tab-content" id="tab-timeline">
@@ -1426,7 +2047,7 @@
           <div class="welcome-features">
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🎤</span>
-              <span class="welcome-feature-text" data-i18n="modal.welcome.feature1">高精度な音声文字起こし（OpenAI Whisper）</span>
+              <span class="welcome-feature-text" data-i18n="modal.welcome.feature1">高精度な音声文字起こし（OpenAI Whisper / Deepgram）</span>
             </div>
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🧠</span>

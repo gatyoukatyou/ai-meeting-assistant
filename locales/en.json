@@ -23,7 +23,8 @@
     "header": {
       "title": "AI Meeting Assistant",
       "settings": "Settings",
-      "detailSettings": "Details"
+      "detailSettings": "Details",
+      "more": "More"
     },
     "recording": {
       "start": "Start Recording",
@@ -56,7 +57,35 @@
       "minutes": "Minutes",
       "qa": "Q&A",
       "customPlaceholder": "Ask a question... (You can also paste transcript excerpts)",
-      "send": "Send"
+      "send": "Send",
+      "doSummary": "Summarize",
+      "doConsult": "Consult AI",
+      "doMinutes": "Create Minutes",
+      "generateSummary": "Generate Summary",
+      "generateConsult": "Generate Consultation",
+      "generateMinutes": "Generate Minutes",
+      "hints": {
+        "summary": "Summarize current transcript",
+        "consult": "Ask AI for discussion advice",
+        "minutes": "Available after stopping recording"
+      },
+      "empty": {
+        "summaryTitle": "No summary yet",
+        "summaryDesc": "Create a summary from the current conversation",
+        "consultTitle": "Consult with AI",
+        "consultDesc": "Ask AI for advice about the meeting content",
+        "minutesTitle": "Create Minutes",
+        "minutesDesc": "Output formatted meeting minutes. Available after stopping recording."
+      },
+      "regenerate": "Regenerate",
+      "tabs": {
+        "summary": "Summary",
+        "consult": "Consult",
+        "memo": "Memo",
+        "minutes": "Minutes",
+        "qa": "Q&A",
+        "timeline": "Timeline"
+      }
     },
     "timeline": {
       "filterAll": "All",
@@ -152,8 +181,8 @@
       "httpsOnly": "Only sent via HTTPS during API calls",
       "isolated": "Inaccessible from other websites",
       "exportable": "Import/export settings supported",
-      "clientWarningTitle": "Client-Side API Warning",
-      "clientWarningText": "This app calls APIs directly from your browser. API keys are exposed in client-side code. For personal use and self-responsibility only. Not recommended for public/production deployments."
+      "clientWarningTitle": "API Key Handling Notice",
+      "clientWarningText": "This app calls APIs directly from your browser. Avoid using on shared or public computers. Enable device lock and user separation. Consider \"Don't save keys\" option if concerned."
     },
     "storage": {
       "migrationTitle": "API Key Storage Update",
@@ -440,7 +469,7 @@
     "welcome": {
       "title": "Welcome to AI Meeting Assistant",
       "description": "AI participates in your meetings in real-time, providing transcription, summaries, opinions, and ideas.",
-      "feature1": "High-precision voice transcription (OpenAI Whisper)",
+      "feature1": "High-precision voice transcription (OpenAI Whisper / Deepgram)",
       "feature2": "Support for multiple AI models",
       "feature3": "API keys obfuscated and stored locally",
       "feature4": "Real-time display of estimated usage costs",
@@ -486,6 +515,7 @@
     "switchToDark": "Switch to dark mode",
     "brutalism": "📦 Brutalism",
     "paper": "📄 Paper",
+    "clean": "🧹 Clean",
     "sky": "Sky",
     "indigo": "Indigo",
     "emerald": "Emerald",
