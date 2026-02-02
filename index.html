@@ -1214,22 +1214,10 @@
         display: none !important;
       }
 
-      /* STTステータスチップは維持（省スペース表示） */
-      #sttStatusChip {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-      }
-
-      /* 展開時のSTT設定も圧縮 */
-      #headerSttControls.expanded {
-        flex-wrap: wrap;
-        gap: 0.5rem;
-      }
-
-      #headerSttControls select {
-        font-size: 0.75rem;
-        padding: 0.3rem 0.4rem;
-        min-width: 70px;
+      /* #74: mobile header compact - hide STT chip & expanded controls */
+      #sttStatusChip,
+      #headerSttControls {
+        display: none !important;
       }
 
       /* ===== ボタンラベルを隠してアイコンのみ（1行成立） ===== */
