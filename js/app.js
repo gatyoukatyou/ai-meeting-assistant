@@ -3714,11 +3714,40 @@ function updateMeetingModeTime() {
 
 function clearTranscript() {
   if (confirm(t('app.transcript.clearConfirm'))) {
+    // 文字起こしをクリア
     fullTranscript = '';
     transcriptChunks = [];
     chunkIdCounter = 0;
     meetingStartMarkerId = null;
     renderTranscriptChunks();
+
+    // 会議タイトルをクリア (#55, #52)
+    localStorage.removeItem(MEETING_TITLE_STORAGE_KEY);
+    const meetingTitleInput = document.getElementById('meetingTitleInput');
+    if (meetingTitleInput) {
+      meetingTitleInput.value = '';
+    }
+
+    // AI応答をリセット
+    aiResponses = { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [] };
+
+    // AI応答UIをクリアし、empty-stateを再表示
+    ['summary', 'consult', 'minutes'].forEach(type => {
+      const responseEl = document.getElementById(`response-${type}`);
+      if (responseEl) responseEl.innerHTML = '';
+
+      const emptyStateMap = { summary: 'emptySummary', consult: 'emptyConsult', minutes: 'emptyMinutes' };
+      const emptyEl = document.getElementById(emptyStateMap[type]);
+      if (emptyEl) emptyEl.style.display = '';
+
+      const regenMap = { summary: 'regenerateSummaryBtn', consult: 'regenerateConsultBtn', minutes: 'regenerateMinutesBtn' };
+      const regenBtn = document.getElementById(regenMap[type]);
+      if (regenBtn) regenBtn.style.display = 'none';
+    });
+
+    // カスタムQ&Aもクリア
+    const customResponseEl = document.getElementById('response-custom');
+    if (customResponseEl) customResponseEl.innerHTML = '';
   }
 }
 
