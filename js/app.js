@@ -1177,31 +1177,41 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Phase 3: メインパネル切り替えタブ（スマホ用）
   // イベント委譲 + closest() で内側のSPANタップにも対応（iOS Safari対策）
   const mainTabsBar = document.querySelector('.main-tabs');
+  const isDebug = window.location.search.includes('debug');
+  if (isDebug) showToast(`[DEBUG] mainTabsBar: ${mainTabsBar ? 'found' : 'NULL'}`, 'info');
+
   if (mainTabsBar) {
     let lastMainTabActivateAt = 0;
 
     const onMainTabActivate = (e) => {
+      if (isDebug) showToast(`[DEBUG] event: ${e.type}`, 'info');
+
       const now = Date.now();
-      if (now - lastMainTabActivateAt < 450) return; // 重複ガード
+      if (now - lastMainTabActivateAt < 450) {
+        if (isDebug) showToast('[DEBUG] blocked by guard', 'warning');
+        return;
+      }
 
       const t = e.target;
       const el = (t instanceof Element) ? t : t?.parentElement;
+      if (isDebug) showToast(`[DEBUG] el: ${el?.tagName}.${el?.className?.split?.(' ')?.[0]}`, 'info');
+
       const btn = el?.closest?.('button.main-tab[data-main-tab]');
-      if (!btn) return;
+      if (!btn) {
+        if (isDebug) showToast('[DEBUG] btn not found!', 'error');
+        return;
+      }
 
       lastMainTabActivateAt = now;
       e.preventDefault?.();
 
       const tabName = btn.getAttribute('data-main-tab');
-      if (!tabName) return;
-
-      try {
-        switchMainTab(tabName);
-      } catch (err) {
-        if (window.location.search.includes('debug')) {
-          console.error('[main-tabs] switchMainTab failed', err);
-        }
+      if (!tabName) {
+        if (isDebug) showToast('[DEBUG] no tabName', 'error');
+        return;
       }
+
+      switchMainTab(tabName);
     };
 
     // click は常に bind（iOS で pointerup が死ぬケース対策）
