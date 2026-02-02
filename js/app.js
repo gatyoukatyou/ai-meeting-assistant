@@ -1175,14 +1175,26 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   // Phase 3: メインパネル切り替えタブ（スマホ用）
-  document.querySelectorAll('.main-tab[data-main-tab]').forEach(tab => {
-    tab.addEventListener('click', () => {
-      const tabName = tab.getAttribute('data-main-tab');
+  // イベント委譲 + closest() で内側のSPANタップにも対応（iOS Safari対策）
+  const mainTabsBar = document.querySelector('.main-tabs');
+  if (mainTabsBar) {
+    const onMainTabActivate = (e) => {
+      const btn = e.target?.closest?.('.main-tab');
+      if (!btn) return;
+      e.preventDefault();
+      const tabName = btn.dataset.mainTab;
       if (tabName) {
         switchMainTab(tabName);
       }
-    });
-  });
+    };
+    // PointerEvent対応なら pointerup のみ、なければ click + touchend
+    if (window.PointerEvent) {
+      mainTabsBar.addEventListener('pointerup', onMainTabActivate);
+    } else {
+      mainTabsBar.addEventListener('click', onMainTabActivate);
+      mainTabsBar.addEventListener('touchend', onMainTabActivate, { passive: false });
+    }
+  }
 
   // Phase 5: 会議中モード
   const meetingModeToggle = document.getElementById('meetingModeToggle');
