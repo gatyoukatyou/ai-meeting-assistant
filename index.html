@@ -1425,6 +1425,14 @@
         pointer-events: none;
       }
 
+      /* パネル切り替え（スマホ用） */
+      .main-container .panel {
+        display: none;
+      }
+      .main-container .panel.active {
+        display: flex;
+      }
+
       .app-wrapper {
         padding-bottom: calc(var(--mobile-bottombar-h) + env(safe-area-inset-bottom, 0px));
       }
