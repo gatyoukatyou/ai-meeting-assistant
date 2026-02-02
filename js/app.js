@@ -717,15 +717,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // i18n初期化（言語切り替えに必要）
   await I18n.init();
+  SecureStorage.cleanupLegacy();
 
   // テーマトグルボタンの初期化
   if (window.AIMeetingTheme && document.getElementById('themeToggleBtn')) {
     window.AIMeetingTheme.bindThemeToggle(document.getElementById('themeToggleBtn'));
-  }
-
-  // Issue #41: API key storage migration check
-  if (SecureStorage.needsMigration()) {
-    showStorageMigrationModal();
   }
 
   // Issue #40: Setup error modal button handlers
@@ -4143,36 +4139,6 @@ function closeExportModal() {
 
 function closeWelcomeModal() {
   document.getElementById('welcomeModal').classList.remove('active');
-}
-
-// =====================================
-// Issue #41: API Key Storage Migration Modal
-// =====================================
-function showStorageMigrationModal() {
-  const modal = document.getElementById('storageMigrationModal');
-  if (!modal) return;
-
-  modal.style.display = 'flex';
-
-  // Bind buttons
-  const sessionBtn = document.getElementById('migrateToSessionBtn');
-  const persistBtn = document.getElementById('keepPersistentBtn');
-
-  if (sessionBtn) {
-    sessionBtn.onclick = function() {
-      SecureStorage.migrateToSessionStorage();
-      modal.style.display = 'none';
-      showToast(t('config.storage.sessionNotice') || 'Keys are now session-only', 'info');
-    };
-  }
-
-  if (persistBtn) {
-    persistBtn.onclick = function() {
-      SecureStorage.keepInLocalStorage();
-      modal.style.display = 'none';
-      showToast(t('common.save') || 'Settings saved', 'success');
-    };
-  }
 }
 
 // =====================================

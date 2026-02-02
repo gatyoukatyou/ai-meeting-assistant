@@ -508,13 +508,13 @@
           <span data-i18n="config.security.title">API Key Security</span>
         </div>
         <div class="security-notice-text" data-i18n="config.security.description">
-          API keys are obfuscated and stored in your browser's local storage. They are never sent to external servers.
+          API keys are stored only for the current session (cleared when the tab/browser closes). They are never sent to external servers.
         </div>
         <div class="security-features">
-          <div class="security-feature" data-i18n="config.security.encrypted">Obfuscated local storage (never stored in plaintext)</div>
+          <div class="security-feature" data-i18n="config.security.encrypted">Session-only storage (not persisted)</div>
           <div class="security-feature" data-i18n="config.security.httpsOnly">Sent via HTTPS only when calling APIs</div>
           <div class="security-feature" data-i18n="config.security.isolated">Inaccessible from other websites</div>
-          <div class="security-feature" data-i18n="config.security.exportable">Settings export/import supported</div>
+          <div class="security-feature" data-i18n="config.security.exportable">Settings export/import supported (API keys excluded)</div>
         </div>
       </div>
 
@@ -750,10 +750,10 @@
       <div class="security-options">
         <div class="security-options-title">🛡️ <span data-i18n="config.options.securityTitle">Security Options</span></div>
         <div class="checkbox-group">
-          <input type="checkbox" id="persistApiKeys">
-          <label for="persistApiKeys" data-i18n="config.storage.persistLabel">Persist API keys across sessions (not recommended)</label>
+          <input type="checkbox" id="persistApiKeys" disabled>
+          <label for="persistApiKeys" data-i18n="config.storage.persistLabel">API keys are session-only (cannot be persisted)</label>
         </div>
-        <div class="setting-hint" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0.5rem;" data-i18n="config.storage.persistWarning">Not recommended on shared devices. Keys remain in this browser.</div>
+        <div class="setting-hint" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0.5rem;" data-i18n="config.storage.persistWarning">Keys are cleared when the tab/browser closes. Export does not include API keys. Not shared across tabs.</div>
         <div class="checkbox-group">
           <input type="checkbox" id="clearOnClose">
           <label for="clearOnClose" data-i18n="config.options.clearOnClose">Auto-delete API keys when browser closes (for shared PCs)</label>

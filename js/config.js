@@ -33,6 +33,7 @@ const ALLOWED_STT_PROVIDERS = new Set([
 document.addEventListener('DOMContentLoaded', async function() {
   // i18n初期化（言語切り替えに必要）
   await I18n.init();
+  SecureStorage.cleanupLegacy();
 
   // テーマ選択の初期化
   if (window.AIMeetingTheme) {
@@ -211,7 +212,12 @@ function loadSavedSettings() {
   if (userDictEl) userDictEl.value = userDictionary;
 
   // オプション
-  document.getElementById('persistApiKeys').checked = SecureStorage.getOption('persistApiKeys', false);
+  const persistApiKeysEl = document.getElementById('persistApiKeys');
+  if (persistApiKeysEl) {
+    persistApiKeysEl.checked = false;
+    persistApiKeysEl.disabled = true;
+  }
+  SecureStorage.setOption('persistApiKeys', false);
   document.getElementById('clearOnClose').checked = SecureStorage.getOption('clearOnClose', false);
   const persistMeetingContextEl = document.getElementById('persistMeetingContext');
   if (persistMeetingContextEl) {
@@ -281,25 +287,7 @@ async function saveSettings() {
   if (userDictEl) SecureStorage.setOption('sttUserDictionary', userDictEl.value.trim());
 
   // オプションを保存
-  // Handle persistApiKeys toggle - migrate keys between storages if changed
-  const newPersistValue = document.getElementById('persistApiKeys').checked;
-  const oldPersistValue = SecureStorage.getOption('persistApiKeys', false);
-  if (newPersistValue !== oldPersistValue) {
-    // Migration needed
-    const providers = ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'];
-    const oldStorage = oldPersistValue ? localStorage : sessionStorage;
-    const newStorage = newPersistValue ? localStorage : sessionStorage;
-    providers.forEach(p => {
-      const key = `_ak_${p}`;
-      const val = oldStorage.getItem(key);
-      if (val) {
-        newStorage.setItem(key, val);
-        oldStorage.removeItem(key);
-      }
-    });
-    SecureStorage.setMigrationDone(); // Mark migration as done
-  }
-  SecureStorage.setOption('persistApiKeys', newPersistValue);
+  SecureStorage.setOption('persistApiKeys', false);
   SecureStorage.setOption('clearOnClose', document.getElementById('clearOnClose').checked);
   const persistMeetingContextEl = document.getElementById('persistMeetingContext');
   if (persistMeetingContextEl) {
@@ -519,11 +507,8 @@ async function validateApiKey(provider, key) {
 // 設定エクスポート
 // =====================================
 function exportSettings() {
-  const password = prompt(t('config.prompts.exportPassword'));
-  if (!password) return;
-
-  const encrypted = SecureStorage.exportAll(password);
-  const blob = new Blob([JSON.stringify({ data: encrypted, v: 2 })], { type: 'application/json' });
+  const data = SecureStorage.exportAll();
+  const blob = new Blob([JSON.stringify({ data: data, v: 3 })], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -545,10 +530,19 @@ function importSettings(event) {
   reader.onload = function(e) {
     try {
       const json = JSON.parse(e.target.result);
-      const password = prompt(t('config.prompts.importPassword'));
-      if (!password) return;
-
-      const success = SecureStorage.importAll(json.data, password);
+      if (!json || typeof json !== 'object') {
+        showError(t('config.messages.importInvalidFormat'));
+        return;
+      }
+      if (json.v === 2) {
+        showError(t('config.messages.importOldFormat'));
+        return;
+      }
+      if (json.v !== 3 || !('data' in json) || json.data == null) {
+        showError(t('config.messages.importInvalidFormat'));
+        return;
+      }
+      const success = SecureStorage.importAll(json.data);
       if (success) {
         showSuccess(t('config.messages.imported'));
         loadSavedSettings();

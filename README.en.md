@@ -23,7 +23,7 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - 📥 **Export to Markdown** – Save meeting content, AI responses, memos/TODOs
 - 🧠 **Richer meeting context** – Goals, participants, handoff notes, references
 - 📎 **Attachments & enhancements** – TXT/MD/PDF/DOCX/CSV + Native Docs/Thinking Boost
-- 🔒 **Local storage** – Obfuscated in-browser storage (session-only by default)
+- 🔒 **Session-only storage** – API keys live only in the current session (cleared when the tab/browser closes)
 - 🎨 **Theme/style switcher** – Light/Dark + 6 accents + Brutalism/Paper
 - 🗂️ **Meeting history** – Auto-save (up to 5), restore and MD import
 - 🎯 **Meeting mode** – Toggle focus view vs. edit mode
@@ -35,16 +35,13 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - This app's protection is **not perfect**
 - API key security **cannot be guaranteed** on shared or public PCs
 - Malware or browser extensions may still access your keys
-- **Manually delete** keys when done, or **enable auto-delete**
+- **Manually delete** keys when done, or **close the tab/browser**
 
 ### Protection Features
 
-- ✅ Keys are **obfuscated** (XOR + device-specific key) and stored only in your browser
-- ✅ **Session-only by default** (keys are cleared when you close the tab)
-- ✅ Optional **persistent storage** (not recommended on shared devices)
+- ✅ API keys are **session-only** (deleted when you close the tab/browser)
 - ✅ **Never sent** to external servers (direct API calls only)
-- ✅ Optional **auto-delete** when browser closes (for shared PCs)
-- ✅ **Backup/restore** functionality with password protection (XOR)
+- ✅ **Settings export/import** is available (API keys are excluded)
 
 See [Security Details](docs/SECURITY.md) for more information.
 
@@ -219,7 +216,7 @@ A: Transcription will still work. AI features (summary, consult, minutes, Q&A) w
 A: Audio and transcripts are sent only to your selected providers. Nothing is sent to the app developer.
 
 **Q: Is it dangerous if my API key leaks?**
-A: Yes. Others could use your key and charges would appear on your account. This app obfuscates keys in browser storage, but protection is not perfect. On shared PCs, enable "auto-delete" and manually delete keys when done.
+A: Yes. Others could use your key and charges would appear on your account. API keys are session-only and cleared when the tab/browser closes, but protection is still not perfect. On shared PCs, close the tab/browser and manually clear keys when done.
 
 **Q: What if I get an error?**
 A: Check that your API keys are correct and that you have available credits with the provider.
@@ -277,7 +274,7 @@ MIT License – Free to use and modify
 - Meeting/Edit mode toggle for focus view
 - Meeting context expansion (participants, handoff notes)
 - Attachments support PDF/DOCX/CSV + Native Docs/Thinking Boost toggles
-- API keys are session-only by default (optional persistence)
+- API keys are session-only (not persisted)
 
 - [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.3.0)
 - [Change Log](docs/CHANGELOG.md)
