@@ -6243,8 +6243,8 @@ function initQuickActionBar() {
     });
   });
 
-  // タブ内の生成ボタン
-  const tabActionButtons = document.querySelectorAll('.tab-action-bar .btn[data-ai-type]');
+  // タブ内の生成ボタン（empty-state内のボタン）
+  const tabActionButtons = document.querySelectorAll('.empty-state .btn[data-ai-type]');
   tabActionButtons.forEach(btn => {
     btn.addEventListener('click', () => {
       if (!getAvailableLlm()) {
