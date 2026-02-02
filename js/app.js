@@ -2534,9 +2534,19 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 
   for (let i = 0; i < maxRetries; i++) {
     try {
+      // AbortSignalがabortedの場合は即座にエラーを投げる (#50)
+      if (options.signal && options.signal.aborted) {
+        const err = new Error('Request aborted');
+        err.name = 'AbortError';
+        throw err;
+      }
       const response = await fetch(url, options);
       return response;
     } catch (error) {
+      // AbortErrorの場合はリトライせず即座に投げる (#50)
+      if (error.name === 'AbortError') {
+        throw error;
+      }
       lastError = error;
       console.warn(`API呼び出し失敗 (${i + 1}/${maxRetries}):`, error);
 
@@ -2565,7 +2575,7 @@ function normalizeGeminiModelId(model) {
 // =====================================
 // Gemini API呼び出しヘルパー（v1 → v1beta, header → query フォールバック）
 // =====================================
-async function callGeminiApi(model, apiKey, body) {
+async function callGeminiApi(model, apiKey, body, signal = null) {
   // Normalize model ID to prevent /models/models/... bug
   const normalizedModel = normalizeGeminiModelId(model);
 
@@ -2581,7 +2591,8 @@ async function callGeminiApi(model, apiKey, body) {
         const options = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body)
+          body: JSON.stringify(body),
+          signal: signal
         };
 
         if (authMethod === 'header') {
@@ -2792,14 +2803,16 @@ async function askAI(type) {
     responseEl.appendChild(document.createTextNode(' ' + t('common.generating')));
   }
 
-  // タイムアウト付きLLM呼び出し
+  // タイムアウト付きLLM呼び出し（AbortController使用 #50）
   const startTime = Date.now();
   let timeoutId = null;
+  const abortController = new AbortController();
 
   try {
-    const llmPromise = callLLM(provider, prompt);
+    const llmPromise = callLLM(provider, prompt, abortController.signal);
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
+        abortController.abort(); // リクエストを実際にキャンセル (#50)
         const err = new Error(t('error.api.timeout'));
         err.code = 'TIMEOUT';
         reject(err);
@@ -2909,7 +2922,8 @@ function disableAIButtons(disabled) {
 }
 
 // LLM呼び出し（フォールバック付き）
-async function callLLM(provider, prompt) {
+// signal: AbortSignal for cancellation (#50)
+async function callLLM(provider, prompt, signal = null) {
   // カスタムモデル > プリセット > デフォルトの優先順位
   var model = SecureStorage.getEffectiveModel(provider, getDefaultModel(provider));
   var apiKey = SecureStorage.getApiKey(provider);
@@ -2943,7 +2957,7 @@ async function callLLM(provider, prompt) {
   }
 
   try {
-    var result = await callLLMOnce(provider, model, prompt);
+    var result = await callLLMOnce(provider, model, prompt, signal);
 
     // Mark model as working on success
     if (window.ModelRegistry) {
@@ -2952,6 +2966,9 @@ async function callLLM(provider, prompt) {
 
     return result;
   } catch (e) {
+    // AbortErrorの場合はフォールバックせず即座に投げる (#50)
+    if (e.name === 'AbortError') throw e;
+
     // Classify error and update health
     if (window.ModelRegistry) {
       if (isModelNotFoundOrDeprecatedError(e)) {
@@ -2973,7 +2990,7 @@ async function callLLM(provider, prompt) {
         for (var i = 0; i < alternatives.length; i++) {
           var alt = alternatives[i];
           try {
-            var altResult = await callLLMOnce(provider, alt, prompt);
+            var altResult = await callLLMOnce(provider, alt, prompt, signal);
             // 成功したら設定を自動更新
             await autoUpdateSavedModel(provider, alt);
             showToast(
@@ -2985,6 +3002,8 @@ async function callLLM(provider, prompt) {
             }
             return altResult;
           } catch (altError) {
+            // AbortErrorの場合はフォールバックせず即座に投げる (#50)
+            if (altError.name === 'AbortError') throw altError;
             console.warn('[LLM] Alternative model also failed:', alt, altError.message);
             continue;
           }
@@ -3011,12 +3030,14 @@ async function callLLM(provider, prompt) {
 
     // 1回だけ再試行
     try {
-      var fbResult = await callLLMOnce(provider, fb, prompt);
+      var fbResult = await callLLMOnce(provider, fb, prompt, signal);
       if (window.ModelRegistry) {
         ModelRegistry.setModelHealth(provider, fb, 'working');
       }
       return fbResult;
     } catch (fbError) {
+      // AbortErrorの場合はフォールバックせず即座に投げる (#50)
+      if (fbError.name === 'AbortError') throw fbError;
       // フォールバックも失敗：元のエラー情報を保持してデバッグしやすくする
       console.error('[LLM] Both original and fallback failed', {
         provider: provider,
@@ -3051,7 +3072,8 @@ function isRateLimitOrServerError(error) {
 }
 
 // LLM呼び出し（1回のみ、フォールバックなし）
-async function callLLMOnce(provider, model, prompt) {
+// signal: AbortSignal for cancellation (#50)
+async function callLLMOnce(provider, model, prompt, signal = null) {
   var apiKey = SecureStorage.getApiKey(provider);
   var response, data, text;
   var inputTokens = 0, outputTokens = 0;
@@ -3092,13 +3114,15 @@ async function callLLMOnce(provider, model, prompt) {
         // Use callGeminiApi for v1 → v1beta, header → query fallback (P0-4)
         response = await callGeminiApi(model, apiKey, {
           contents: [{ parts: geminiParts }]
-        });
+        }, signal);
         data = await response.json();
         if (!response.ok) {
           var errMsg = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
           throw new Error(errMsg);
         }
       } catch (geminiErr) {
+        // AbortErrorの場合はそのまま投げる (#50)
+        if (geminiErr.name === 'AbortError') throw geminiErr;
         // Native Docsで失敗した場合はテキスト抽出にフォールバック
         if (usedNativeDocs) {
           console.warn('[LLM] Native Docs failed, falling back to text extraction:', geminiErr.message);
@@ -3106,7 +3130,7 @@ async function callLLMOnce(provider, model, prompt) {
           // テキストのみで再試行
           response = await callGeminiApi(model, apiKey, {
             contents: [{ parts: [{ text: prompt }] }]
-          });
+          }, signal);
           data = await response.json();
           if (!response.ok) {
             var errMsg2 = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
@@ -3144,7 +3168,8 @@ async function callLLMOnce(provider, model, prompt) {
           'anthropic-version': '2023-06-01',
           'anthropic-dangerous-direct-browser-access': 'true'
         },
-        body: JSON.stringify(claudePayload)
+        body: JSON.stringify(claudePayload),
+        signal: signal
       });
       data = await response.json();
       if (!response.ok) {
@@ -3180,7 +3205,8 @@ async function callLLMOnce(provider, model, prompt) {
         body: JSON.stringify({
           model: model,
           messages: [{ role: 'user', content: prompt }]
-        })
+        }),
+        signal: signal
       });
       data = await response.json();
       if (!response.ok) {
@@ -3203,7 +3229,8 @@ async function callLLMOnce(provider, model, prompt) {
         body: JSON.stringify({
           model: model,
           messages: [{ role: 'user', content: prompt }]
-        })
+        }),
+        signal: signal
       });
       data = await response.json();
       if (!response.ok) {
