@@ -1,6 +1,6 @@
 # セキュリティ / Security
 
-最終更新日 / Last Updated: 2026-01-10
+最終更新日 / Last Updated: 2026-02-02
 
 ---
 
@@ -12,7 +12,7 @@
 
 - 共有PC・公共PCではAPIキーの安全性を保証できません
 - マルウェアやブラウザ拡張機能による漏洩リスクは防げません
-- 保護は「難読化」であり、強力な暗号化ではありません
+- APIキーはセッション内のみ保持されますが、完璧な保護ではありません
 - APIキーの管理は、最終的にユーザー自身の責任です
 - 重要なAPIキーには、プロバイダー側で使用金額の上限を設定してください
 
@@ -30,7 +30,7 @@
 - 不要になったデータは履歴削除や設定のクリアで消去してください
 
 ### APIキーの扱い
-- APIキーはローカルストレージに難読化して保存されます
+- APIキーはセッション内のみ保持され、タブ/ブラウザを閉じると消えます
 - 開発者のサーバーに送信されることはありません
 - HTTPS通信のみを使用します
 
@@ -39,14 +39,14 @@
 | 脅威 | 保護状況 | 詳細 |
 |------|----------|------|
 | 他のWebサイトからのアクセス | ✅ 対応 | ブラウザが自動的にブロック |
-| 保存場所を直接閲覧 | ⚠️ 部分的 | 難読化されているが解読可能 |
+| 保存場所を直接閲覧 | ⚠️ 部分的 | セッション内のみだが、実行中は閲覧可能 |
 | 通信の盗聴 | ✅ 対応 | HTTPS暗号化で保護 |
-| 共用パソコンでの使用 | ⚠️ 部分的 | 自動削除オプションで軽減 |
+| 共用パソコンでの使用 | ⚠️ 部分的 | セッション内のみ。終了時はタブ/ブラウザを閉じる |
 | マルウェア・悪意ある拡張機能 | ❌ 非対応 | ブラウザ内データにアクセス可能 |
 
 ### ユーザーへの推奨事項
 - 信頼できる端末・ネットワークで利用してください
-- 共用PCでは「ブラウザを閉じたら削除」をONにしてください
+- 共用PCではタブ/ブラウザを閉じ、使い終わったら手動で削除してください
 - APIキーは定期的にローテーションしてください
 - 不要になったAPIキーは無効化してください
 
@@ -64,7 +64,7 @@
 
 - API key security cannot be guaranteed on shared or public PCs
 - Leakage risks from malware or browser extensions cannot be prevented
-- Protection uses obfuscation, not strong encryption
+- API keys are session-only, but protection is not perfect
 - API key management is ultimately the user's responsibility
 - Set spending limits with your API provider for important keys
 
@@ -82,7 +82,7 @@ The Application is designed to minimize security risks.
 - Remove data via history clear or settings reset when no longer needed
 
 ### Handling of API Keys
-- API keys are obfuscated and stored in browser local storage
+- API keys are session-only and cleared when the tab/browser closes
 - They are never transmitted to developer-controlled servers
 - All communication uses HTTPS
 
@@ -91,14 +91,14 @@ The Application is designed to minimize security risks.
 | Threat | Protection | Details |
 |--------|------------|---------|
 | Access from other websites | ✅ Protected | Blocked automatically by browser |
-| Direct storage inspection | ⚠️ Partial | Obfuscated but decodable |
+| Direct storage inspection | ⚠️ Partial | Session-only, but readable during an active session |
 | Network eavesdropping | ✅ Protected | HTTPS encryption |
-| Shared computer usage | ⚠️ Partial | Mitigated by auto-delete option |
+| Shared computer usage | ⚠️ Partial | Session-only. Close the tab/browser when done |
 | Malware / malicious extensions | ❌ Not protected | Can access browser data |
 
 ### Recommendations for Users
 - Use the Application on trusted devices and networks
-- Enable "Delete on browser close" on shared PCs
+- On shared PCs, close the tab/browser and manually clear keys when done
 - Rotate API keys regularly
 - Revoke unused or compromised API keys promptly
 

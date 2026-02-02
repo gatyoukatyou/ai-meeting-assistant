@@ -176,22 +176,17 @@
     "backToMain": "Back to main screen",
     "security": {
       "title": "API Key Security",
-      "description": "API keys are obfuscated within this app and stored in browser local storage. They are never sent to external servers.",
-      "encrypted": "Obfuscated local storage (never stored as plain text)",
+      "description": "API keys are stored only for the current session (cleared when the tab/browser closes). They are never sent to external servers.",
+      "encrypted": "Session-only storage (not persisted)",
       "httpsOnly": "Only sent via HTTPS during API calls",
       "isolated": "Inaccessible from other websites",
-      "exportable": "Import/export settings supported",
+      "exportable": "Import/export settings supported (API keys excluded)",
       "clientWarningTitle": "API Key Handling Notice",
-      "clientWarningText": "This app calls APIs directly from your browser. Avoid using on shared or public computers. Enable device lock and user separation. Consider \"Don't save keys\" option if concerned."
+      "clientWarningText": "This app calls APIs directly from your browser. Avoid using on shared or public computers. Enable device lock and user separation."
     },
     "storage": {
-      "migrationTitle": "API Key Storage Update",
-      "migrationBody": "For improved security, API keys are now session-only by default. How would you like to proceed?",
-      "sessionOnly": "Session only (Recommended)",
-      "persistKeys": "Save to device",
-      "persistLabel": "Persist API keys across sessions (not recommended)",
-      "persistWarning": "Not recommended on shared devices. Keys remain in this browser.",
-      "sessionNotice": "This key will be lost when you close the tab"
+      "persistLabel": "API keys are session-only (cannot be persisted)",
+      "persistWarning": "Keys are cleared when the tab/browser closes. Export does not include API keys. Not shared across tabs."
     },
     "stt": {
       "clickToExpand": "Click to expand settings",
@@ -302,17 +297,17 @@
     "messages": {
       "saved": "Settings saved. Return to the main screen to start using the app.",
       "migrated": "Old settings migrated. STT provider set to OpenAI Whisper.",
-      "exported": "Settings exported. Keep your password safe.",
+      "exported": "Settings exported. API keys are not included.",
       "imported": "Settings imported successfully.",
       "cleared": "Settings deleted.",
-      "importFailed": "Import failed. Please check your password.",
+      "importOldFormat": "Old export format (v2) is no longer supported. Please re-export using v3.",
+      "importInvalidFormat": "Invalid settings file format.",
+      "importFailed": "Import failed. Please check the file format.",
       "fileFailed": "Failed to read file.",
       "noApiKey": "API key is not entered.",
       "invalidApiKey": "API key is invalid. Please enter a correct key."
     },
     "prompts": {
-      "exportPassword": "Set a password for export (required for import):",
-      "importPassword": "Enter the import password:",
       "clearConfirm": "Delete all settings including API keys? This cannot be undone."
     }
   },
@@ -471,7 +466,7 @@
       "description": "AI participates in your meetings in real-time, providing transcription, summaries, opinions, and ideas.",
       "feature1": "High-precision voice transcription (OpenAI Whisper / Deepgram)",
       "feature2": "Support for multiple AI models",
-      "feature3": "API keys obfuscated and stored locally",
+      "feature3": "API keys are session-only and cleared on close",
       "feature4": "Real-time display of estimated usage costs",
       "terms": "By starting, you agree to the Terms of Service and Privacy Policy.",
       "skipButton": "Configure later",
