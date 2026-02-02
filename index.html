@@ -1418,6 +1418,19 @@
         max-width: 240px;
         text-align: center;
         padding: 0.6rem 0.5rem;
+        touch-action: manipulation;
+      }
+      /* 内側要素がタップターゲットを奪うのを防ぐ（iOS Safari対策） */
+      .main-tab * {
+        pointer-events: none;
+      }
+
+      /* パネル切り替え（スマホ用） */
+      .main-container .panel {
+        display: none;
+      }
+      .main-container .panel.active {
+        display: flex;
       }
 
       .app-wrapper {

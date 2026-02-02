@@ -1175,14 +1175,38 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   // Phase 3: メインパネル切り替えタブ（スマホ用）
-  document.querySelectorAll('.main-tab[data-main-tab]').forEach(tab => {
-    tab.addEventListener('click', () => {
-      const tabName = tab.getAttribute('data-main-tab');
+  // イベント委譲 + closest() で内側のSPANタップにも対応（iOS Safari対策）
+  const mainTabsBar = document.querySelector('.main-tabs');
+  if (mainTabsBar) {
+    let lastMainTabActivateAt = 0;
+
+    const onMainTabActivate = (e) => {
+      const now = Date.now();
+      if (now - lastMainTabActivateAt < 450) return; // 重複ガード
+
+      const t = e.target;
+      const el = (t instanceof Element) ? t : t?.parentElement;
+      const btn = el?.closest?.('button.main-tab[data-main-tab]');
+      if (!btn) return;
+
+      lastMainTabActivateAt = now;
+      e.preventDefault?.();
+
+      const tabName = btn.getAttribute('data-main-tab');
       if (tabName) {
         switchMainTab(tabName);
       }
-    });
-  });
+    };
+
+    // click は常に bind（iOS で pointerup が死ぬケース対策）
+    mainTabsBar.addEventListener('click', onMainTabActivate, true);
+    // touchend は iOS対策（passive:false + capture）
+    mainTabsBar.addEventListener('touchend', onMainTabActivate, { capture: true, passive: false });
+    // pointerup も併用（重複はタイムスタンプでガード）
+    if (window.PointerEvent) {
+      mainTabsBar.addEventListener('pointerup', onMainTabActivate, true);
+    }
+  }
 
   // Phase 5: 会議中モード
   const meetingModeToggle = document.getElementById('meetingModeToggle');
