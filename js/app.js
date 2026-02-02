@@ -3701,6 +3701,11 @@ function switchTab(tabName) {
 
 // Phase 3: メインパネル切り替え（スマホ用）
 function switchMainTab(tabName) {
+  // デバッグ: 関数が呼ばれたことを表示
+  if (window.location.search.includes('debug')) {
+    showToast(`[DEBUG] switchMainTab: ${tabName}`, 'info');
+  }
+
   // タブの切り替え
   document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
   document.querySelector(`.main-tab[data-main-tab="${tabName}"]`).classList.add('active');
