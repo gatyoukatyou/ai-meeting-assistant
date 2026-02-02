@@ -188,6 +188,11 @@
     html{color-scheme:light dark;}
 
     /* Phase 1: 100vh Fixed Layout */
+    :root { --app-h: 100vh; }
+    @supports (height: 100dvh) {
+      :root { --app-h: 100dvh; }
+    }
+
     html, body {
       height: 100vh;
       overflow: hidden;
@@ -207,7 +212,7 @@
     @media (max-width: 767px) {
       html, body {
         height: auto;
-        min-height: 100vh;
+        min-height: var(--app-h);
         overflow: auto;
       }
     }
@@ -222,7 +227,7 @@
     @media (max-width: 767px) {
       .app-wrapper {
         height: auto;
-        min-height: 100vh;
+        min-height: var(--app-h);
       }
     }
 
@@ -903,7 +908,7 @@
 
     /* ===== Mobile main tabs ===== */
     .main-tabs{ display:none; }
-    @media (max-width:1024px){
+    @media (min-width: 768px) and (max-width: 1024px){
       .main-tabs{
         display:flex;
         background:var(--card-bg);
@@ -1397,9 +1402,11 @@
         right: 0;
         bottom: 0;
         bottom: env(safe-area-inset-bottom, 0);
+        top: auto;
         z-index: 1200;
         background: var(--card-bg);
         border-top: var(--border-width) solid var(--border-color);
+        border-bottom: none;
         padding: 0.35rem 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.35rem);
         display: flex;
         justify-content: space-around;

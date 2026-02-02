@@ -6254,13 +6254,27 @@ function syncMobileBarHeights() {
 
   const header = document.querySelector('.header');
   const mainTabs = document.querySelector('.main-tabs');
+  const warnIfClamped = (target, raw, clamped, min, max) => {
+    if ((raw < min || raw > max) && window.location.search.includes('debug')) {
+      console.warn('[mobile-bars] suspicious height clamp', { target, raw, clamped });
+    }
+  };
+
   if (header) {
-    const h = Math.ceil(header.getBoundingClientRect().height);
-    document.documentElement.style.setProperty('--mobile-topbar-h', `${h}px`);
+    const raw = Math.ceil(header.getBoundingClientRect().height);
+    if (raw > 0) {
+      const clamped = Math.min(Math.max(raw, 44), 140);
+      warnIfClamped('top', raw, clamped, 44, 140);
+      document.documentElement.style.setProperty('--mobile-topbar-h', `${clamped}px`);
+    }
   }
   if (mainTabs) {
-    const h = Math.ceil(mainTabs.getBoundingClientRect().height);
-    document.documentElement.style.setProperty('--mobile-bottombar-h', `${h}px`);
+    const raw = Math.ceil(mainTabs.getBoundingClientRect().height);
+    if (raw > 0) {
+      const clamped = Math.min(Math.max(raw, 44), 140);
+      warnIfClamped('bottom', raw, clamped, 44, 140);
+      document.documentElement.style.setProperty('--mobile-bottombar-h', `${clamped}px`);
+    }
   }
 }
 
