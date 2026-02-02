@@ -1178,21 +1178,39 @@ document.addEventListener('DOMContentLoaded', async function() {
   // イベント委譲 + closest() で内側のSPANタップにも対応（iOS Safari対策）
   const mainTabsBar = document.querySelector('.main-tabs');
   if (mainTabsBar) {
+    let lastMainTabActivateAt = 0;
+
     const onMainTabActivate = (e) => {
-      const btn = e.target?.closest?.('.main-tab');
+      const now = Date.now();
+      if (now - lastMainTabActivateAt < 450) return; // 重複ガード
+
+      const t = e.target;
+      const el = (t instanceof Element) ? t : t?.parentElement;
+      const btn = el?.closest?.('button.main-tab[data-main-tab]');
       if (!btn) return;
-      e.preventDefault();
-      const tabName = btn.dataset.mainTab;
-      if (tabName) {
+
+      lastMainTabActivateAt = now;
+      e.preventDefault?.();
+
+      const tabName = btn.getAttribute('data-main-tab');
+      if (!tabName) return;
+
+      try {
         switchMainTab(tabName);
+      } catch (err) {
+        if (window.location.search.includes('debug')) {
+          console.error('[main-tabs] switchMainTab failed', err);
+        }
       }
     };
-    // PointerEvent対応なら pointerup のみ、なければ click + touchend
+
+    // click は常に bind（iOS で pointerup が死ぬケース対策）
+    mainTabsBar.addEventListener('click', onMainTabActivate, true);
+    // touchend は iOS対策（passive:false + capture）
+    mainTabsBar.addEventListener('touchend', onMainTabActivate, { capture: true, passive: false });
+    // pointerup も併用（重複はタイムスタンプでガード）
     if (window.PointerEvent) {
-      mainTabsBar.addEventListener('pointerup', onMainTabActivate);
-    } else {
-      mainTabsBar.addEventListener('click', onMainTabActivate);
-      mainTabsBar.addEventListener('touchend', onMainTabActivate, { passive: false });
+      mainTabsBar.addEventListener('pointerup', onMainTabActivate, true);
     }
   }
 
