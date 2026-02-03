@@ -278,19 +278,19 @@
       accentLight: '#ffedd5',
       accentMuted: '#fdba74'
     },
-    lime: {
-      nameKey: 'theme.lime',
-      accent: '#39ff14',
-      accentHover: '#32e612',
-      accentLight: '#ecfccb',
-      accentMuted: '#a3e635'
+    amber: {
+      nameKey: 'theme.amber',
+      accent: '#f59e0b',
+      accentHover: '#d97706',
+      accentLight: '#fffbeb',
+      accentMuted: '#fbbf24'
     },
-    cyan: {
-      nameKey: 'theme.cyan',
-      accent: '#00ffff',
-      accentHover: '#00e5e5',
-      accentLight: '#cffafe',
-      accentMuted: '#67e8f9'
+    terracotta: {
+      nameKey: 'theme.terracotta',
+      accent: '#c2410c',
+      accentHover: '#9a3412',
+      accentLight: '#fff7ed',
+      accentMuted: '#fdba74'
     },
     pink: {
       nameKey: 'theme.pink',
@@ -304,11 +304,27 @@
   var STORAGE_KEY = 'color_theme';
   var DEFAULT_COLOR_THEME = 'indigo';
 
-  function applyColorPalette(paletteName) {
-    var p = colorPalettes[paletteName];
-    if (!p) {
-      p = colorPalettes[DEFAULT_COLOR_THEME];
+  // Migration map for deprecated color themes
+  var COLOR_THEME_MIGRATION = {
+    lime: 'amber',
+    cyan: 'terracotta'
+  };
+
+  function normalizeColorTheme(value) {
+    // Migrate deprecated themes
+    if (COLOR_THEME_MIGRATION[value]) {
+      return COLOR_THEME_MIGRATION[value];
     }
+    // Return if valid, otherwise default
+    if (colorPalettes[value]) {
+      return value;
+    }
+    return DEFAULT_COLOR_THEME;
+  }
+
+  function applyColorPalette(paletteName) {
+    var normalized = normalizeColorTheme(paletteName);
+    var p = colorPalettes[normalized];
 
     var root = document.documentElement;
     root.style.setProperty('--accent', p.accent);
@@ -322,7 +338,13 @@
 
   function getSavedColorTheme() {
     try {
-      return localStorage.getItem(STORAGE_KEY) || DEFAULT_COLOR_THEME;
+      var raw = localStorage.getItem(STORAGE_KEY) || DEFAULT_COLOR_THEME;
+      var normalized = normalizeColorTheme(raw);
+      // Auto-migrate if value changed
+      if (raw !== normalized) {
+        saveColorTheme(normalized);
+      }
+      return normalized;
     } catch (e) {
       return DEFAULT_COLOR_THEME;
     }
