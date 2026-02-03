@@ -511,12 +511,16 @@
     "brutalism": "📦 Brutalism",
     "paper": "📄 Paper",
     "clean": "🧹 Clean",
+    "cli": "💻 CLI",
     "sky": "Sky",
     "indigo": "Indigo",
     "emerald": "Emerald",
     "violet": "Violet",
     "slate": "Slate",
-    "coral": "Coral"
+    "coral": "Coral",
+    "lime": "Lime",
+    "cyan": "Cyan",
+    "pink": "Pink"
   },
   "context": {
     "trigger": "Add meeting info",

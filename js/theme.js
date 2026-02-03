@@ -109,9 +109,9 @@
     }
   }
 
-  // ========== Style Switcher (Brutalism / Paper / Clean) ==========
+  // ========== Style Switcher (Brutalism / Paper / Clean / CLI) ==========
   function normalizeStyle(value) {
-    if (value === 'paper' || value === 'clean') return value;
+    if (value === 'paper' || value === 'clean' || value === 'cli') return value;
     return 'brutalism';
   }
 
@@ -277,6 +277,27 @@
       accentHover: '#ea580c',
       accentLight: '#ffedd5',
       accentMuted: '#fdba74'
+    },
+    lime: {
+      nameKey: 'theme.lime',
+      accent: '#39ff14',
+      accentHover: '#32e612',
+      accentLight: '#ecfccb',
+      accentMuted: '#a3e635'
+    },
+    cyan: {
+      nameKey: 'theme.cyan',
+      accent: '#00ffff',
+      accentHover: '#00e5e5',
+      accentLight: '#cffafe',
+      accentMuted: '#67e8f9'
+    },
+    pink: {
+      nameKey: 'theme.pink',
+      accent: '#ec4899',
+      accentHover: '#db2777',
+      accentLight: '#fce7f3',
+      accentMuted: '#f9a8d4'
     }
   };
 

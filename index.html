@@ -1282,9 +1282,10 @@
 
     /* ===== Clean Theme (Monochrome) ===== */
     html[data-style="clean"] {
+      /* Shape & shadow */
       --border-width: 1px;
       --radius: 6px;
-      --btn-radius: 6px; /* Clean: 微小な角丸 */
+      --btn-radius: 6px;
       --shadow: none;
       --shadow-hard: 0 1px 3px rgba(0,0,0,0.08);
       --shadow-hard-sm: 0 1px 2px rgba(0,0,0,0.05);
@@ -1293,6 +1294,37 @@
       --overlay-bg: rgba(0,0,0,0.62);
       --modal-bg: #ffffff;
       --modal-text: #1f2937;
+
+      /* Light mode colors (Notion-like) */
+      --bg: #ffffff;
+      --card-bg: #ffffff;
+      --text: #111827;
+      --text-secondary: #6b7280;
+      --primary: #111827;
+      --primary-hover: #374151;
+      --accent: #6b7280;
+      --border: var(--border-color);
+      --pattern-dot: transparent;
+      --pattern-image: none;
+      --surface-muted: #f9fafb;
+      --ai-response-bg: #f9fafb;
+      --cost-bg: #fef3c7;
+      --cost-text: #111827;
+      --accent-blue: #f3f4f6;
+      --accent-green: #f0fdf4;
+      --accent-border-blue: #e5e7eb;
+      --accent-border-green: #d1fae5;
+      --tab-strip-bg: transparent;
+      --tab-active-bg: var(--card-bg);
+      --btn-hover-bg: #f3f4f6;
+      --btn-hover-translate: 0px;
+      --btn-hover-shadow: none;
+      --toast-bg: var(--card-bg);
+      --meeting-mode-bg: linear-gradient(135deg, #111827 0%, #1f2937 100%);
+      --modal-header-bg: #111827;
+      --modal-close-color: #fff;
+      --font-body: var(--font-sans);
+      --textarea-font: var(--font-sans);
     }
 
     html[data-style="clean"] .btn {
@@ -1340,6 +1372,98 @@
       --overlay-bg:rgba(0,0,0,0.7);
       --meeting-mode-bg:linear-gradient(135deg, #0f172a 0%, #111827 100%);
       --focus-ring:0 0 0 3px rgba(129,140,248,.45);
+    }
+
+    /* ===== CLI Theme (Terminal/Hacker) ===== */
+    html[data-style="cli"] {
+      --bg: #0a0a0a;
+      --card-bg: #111111;
+      --text: #00ff00;
+      --text-secondary: #00cc00;
+      --primary: #00ff00;
+      --primary-hover: #00cc00;
+      --accent: #00ff00;
+      --border-color: #00ff00;
+      --border-width: 1px;
+      --border: var(--border-color);
+      --radius: 0;
+      --btn-radius: 0;
+      --shadow-hard: 0 0 10px rgba(0,255,0,0.3);
+      --shadow-hard-sm: 0 0 5px rgba(0,255,0,0.2);
+      --shadow-modal: 0 0 20px rgba(0,255,0,0.4);
+      --pattern-dot: rgba(0,255,0,0.05);
+      --pattern-image: radial-gradient(var(--pattern-dot) 1px, transparent 1px);
+      --surface-muted: #1a1a1a;
+      --ai-response-bg: #1a1a1a;
+      --cost-bg: #1a2a1a;
+      --cost-text: #00ff00;
+      --accent-blue: #0a1a0a;
+      --accent-green: #0a2a0a;
+      --accent-border-blue: #00aa00;
+      --accent-border-green: #00cc00;
+      --tab-strip-bg: var(--bg);
+      --tab-active-bg: var(--card-bg);
+      --btn-hover-bg: #1a1a1a;
+      --btn-hover-translate: 0px;
+      --btn-hover-shadow: 0 0 8px rgba(0,255,0,0.5);
+      --overlay-bg: rgba(0,0,0,0.85);
+      --toast-bg: var(--card-bg);
+      --meeting-mode-bg: linear-gradient(135deg, #000000 0%, #0a0a0a 100%);
+      --modal-bg: #111111;
+      --modal-text: #00ff00;
+      --modal-header-bg: #0a0a0a;
+      --modal-close-color: #00ff00;
+      --on-primary: #000000;
+      --font-body: var(--font-mono);
+      --textarea-font: var(--font-mono);
+      --focus-ring: 0 0 0 2px rgba(0,255,0,0.5);
+    }
+
+    /* CLI button styling */
+    html[data-style="cli"] .btn {
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    html[data-style="cli"] .btn-primary {
+      background: transparent;
+      color: var(--primary);
+      border-color: var(--primary);
+    }
+    html[data-style="cli"] .btn-primary:hover {
+      background: var(--primary);
+      color: #000;
+    }
+    html[data-style="cli"] .panel-header {
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    /* CLI: Dark mode override (keep same appearance - full variable set) */
+    html[data-style="cli"][data-display-theme="dark"] {
+      --bg: #0a0a0a;
+      --card-bg: #111111;
+      --text: #00ff00;
+      --text-secondary: #00cc00;
+      --primary: #00ff00;
+      --primary-hover: #00cc00;
+      --border-color: #00ff00;
+      --border: var(--border-color);
+      --surface-muted: #1a1a1a;
+      --ai-response-bg: #1a1a1a;
+      --cost-bg: #1a2a1a;
+      --cost-text: #00ff00;
+      --accent-blue: #0a1a0a;
+      --accent-green: #0a2a0a;
+      --accent-border-blue: #00aa00;
+      --accent-border-green: #00cc00;
+      --overlay-bg: rgba(0,0,0,0.85);
+      --toast-bg: var(--card-bg);
+      --meeting-mode-bg: linear-gradient(135deg, #000000 0%, #0a0a0a 100%);
+      --modal-bg: #111111;
+      --modal-text: #00ff00;
+      --modal-header-bg: #0a0a0a;
+      --modal-close-color: #00ff00;
+      --focus-ring: 0 0 0 2px rgba(0,255,0,0.5);
     }
 
     /* ===== PR-2: Mobile Fixed Top Bar (Task A) ===== */
