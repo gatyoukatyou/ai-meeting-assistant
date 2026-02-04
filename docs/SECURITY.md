@@ -105,3 +105,22 @@ The Application is designed to minimize security risks.
 ### Reporting Security Issues
 - General issues: [GitHub Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)
 - Serious vulnerabilities: [Security Advisories](https://github.com/gatyoukatyou/ai-meeting-assistant/security/advisories/new)
+
+---
+
+## CI Security Checks / CIセキュリティチェック
+
+### 自動チェック項目
+- **CodeQL**: JavaScript静的解析（脆弱性検出）
+- **gitleaks**: シークレット漏洩スキャン
+- **dependency-review**: 依存関係の脆弱性チェック（PR時）
+
+### ブランチ保護設定（管理者向け）
+
+1. Settings > Branches > Add branch protection rule
+2. Branch name pattern: `main`
+3. 以下を有効化:
+   - [x] Require status checks to pass before merging
+   - 必須チェック: `CodeQL Analysis`, `Secret Scanning`, `Dependency Review`, `lint`
+   - [x] Require branches to be up to date before merging
+4. Save changes
