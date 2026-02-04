@@ -3403,7 +3403,7 @@ function updateUI() {
 
   if (isRecording) {
     // Update button label via inner span (preserves data-i18n)
-    updateLabelSpan(btn, 'app.recording.stop', '⏹ ');
+    updateLabelSpan(btn, 'app.recording.rec', '🔴 ');
     btn.classList.remove('btn-primary');
     btn.classList.add('btn-danger');
     if (pauseBtn) {

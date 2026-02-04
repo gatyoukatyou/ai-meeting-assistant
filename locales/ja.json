@@ -29,6 +29,7 @@
     "recording": {
       "start": "録音開始",
       "stop": "録音停止",
+      "rec": "REC",
       "pause": "一時停止",
       "resume": "再開",
       "statusReady": "待機中",

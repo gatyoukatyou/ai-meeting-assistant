@@ -1556,13 +1556,13 @@
 
       .main-tab {
         flex: 1;
-        max-width: 280px;
+        max-width: 200px;
         text-align: center;
-        min-height: 48px;
-        padding: 0.75rem 1.25rem;
-        font-size: 1rem;
+        min-height: 40px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
         font-weight: 600;
-        border-radius: 10px;
+        border-radius: 8px;
         touch-action: manipulation;
         background: var(--primary);
         color: var(--on-primary);
@@ -1823,6 +1823,57 @@
         min-height: calc(var(--control-h-mobile) - 6px);
       }
     }
+
+    /* ===== Mobile Header Simplification ===== */
+    @media (max-width: 767px) {
+      /* 不要な要素を非表示 */
+      .header-record .status-badge,
+      .header-record .context-btn,
+      .header-record .context-status,
+      .header-record .enhancement-badge,
+      #sttStatusChip,
+      #headerSttControls,
+      .header-export {
+        display: none !important;
+      }
+
+      /* ヘッダー2行目を3ボタン専用レイアウトに */
+      .header-row-2 {
+        display: flex;
+        justify-content: center;
+        padding: 0.5rem 0.75rem !important;
+        gap: 0.5rem;
+      }
+
+      .header-record {
+        display: flex;
+        flex: 1;
+        gap: 0.5rem;
+        max-width: 100%;
+      }
+
+      /* 録音・一時停止・その他ボタンを大きく */
+      .header-record .record-btn,
+      .header-more-btn {
+        flex: 1;
+        height: 48px !important;
+        min-height: 48px !important;
+        font-size: 1rem !important;
+        font-weight: 600;
+        padding: 0.5rem 0.75rem !important;
+        border-radius: 10px !important;
+      }
+
+      /* 録音ボタンのラベル表示 */
+      .header-record .record-btn .btn-label {
+        display: inline !important;
+      }
+
+      /* その他ボタンのテキスト表示 */
+      .header-more-btn .more-text {
+        display: inline !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1856,7 +1907,7 @@
     <div class="header-row-2">
       <div class="header-record">
         <button type="button" class="btn btn-primary record-btn" id="recordBtn">
-          <span class="btn-icon">🎤</span>
+          <span class="btn-icon">🎙️</span>
           <span class="btn-label" data-i18n="app.recording.start">録音開始</span>
         </button>
         <button type="button" class="btn btn-secondary record-btn" id="pauseBtn" style="display: none;">

@@ -29,6 +29,7 @@
     "recording": {
       "start": "Start Recording",
       "stop": "Stop Recording",
+      "rec": "REC",
       "pause": "Pause",
       "resume": "Resume",
       "statusReady": "Ready",
