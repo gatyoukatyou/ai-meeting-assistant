@@ -1036,22 +1036,10 @@
     }
     .meeting-mode-exit-btn:hover{ background:rgba(255,255,255,.2); }
     .meeting-mode-toggle{ display:none; }
+    /* モバイルでは会議モード切替を非表示（下部タブで代用） */
     @media (max-width: 767px){
-      .meeting-mode-toggle{
-        display:inline-flex;
-        position:fixed;
-        bottom:6rem;
-        left:50%;
-        transform:translateX(-50%);
-        z-index:1400;
-        padding:.625rem 1.25rem;
-        font-size:.8rem;
-        background:rgba(255,255,255,.9);
-        color:var(--text);
-        border:var(--border-width) solid var(--border-color);
-        border-radius:999px;
-        box-shadow:var(--shadow-hard-sm);
-      }
+      .meeting-mode-toggle{ display:none !important; }
+      #meetingModeChip{ display:none !important; }
     }
 
     /* ===== Toasts ===== */
