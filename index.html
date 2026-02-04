@@ -1560,7 +1560,7 @@
         background: var(--card-bg);
         border-top: var(--border-width) solid var(--border-color);
         border-bottom: none;
-        padding: 0.5rem 0.75rem calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
+        padding: 0.65rem 1rem calc(env(safe-area-inset-bottom, 0px) + 0.65rem);
         display: flex;
         justify-content: center;
         gap: 0.75rem;
@@ -1570,12 +1570,25 @@
         flex: 1;
         max-width: 280px;
         text-align: center;
-        min-height: 52px;
-        padding: 0.85rem 1.25rem;
-        font-size: 1.05rem;
-        font-weight: 500;
-        border-radius: 999px;
+        min-height: 72px;
+        padding: 1.25rem 1.5rem;
+        font-size: 1.15rem;
+        font-weight: 600;
+        border-radius: 14px;
         touch-action: manipulation;
+        background: var(--primary);
+        color: var(--on-primary);
+        border: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        transition: transform 0.1s, box-shadow 0.1s;
+      }
+      .main-tab:active {
+        transform: scale(0.97);
+        box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      }
+      .main-tab.active {
+        background: var(--primary-hover);
+        box-shadow: 0 2px 12px rgba(0,0,0,0.2);
       }
       /* 内側要素がタップターゲットを奪うのを防ぐ（iOS Safari対策） */
       .main-tab * {
