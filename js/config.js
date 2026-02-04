@@ -66,7 +66,6 @@ const ALLOWED_STT_PROVIDERS = new Set([
 document.addEventListener('DOMContentLoaded', async function() {
   // i18n初期化（言語切り替えに必要）
   await I18n.init();
-  SecureStorage.cleanupLegacy();
 
   // テーマ選択の初期化
   if (window.AIMeetingTheme) {

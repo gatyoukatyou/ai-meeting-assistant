@@ -1036,22 +1036,10 @@
     }
     .meeting-mode-exit-btn:hover{ background:rgba(255,255,255,.2); }
     .meeting-mode-toggle{ display:none; }
+    /* モバイルでは会議モード切替を非表示（下部タブで代用） */
     @media (max-width: 767px){
-      .meeting-mode-toggle.visible{
-        display:inline-flex;
-        position:fixed;
-        bottom:6rem;
-        left:50%;
-        transform:translateX(-50%);
-        z-index:1400;
-        padding:.625rem 1.25rem;
-        font-size:.8rem;
-        background:rgba(255,255,255,.9);
-        color:var(--text);
-        border:var(--border-width) solid var(--border-color);
-        border-radius:999px;
-        box-shadow:var(--shadow-hard-sm);
-      }
+      .meeting-mode-toggle{ display:none !important; }
+      #meetingModeChip{ display:none !important; }
     }
 
     /* ===== Toasts ===== */
@@ -1446,6 +1434,22 @@
       letter-spacing: 0.1em;
     }
 
+    /* CLI: Mobile bottom tabs - outline style */
+    @media (max-width: 767px) {
+      html[data-style="cli"] .main-tab {
+        background: var(--card-bg);
+        color: var(--primary);
+        border: 2px solid var(--primary);
+      }
+      html[data-style="cli"] .main-tab:active {
+        background: var(--surface-muted);
+      }
+      html[data-style="cli"] .main-tab.active {
+        background: var(--surface-muted);
+        border-color: var(--primary-hover);
+      }
+    }
+
     /* CLI: Dark mode override (chic emerald - same as base) */
     html[data-style="cli"][data-display-theme="dark"] {
       --bg: #0b0f0e;
@@ -1560,18 +1564,35 @@
         background: var(--card-bg);
         border-top: var(--border-width) solid var(--border-color);
         border-bottom: none;
-        padding: 0.35rem 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.35rem);
+        padding: 0.5rem 0.75rem calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
         display: flex;
-        justify-content: space-around;
-        gap: 0.5rem;
+        justify-content: center;
+        gap: 0.75rem;
       }
 
       .main-tab {
         flex: 1;
-        max-width: 240px;
+        max-width: 200px;
         text-align: center;
-        padding: 0.6rem 0.5rem;
+        min-height: 40px;
+        padding: 0.5rem 1rem;
+        font-size: 0.9rem;
+        font-weight: 600;
+        border-radius: 8px;
         touch-action: manipulation;
+        background: var(--primary);
+        color: var(--on-primary);
+        border: none;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.12);
+        transition: transform 0.1s, box-shadow 0.1s;
+      }
+      .main-tab:active {
+        transform: scale(0.97);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+      }
+      .main-tab.active {
+        background: var(--primary-hover);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.18);
       }
       /* 内側要素がタップターゲットを奪うのを防ぐ（iOS Safari対策） */
       .main-tab * {
@@ -1818,6 +1839,57 @@
         min-height: calc(var(--control-h-mobile) - 6px);
       }
     }
+
+    /* ===== Mobile Header Simplification ===== */
+    @media (max-width: 767px) {
+      /* 不要な要素を非表示 */
+      .header-record .status-badge,
+      .header-record .context-btn,
+      .header-record .context-status,
+      .header-record .enhancement-badge,
+      #sttStatusChip,
+      #headerSttControls,
+      .header-export {
+        display: none !important;
+      }
+
+      /* ヘッダー2行目を3ボタン専用レイアウトに */
+      .header-row-2 {
+        display: flex;
+        justify-content: center;
+        padding: 0.5rem 0.75rem !important;
+        gap: 0.5rem;
+      }
+
+      .header-record {
+        display: flex;
+        flex: 1;
+        gap: 0.5rem;
+        max-width: 100%;
+      }
+
+      /* 録音・一時停止・その他ボタンを大きく */
+      .header-record .record-btn,
+      .header-more-btn {
+        flex: 1;
+        height: 48px !important;
+        min-height: 48px !important;
+        font-size: 1rem !important;
+        font-weight: 600;
+        padding: 0.5rem 0.75rem !important;
+        border-radius: 10px !important;
+      }
+
+      /* 録音ボタンのラベル表示 */
+      .header-record .record-btn .btn-label {
+        display: inline !important;
+      }
+
+      /* その他ボタンのテキスト表示 */
+      .header-more-btn .more-text {
+        display: inline !important;
+      }
+    }
   </style>
 </head>
 <body>
@@ -1851,7 +1923,7 @@
     <div class="header-row-2">
       <div class="header-record">
         <button type="button" class="btn btn-primary record-btn" id="recordBtn">
-          <span class="btn-icon">🎤</span>
+          <span class="btn-icon">🎙️</span>
           <span class="btn-label" data-i18n="app.recording.start">録音開始</span>
         </button>
         <button type="button" class="btn btn-secondary record-btn" id="pauseBtn" style="display: none;">
@@ -2356,10 +2428,8 @@
             </label>
           </div>
           <div class="export-presets">
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('all')" data-i18n="export.presets.all">全選択</button>
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('minutes')" data-i18n="export.presets.minutesOnly">議事録のみ</button>
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('ai')" data-i18n="export.presets.aiOnly">AI回答のみ</button>
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('none')" data-i18n="export.presets.clear">クリア</button>
+            <button class="btn btn-ghost btn-sm" id="exportPresetAll" data-i18n="export.presets.all">全選択</button>
+            <button class="btn btn-ghost btn-sm" id="exportPresetClear" data-i18n="export.presets.clear">クリア</button>
           </div>
         </div>
         <!-- プレビュー -->
@@ -2474,10 +2544,10 @@
   <!-- Phase 5: 会議中モードオーバーレイ -->
   <div class="meeting-mode-overlay" id="meetingModeOverlay">
     <div class="meeting-mode-status">
-      <div class="meeting-mode-icon">🔴</div>
+      <div class="meeting-mode-icon" id="meetingModeStatusIcon">🔴</div>
       <div class="meeting-mode-text" id="meetingModeStatusText" data-i18n="app.meeting.recording">録音中</div>
       <div class="meeting-mode-time" id="meetingModeTime">00:00:00</div>
-      <div class="meeting-mode-hint" data-i18n="app.meeting.focusHint">会議に集中してください</div>
+      <div class="meeting-mode-hint" id="meetingModeFocusHint" data-i18n="app.meeting.focusHint">会議に集中してください</div>
     </div>
     <button class="btn btn-danger meeting-mode-stop-btn" id="meetingModeStopBtn">
       ⏹ <span data-i18n="app.recording.stop">録音停止</span>

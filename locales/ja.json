@@ -29,6 +29,7 @@
     "recording": {
       "start": "録音開始",
       "stop": "録音停止",
+      "rec": "REC",
       "pause": "一時停止",
       "resume": "再開",
       "statusReady": "待機中",
@@ -139,7 +140,9 @@
       "editMode": "編集モード",
       "recording": "録音中",
       "paused": "一時停止中",
+      "notRecording": "未録音",
       "focusHint": "会議に集中してください",
+      "startRecordingHint": "録音を開始してください",
       "returnButton": "通常画面に戻る"
     },
     "transcript": {
@@ -173,7 +176,8 @@
     "title": "設定",
     "apiNotConfigured": "⚠️ API未設定",
     "pageTitle": "設定 - AI参加会議",
-    "backToMain": "メイン画面に戻る",
+    "backToMain": "このウィンドウを閉じる",
+    "closeTabHint": "ブラウザの制限により自動で閉じられませんでした。手動でタブを閉じてください。",
     "security": {
       "title": "APIキーのセキュリティ",
       "description": "APIキーはセッション内のみ保持され、タブ/ブラウザを閉じると消えます。外部サーバーには一切送信されません。",

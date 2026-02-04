@@ -29,6 +29,7 @@
     "recording": {
       "start": "Start Recording",
       "stop": "Stop Recording",
+      "rec": "REC",
       "pause": "Pause",
       "resume": "Resume",
       "statusReady": "Ready",
@@ -139,7 +140,9 @@
       "editMode": "Edit Mode",
       "recording": "Recording",
       "paused": "Paused",
+      "notRecording": "Not Recording",
       "focusHint": "Focus on your meeting",
+      "startRecordingHint": "Start recording to capture audio",
       "returnButton": "Return to normal view"
     },
     "transcript": {
@@ -173,7 +176,8 @@
     "title": "Settings",
     "apiNotConfigured": "⚠️ API not configured",
     "pageTitle": "Settings - AI Meeting Assistant",
-    "backToMain": "Back to main screen",
+    "backToMain": "Close this window",
+    "closeTabHint": "Could not close automatically due to browser restrictions. Please close this tab manually.",
     "security": {
       "title": "API Key Security",
       "description": "API keys are stored only for the current session (cleared when the tab/browser closes). They are never sent to external servers.",

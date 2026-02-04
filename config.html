@@ -26,6 +26,13 @@
       --accent-green: #f0fdf4;
       --accent-border-blue: #dbeafe;
       --accent-border-green: #dcfce7;
+      /* Additional accent colors */
+      --accent-warning: #fefce8;
+      --accent-border-warning: #fef08a;
+      --text-warning: #92400e;
+      --accent-purple: #faf5ff;
+      --accent-border-purple: #e9d5ff;
+      --text-purple: #7c3aed;
     }
 
     /* Dark mode variables */
@@ -46,6 +53,152 @@
       --danger-hover: #dc2626;
       --success: #10b981;
       --warning: #f59e0b;
+      --accent-warning: #422006;
+      --accent-border-warning: #854d0e;
+      --text-warning: #fbbf24;
+      --accent-purple: #2e1065;
+      --accent-border-purple: #581c87;
+      --text-purple: #c4b5fd;
+    }
+
+    /* ===== Paper Theme ===== */
+    html[data-style="paper"] {
+      --bg: #F6F0E7;
+      --card-bg: #FFFCF7;
+      --text: #2B2A26;
+      --text-secondary: #6B645C;
+      --primary: #2F4FA5;
+      --primary-hover: #264181;
+      --border: #CFC6BA;
+      --accent-blue: #E8EEF9;
+      --accent-green: #E6F3EA;
+      --accent-border-blue: #C9D4EB;
+      --accent-border-green: #C7DDCF;
+      --accent-warning: #F5ECD8;
+      --accent-border-warning: #E0D0AC;
+      --text-warning: #8B6914;
+      --accent-purple: #F0E8F5;
+      --accent-border-purple: #D8C8E8;
+      --text-purple: #6B4A9E;
+    }
+    html[data-style="paper"][data-display-theme="dark"] {
+      --bg: #1F1B16;
+      --card-bg: #26211B;
+      --text: #F5F1E8;
+      --text-secondary: #C9C1B5;
+      --border: #5C5348;
+      --accent-blue: #2A2520;
+      --accent-green: #252A22;
+      --accent-border-blue: #4A4238;
+      --accent-border-green: #3A4035;
+      --accent-warning: #322A1E;
+      --accent-border-warning: #5C4A30;
+      --text-warning: #D4A520;
+      --accent-purple: #2A2430;
+      --accent-border-purple: #4A3860;
+      --text-purple: #B89CE0;
+    }
+
+    /* ===== Clean Theme ===== */
+    html[data-style="clean"] {
+      --bg: #fafafa;
+      --card-bg: #ffffff;
+      --text: #171717;
+      --text-secondary: #525252;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --border: #e5e5e5;
+      --accent-blue: #eff6ff;
+      --accent-green: #f0fdf4;
+      --accent-border-blue: #bfdbfe;
+      --accent-border-green: #bbf7d0;
+      --accent-warning: #fefce8;
+      --accent-border-warning: #fde047;
+      --text-warning: #a16207;
+      --accent-purple: #faf5ff;
+      --accent-border-purple: #d8b4fe;
+      --text-purple: #7c3aed;
+    }
+    html[data-style="clean"][data-display-theme="dark"] {
+      --bg: #0a0a0a;
+      --card-bg: #171717;
+      --text: #fafafa;
+      --text-secondary: #a3a3a3;
+      --border: #262626;
+      --accent-blue: #172554;
+      --accent-green: #14532d;
+      --accent-border-blue: #1e3a8a;
+      --accent-border-green: #166534;
+      --accent-warning: #422006;
+      --accent-border-warning: #854d0e;
+      --text-warning: #fbbf24;
+      --accent-purple: #3b0764;
+      --accent-border-purple: #581c87;
+      --text-purple: #c4b5fd;
+    }
+
+    /* ===== CLI Theme ===== */
+    html[data-style="cli"] {
+      --bg: #0b0f0e;
+      --card-bg: #101816;
+      --text: #d1fae5;
+      --text-secondary: #6ee7b7;
+      --primary: #34d399;
+      --primary-hover: #10b981;
+      --border: #065f46;
+      --accent-blue: #0b1512;
+      --accent-green: #0f1c17;
+      --accent-border-blue: #064e3b;
+      --accent-border-green: #065f46;
+      /* CLI uses terminal green for all accents */
+      --accent-warning: #0f1c17;
+      --accent-border-warning: #065f46;
+      --text-warning: #6ee7b7;
+      --accent-purple: #0f1c17;
+      --accent-border-purple: #065f46;
+      --text-purple: #6ee7b7;
+    }
+    html[data-style="cli"][data-display-theme="light"] {
+      --bg: #f8fafc;
+      --card-bg: #ffffff;
+      --text: #0f172a;
+      --text-secondary: #334155;
+      --primary: #0f172a;
+      --primary-hover: #334155;
+      --border: #cbd5e1;
+      --accent-blue: #e2e8f0;
+      --accent-green: #dcfce7;
+      --accent-border-blue: #94a3b8;
+      --accent-border-green: #86efac;
+      --accent-warning: #f1f5f9;
+      --accent-border-warning: #94a3b8;
+      --text-warning: #334155;
+      --accent-purple: #f1f5f9;
+      --accent-border-purple: #94a3b8;
+      --text-purple: #334155;
+    }
+    html[data-style="cli"] .btn {
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      border-radius: 0;
+    }
+    html[data-style="cli"] .btn-primary {
+      background: transparent;
+      color: var(--primary);
+      border: 1px solid var(--primary);
+    }
+    html[data-style="cli"] .btn-primary:hover {
+      background: var(--primary);
+      color: var(--bg);
+    }
+    html[data-style="cli"] .setting-card,
+    html[data-style="cli"] .settings-section {
+      border-radius: 0;
+    }
+    html[data-style="cli"] input,
+    html[data-style="cli"] select,
+    html[data-style="cli"] textarea {
+      border-radius: 0;
     }
 
     * {
@@ -103,7 +256,7 @@
     }
 
     .btn-secondary:hover {
-      background: #cbd5e1;
+      background: var(--border-light);
     }
 
     .btn-primary {
@@ -152,6 +305,16 @@
       border-radius: 0.75rem;
       padding: 1.25rem;
       margin-bottom: 1.5rem;
+    }
+
+    .security-notice.warning-notice {
+      background: var(--accent-warning);
+      border-color: var(--accent-border-warning);
+    }
+
+    .security-notice.warning-notice .security-notice-title,
+    .security-notice.warning-notice .security-notice-text {
+      color: var(--text-warning);
     }
 
     .security-notice-title {
@@ -248,6 +411,8 @@
       border: 1px solid var(--border);
       border-radius: 0.5rem;
       font-size: 0.875rem;
+      background: var(--card-bg);
+      color: var(--text);
     }
 
     .setting-input:focus {
@@ -259,6 +424,8 @@
       padding: 0.5rem;
       border: 1px solid var(--border);
       border-radius: 0.5rem;
+      background: var(--card-bg);
+      color: var(--text);
       font-size: 0.875rem;
       min-width: 140px;
     }
@@ -302,8 +469,8 @@
     }
 
     .security-options {
-      background: #fefce8;
-      border: 1px solid #fef08a;
+      background: var(--accent-warning);
+      border: 1px solid var(--accent-border-warning);
       border-radius: 0.75rem;
       padding: 1.25rem;
       margin-top: 1.5rem;
@@ -311,9 +478,37 @@
 
     .security-options-title {
       font-weight: 600;
-      color: #92400e;
+      color: var(--text-warning);
       margin-bottom: 0.875rem;
       font-size: 0.9rem;
+    }
+
+    .security-options.accent-blue {
+      background: var(--accent-blue);
+      border-color: var(--accent-border-blue);
+    }
+    .security-options.accent-blue .security-options-title,
+    .security-options.accent-blue .checkbox-group label {
+      color: var(--primary);
+    }
+
+    .security-options.accent-green {
+      background: var(--accent-green);
+      border-color: var(--accent-border-green);
+    }
+    .security-options.accent-green .security-options-title,
+    .security-options.accent-green .checkbox-group label,
+    .security-options.accent-green .setting-hint {
+      color: var(--success);
+    }
+
+    .security-options.accent-purple {
+      background: var(--accent-purple);
+      border-color: var(--accent-border-purple);
+    }
+    .security-options.accent-purple .security-options-title,
+    .security-options.accent-purple .setting-label {
+      color: var(--text-purple);
     }
 
     .checkbox-group {
@@ -330,7 +525,7 @@
 
     .checkbox-group label {
       font-size: 0.8rem;
-      color: #854d0e;
+      color: var(--text-warning);
     }
 
     .validation-status {
@@ -345,21 +540,21 @@
     }
 
     .validation-pending {
-      background: #fef3c7;
-      color: #92400e;
-      border-color: #fef08a;
+      background: var(--accent-warning);
+      color: var(--text-warning);
+      border-color: var(--accent-border-warning);
     }
 
     .validation-success {
-      background: #d1fae5;
-      color: #065f46;
-      border-color: #a7f3d0;
+      background: var(--accent-green);
+      color: var(--success);
+      border-color: var(--accent-border-green);
     }
 
     .validation-error {
-      background: #fee2e2;
-      color: #991b1b;
-      border-color: #fecaca;
+      background: var(--card-bg);
+      color: var(--danger);
+      border-color: var(--danger);
     }
 
     /* API action buttons */
@@ -385,23 +580,23 @@
     }
 
     .btn-validate {
-      background: #3b82f6;
+      background: var(--primary);
       color: white;
-      border-color: #2563eb;
+      border-color: var(--primary-hover);
     }
 
     .btn-validate:hover:not(:disabled) {
-      background: #2563eb;
+      background: var(--primary-hover);
     }
 
     .btn-clear {
-      background: #f3f4f6;
-      color: #374151;
-      border-color: #d1d5db;
+      background: var(--border);
+      color: var(--text);
+      border-color: var(--border);
     }
 
     .btn-clear:hover:not(:disabled) {
-      background: #e5e7eb;
+      background: var(--border-light);
     }
 
     .settings-transfer {
@@ -438,9 +633,9 @@
     }
 
     .success-message {
-      background: #d1fae5;
-      border: 1px solid #a7f3d0;
-      color: #065f46;
+      background: var(--accent-green);
+      border: 1px solid var(--accent-border-green);
+      color: var(--success);
       padding: 1rem;
       border-radius: 0.5rem;
       margin-bottom: 1.5rem;
@@ -448,9 +643,9 @@
     }
 
     .error-message {
-      background: #fee2e2;
-      border: 1px solid #fecaca;
-      color: #991b1b;
+      background: var(--card-bg);
+      border: 1px solid var(--danger);
+      color: var(--danger);
       padding: 1rem;
       border-radius: 0.5rem;
       margin-bottom: 1.5rem;
@@ -478,11 +673,11 @@
           <option value="ja" data-i18n="language.ja">Japanese</option>
           <option value="en" data-i18n="language.en">English</option>
         </select>
-        <button type="button" class="btn btn-secondary" id="backToMainBtn" onclick="handleBackToMain()">← <span data-i18n="config.backToMain">Back to main</span></button>
+        <button type="button" class="btn btn-secondary" id="backToMainBtn" onclick="handleBackToMain()">✕ <span data-i18n="config.backToMain">Close this window</span></button>
       </div>
     </div>
-    <div id="closeTabHint" class="close-tab-hint">
-      元のタブ（会議画面）をクリックしてください。このタブは Cmd/Ctrl+W で閉じてOKです。
+    <div id="closeTabHint" class="close-tab-hint" data-i18n="config.closeTabHint">
+      Could not close automatically due to browser restrictions. Please close this tab manually.
     </div>
   </header>
 
@@ -492,12 +687,12 @@
 
     <div class="card">
       <!-- Security Warning for client-side API exposure -->
-      <div class="security-notice" style="background: #fef3c7; border-color: #fef08a; margin-bottom: 1rem;">
-        <div class="security-notice-title" style="color: #92400e;">
+      <div class="security-notice warning-notice" style="margin-bottom: 1rem;">
+        <div class="security-notice-title">
           <span>⚠️</span>
           <span data-i18n="config.security.clientWarningTitle">APIキーの取り扱いに関する注意</span>
         </div>
-        <div class="security-notice-text" style="color: #92400e;" data-i18n="config.security.clientWarningText">
+        <div class="security-notice-text" data-i18n="config.security.clientWarningText">
           このアプリはブラウザから直接APIを呼び出します。共有PC/公共端末での利用は非推奨です。端末のロックやユーザー分離を推奨します。
         </div>
       </div>
@@ -724,8 +919,8 @@
           </div>
         </div>
 
-        <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: #fef3c7; border-radius: 0.5rem; border: 1px solid #fef08a;">
-          <div style="font-size: 0.85rem; color: #92400e;" data-i18n-html="config.llm.notConfiguredWarning">
+        <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-warning); border-radius: 0.5rem; border: 1px solid var(--accent-border-warning);">
+          <div style="font-size: 0.85rem; color: var(--text-warning);" data-i18n-html="config.llm.notConfiguredWarning">
             ⚠️ <strong>If no LLM API key is configured</strong><br>
             AI features like summary, opinions, and meeting notes will not be available. Please configure at least one above.
           </div>
@@ -767,31 +962,31 @@
         </div>
       </div>
 
-      <div class="security-options" style="background: #eff6ff; border-color: #bfdbfe;">
-        <div class="security-options-title" style="color: #1e40af;">💰 <span data-i18n="config.options.costAlertTitle">Cost Alert</span></div>
+      <div class="security-options accent-blue">
+        <div class="security-options-title">💰 <span data-i18n="config.options.costAlertTitle">Cost Alert</span></div>
         <div class="setting-group" style="margin-bottom: 0.5rem;">
           <label class="setting-label" style="font-size: 0.8rem;" data-i18n="config.options.costLimit">Session cost limit (JPY)</label>
           <input type="number" class="setting-input" id="costLimit" data-i18n-placeholder="config.options.costLimitPlaceholder" placeholder="e.g. 100" value="100" min="0" step="10" style="max-width: 150px;">
         </div>
         <div class="checkbox-group">
           <input type="checkbox" id="costAlertEnabled" checked>
-          <label for="costAlertEnabled" style="color: #1e40af;" data-i18n="config.options.costAlertEnabled">Show warning at 80% of limit</label>
+          <label for="costAlertEnabled" data-i18n="config.options.costAlertEnabled">Show warning at 80% of limit</label>
         </div>
       </div>
 
-      <div class="security-options" style="background: #f0fdf4; border-color: #bbf7d0;">
-        <div class="security-options-title" style="color: #166534;">📎 <span data-i18n="config.options.enhancedContextTitle">Enhanced Context</span></div>
+      <div class="security-options accent-green">
+        <div class="security-options-title">📎 <span data-i18n="config.options.enhancedContextTitle">Enhanced Context</span></div>
         <div class="checkbox-group">
           <input type="checkbox" id="enhancedContext">
-          <label for="enhancedContext" style="color: #166534;" data-i18n="config.options.enhancedContextEnabled">Enable file attachments for meeting context</label>
+          <label for="enhancedContext" data-i18n="config.options.enhancedContextEnabled">Enable file attachments for meeting context</label>
         </div>
-        <div class="setting-hint" style="color: #166534; opacity: 0.8;" data-i18n="config.options.enhancedContextHint">
+        <div class="setting-hint" data-i18n="config.options.enhancedContextHint">
           When enabled, you can attach TXT/MD files to provide additional meeting context to AI.
         </div>
       </div>
 
-      <div class="security-options" style="background: #faf5ff; border-color: #e9d5ff;">
-        <div class="security-options-title" style="color: #7c3aed;">🎨 <span data-i18n="config.theme.title">Appearance</span></div>
+      <div class="security-options accent-purple">
+        <div class="security-options-title">🎨 <span data-i18n="config.theme.title">Appearance</span></div>
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label" style="font-size: 0.8rem;" data-i18n="config.theme.displayLabel">Display theme</label>
           <select class="setting-input" id="displayTheme" style="max-width: 200px;">
