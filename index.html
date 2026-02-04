@@ -1560,19 +1560,21 @@
         background: var(--card-bg);
         border-top: var(--border-width) solid var(--border-color);
         border-bottom: none;
-        padding: 0.35rem 0.5rem calc(env(safe-area-inset-bottom, 0px) + 0.35rem);
+        padding: 0.5rem 0.75rem calc(env(safe-area-inset-bottom, 0px) + 0.5rem);
         display: flex;
-        justify-content: space-around;
-        gap: 0.5rem;
+        justify-content: center;
+        gap: 0.75rem;
       }
 
       .main-tab {
         flex: 1;
-        max-width: 240px;
+        max-width: 280px;
         text-align: center;
-        min-height: 44px;
-        padding: 0.65rem 0.75rem;
-        font-size: 0.95rem;
+        min-height: 52px;
+        padding: 0.85rem 1.25rem;
+        font-size: 1.05rem;
+        font-weight: 500;
+        border-radius: 999px;
         touch-action: manipulation;
       }
       /* 内側要素がタップターゲットを奪うのを防ぐ（iOS Safari対策） */
