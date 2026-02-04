@@ -44,3 +44,6 @@ jobs:
           test -f docs/SECURITY.md && echo "  docs/SECURITY.md exists"
           test -f docs/PRIVACY.md && echo "  docs/PRIVACY.md exists"
           echo "All required docs present"
+
+      - name: Check PRICING sync (warning only)
+        run: node scripts/check-pricing-sync.js
