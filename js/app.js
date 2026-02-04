@@ -387,7 +387,8 @@ let costs = {
   }
 };
 
-// 料金レート（2024年12月時点、1ドル=150円換算）
+// 料金レート（最終更新: 2026年2月、1ドル=150円換算）
+// 出典: 各プロバイダの公式価格ページ
 const PRICING = {
   // 文字起こしAPI（STT専用）
   transcription: {
@@ -407,16 +408,30 @@ const PRICING = {
     'gemini-2.0-flash-exp': { input: 0.075, output: 0.3 },  // deprecated
     'gemini-2.0-flash': { input: 0.075, output: 0.3 },      // deprecated
     'gemini-1.5-pro': { input: 1.25, output: 5.0 },
-    'gemini-1.5-flash': { input: 0.075, output: 0.3 }
+    'gemini-1.5-flash': { input: 0.075, output: 0.3 },
+    // -latest エイリアス（具体バージョンと同じ価格）
+    'gemini-1.5-pro-latest': { input: 1.25, output: 5.0 },
+    'gemini-1.5-flash-latest': { input: 0.075, output: 0.3 },
+    'gemini-2.5-pro-latest': { input: 1.25, output: 5.0 },
+    'gemini-2.5-flash-latest': { input: 0.15, output: 0.6 }
   },
   claude: {
     'claude-sonnet-4-20250514': { input: 3, output: 15 },
-    'claude-3-5-sonnet-20241022': { input: 3, output: 15 }
+    'claude-3-5-sonnet-20241022': { input: 3, output: 15 },
+    // バージョン付きエイリアス
+    'claude-3-5-sonnet-latest': { input: 3, output: 15 }
   },
   openai: {
     'gpt-4o': { input: 2.5, output: 10 },
     'gpt-4o-mini': { input: 0.15, output: 0.6 },
-    'gpt-4-turbo': { input: 10, output: 30 }
+    'gpt-4-turbo': { input: 10, output: 30 },
+    // バージョン付きモデル
+    'gpt-4-turbo-2024-04-09': { input: 10, output: 30 },
+    'gpt-4-turbo-preview': { input: 10, output: 30 },
+    'gpt-4o-2024-05-13': { input: 2.5, output: 10 },
+    'gpt-4o-2024-08-06': { input: 2.5, output: 10 },
+    'gpt-4o-2024-11-20': { input: 2.5, output: 10 },
+    'gpt-4o-mini-2024-07-18': { input: 0.15, output: 0.6 }
   },
   groq: {
     'llama-3.3-70b-versatile': { input: 0.59, output: 0.79 },
