@@ -717,7 +717,6 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // i18n初期化（言語切り替えに必要）
   await I18n.init();
-  SecureStorage.cleanupLegacy();
 
   // テーマトグルボタンの初期化
   if (window.AIMeetingTheme && document.getElementById('themeToggleBtn')) {
@@ -1213,7 +1212,9 @@ document.addEventListener('DOMContentLoaded', async function() {
   const meetingModeStopBtn = document.getElementById('meetingModeStopBtn');
   if (meetingModeStopBtn) {
     meetingModeStopBtn.addEventListener('click', async () => {
-      await stopRecording();
+      if (isRecording) {
+        await stopRecording();
+      }
       exitMeetingMode();
     });
   }
@@ -3423,10 +3424,6 @@ function updateUI() {
     if (floatingBtn) {
       floatingBtn.classList.add('visible');
     }
-    // Phase 5: 会議中モード切替ボタンを表示（スマホ用）
-    if (meetingModeToggle) {
-      meetingModeToggle.classList.add('visible');
-    }
     if (meetingModeText) {
       const key = isPaused ? 'app.meeting.paused' : 'app.meeting.recording';
       meetingModeText.setAttribute('data-i18n', key);
@@ -3458,13 +3455,9 @@ function updateUI() {
     if (floatingBtn) {
       floatingBtn.classList.remove('visible');
     }
-    // Phase 5: 会議中モード切替ボタンを非表示
-    if (meetingModeToggle) {
-      meetingModeToggle.classList.remove('visible');
-    }
     if (meetingModeText) {
-      meetingModeText.setAttribute('data-i18n', 'app.meeting.recording');
-      meetingModeText.textContent = t('app.meeting.recording');
+      meetingModeText.setAttribute('data-i18n', 'app.meeting.notRecording');
+      meetingModeText.textContent = t('app.meeting.notRecording');
     }
     // 議事録ボタンは録音停止後かつ文字起こしがある場合に有効
     if (minutesBtn) {
@@ -3691,9 +3684,22 @@ function switchTab(tabName) {
 
 // Phase 3: メインパネル切り替え（スマホ用）
 function switchMainTab(tabName) {
+  // 会議モード（パネル）中は編集モードに戻してからタブ切替
+  if (isPanelMeetingMode) {
+    isPanelMeetingMode = false;
+    document.querySelector('.main-container')?.classList.remove('meeting-mode');
+    localStorage.setItem('_panelMeetingMode', '0');
+    updatePanelMeetingModeUI();
+  }
+
+  // オーバーレイ会議モード中も解除（録音は止めない）
+  if (isMeetingMode) {
+    exitMeetingMode();
+  }
+
   // タブの切り替え
   document.querySelectorAll('.main-tab').forEach(t => t.classList.remove('active'));
-  document.querySelector(`.main-tab[data-main-tab="${tabName}"]`).classList.add('active');
+  document.querySelector(`.main-tab[data-main-tab="${tabName}"]`)?.classList.add('active');
 
   // パネルの切り替え
   const transcriptPanel = document.getElementById('transcriptPanel');
@@ -3710,13 +3716,44 @@ function switchMainTab(tabName) {
 
 // Phase 5: 会議中モード
 function enterMeetingMode() {
-  if (!isRecording) return;
-
   isMeetingMode = true;
   updateMeetingModeBodyClass(); // PR-3: body class for wider layout
   const overlay = document.getElementById('meetingModeOverlay');
   if (overlay) {
     overlay.classList.add('active');
+  }
+
+  // 未録音時の表示更新
+  const statusIcon = document.getElementById('meetingModeStatusIcon');
+  const statusText = document.getElementById('meetingModeStatusText');
+  const focusHint = document.getElementById('meetingModeFocusHint');
+  const stopBtn = document.getElementById('meetingModeStopBtn');
+
+  if (!isRecording) {
+    // 未録音時
+    if (statusIcon) statusIcon.textContent = '⏸';
+    if (statusText) {
+      statusText.setAttribute('data-i18n', 'app.meeting.notRecording');
+      statusText.textContent = t('app.meeting.notRecording');
+    }
+    if (focusHint) {
+      focusHint.setAttribute('data-i18n', 'app.meeting.startRecordingHint');
+      focusHint.textContent = t('app.meeting.startRecordingHint');
+    }
+    if (stopBtn) stopBtn.style.display = 'none';
+  } else {
+    // 録音中
+    if (statusIcon) statusIcon.textContent = isPaused ? '⏸' : '🔴';
+    if (statusText) {
+      const key = isPaused ? 'app.meeting.paused' : 'app.meeting.recording';
+      statusText.setAttribute('data-i18n', key);
+      statusText.textContent = t(key);
+    }
+    if (focusHint) {
+      focusHint.setAttribute('data-i18n', 'app.meeting.focusHint');
+      focusHint.textContent = t('app.meeting.focusHint');
+    }
+    if (stopBtn) stopBtn.style.display = '';
   }
 
   // タイマー開始
@@ -3740,7 +3777,14 @@ function exitMeetingMode() {
 }
 
 function updateMeetingModeTime() {
-  if (!recordingStartTime) return;
+  const timeEl = document.getElementById('meetingModeTime');
+  if (!timeEl) return;
+
+  if (!recordingStartTime) {
+    // 未録音時は --:--:-- を表示
+    timeEl.textContent = '--:--:--';
+    return;
+  }
 
   const elapsed = getActiveDurationMs();
   const hours = Math.floor(elapsed / 3600000);
@@ -3753,10 +3797,7 @@ function updateMeetingModeTime() {
     seconds.toString().padStart(2, '0')
   ].join(':');
 
-  const timeEl = document.getElementById('meetingModeTime');
-  if (timeEl) {
-    timeEl.textContent = timeStr;
-  }
+  timeEl.textContent = timeStr;
 }
 
 function clearTranscript() {

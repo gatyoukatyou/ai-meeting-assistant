@@ -1037,7 +1037,7 @@
     .meeting-mode-exit-btn:hover{ background:rgba(255,255,255,.2); }
     .meeting-mode-toggle{ display:none; }
     @media (max-width: 767px){
-      .meeting-mode-toggle.visible{
+      .meeting-mode-toggle{
         display:inline-flex;
         position:fixed;
         bottom:6rem;
@@ -1570,7 +1570,9 @@
         flex: 1;
         max-width: 240px;
         text-align: center;
-        padding: 0.6rem 0.5rem;
+        min-height: 44px;
+        padding: 0.65rem 0.75rem;
+        font-size: 0.95rem;
         touch-action: manipulation;
       }
       /* 内側要素がタップターゲットを奪うのを防ぐ（iOS Safari対策） */
@@ -2474,10 +2476,10 @@
   <!-- Phase 5: 会議中モードオーバーレイ -->
   <div class="meeting-mode-overlay" id="meetingModeOverlay">
     <div class="meeting-mode-status">
-      <div class="meeting-mode-icon">🔴</div>
+      <div class="meeting-mode-icon" id="meetingModeStatusIcon">🔴</div>
       <div class="meeting-mode-text" id="meetingModeStatusText" data-i18n="app.meeting.recording">録音中</div>
       <div class="meeting-mode-time" id="meetingModeTime">00:00:00</div>
-      <div class="meeting-mode-hint" data-i18n="app.meeting.focusHint">会議に集中してください</div>
+      <div class="meeting-mode-hint" id="meetingModeFocusHint" data-i18n="app.meeting.focusHint">会議に集中してください</div>
     </div>
     <button class="btn btn-danger meeting-mode-stop-btn" id="meetingModeStopBtn">
       ⏹ <span data-i18n="app.recording.stop">録音停止</span>

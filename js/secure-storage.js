@@ -5,23 +5,6 @@ const SecureStorage = {
   // API key storage providers list
   _providers: ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'],
 
-  // Remove legacy device-key storage remnants
-  cleanupLegacy: function() {
-    try {
-      localStorage.removeItem('_dk');
-      localStorage.removeItem('_apiKeyStorageMigrationDone');
-      localStorage.removeItem('_opt_persistApiKeys');
-      for (let i = localStorage.length - 1; i >= 0; i--) {
-        const key = localStorage.key(i);
-        if (key && key.startsWith('_ak_')) {
-          localStorage.removeItem(key);
-        }
-      }
-    } catch (e) {
-      console.warn('[SecureStorage] Legacy cleanup failed:', e);
-    }
-  },
-
   // APIキーを保存 (session-only)
   setApiKey: function(provider, key) {
     const storageKey = `_ak_${provider}`;
@@ -170,7 +153,6 @@ const SecureStorage = {
       localStorage.removeItem(`_m_${p}`);
       localStorage.removeItem(`_mc_${p}`);
     });
-    localStorage.removeItem('_dk');
     localStorage.removeItem('_opt_clearOnClose');
     localStorage.removeItem('_opt_costAlertEnabled');
     localStorage.removeItem('_opt_costLimit');
@@ -178,9 +160,7 @@ const SecureStorage = {
     localStorage.removeItem('_opt_sttProvider');
     localStorage.removeItem('_opt_sttUserDictionary');
     localStorage.removeItem('_opt_sttLanguage');
-    localStorage.removeItem('_opt_persistApiKeys');
     localStorage.removeItem('_opt_persistMeetingContext');
-    localStorage.removeItem('_apiKeyStorageMigrationDone');
   },
 
   // APIキーのみ削除 - clears from BOTH storages
