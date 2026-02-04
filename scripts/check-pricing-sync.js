@@ -13,16 +13,8 @@ const ROOT = path.join(__dirname, '..');
 const APP_JS = path.join(ROOT, 'js', 'app.js');
 const MODEL_REGISTRY_JS = path.join(ROOT, 'js', 'model-registry.js');
 
-// Provider name mapping: ModelRegistry -> PRICING
-const PROVIDER_MAP = {
-  gemini: 'gemini',
-  openai_llm: 'openai',
-  claude: 'claude',
-  groq: 'groq'
-};
-
-// OpenAI model prefixes (gpt-4o, o1-, o3-, etc.)
-const OPENAI_PREFIXES = ['gpt-', 'o1-', 'o3-'];
+// Model ID prefixes for validation (used only for fixedModels string format detection)
+const KNOWN_MODEL_PREFIXES = ['gemini-', 'gpt-', 'o1-', 'o3-', 'claude-', 'llama-', 'mixtral-', 'gemma-'];
 
 /**
  * Extract PRICING block using brace-counting (more robust than regex)
@@ -67,44 +59,31 @@ function extractPricingBlock(content) {
 }
 
 /**
- * Determine provider from model ID
+ * Check if string looks like a model ID (used for string format detection)
  */
-function getProviderFromModelId(modelId) {
-  if (modelId.startsWith('gemini-')) return 'gemini';
-  if (modelId.startsWith('claude-')) return 'claude';
-  if (modelId.startsWith('llama-')) return 'groq';
-
-  // OpenAI: gpt-*, o1-*, o3-*, etc.
-  for (const prefix of OPENAI_PREFIXES) {
-    if (modelId.startsWith(prefix)) return 'openai';
-  }
-
-  return null;
+function looksLikeModelId(str) {
+  return KNOWN_MODEL_PREFIXES.some(prefix => str.startsWith(prefix));
 }
 
+/**
+ * Extract all model IDs from PRICING (flat set, no provider grouping)
+ * This avoids prefix-detection races when new model families are added.
+ */
 function extractPricingModels(content) {
   const pricingBlock = extractPricingBlock(content);
   if (!pricingBlock) {
     warn('Could not extract PRICING block - check script compatibility');
-    return {};
+    return new Set();
   }
 
-  const models = {};
+  const models = new Set();
 
   // Extract all model IDs (pattern: 'model-id': { input:)
   const modelPattern = /'([a-zA-Z0-9._-]+)':\s*\{\s*input:/g;
   let match;
 
   while ((match = modelPattern.exec(pricingBlock)) !== null) {
-    const modelId = match[1];
-    const provider = getProviderFromModelId(modelId);
-
-    if (!provider) continue;
-
-    if (!models[provider]) {
-      models[provider] = [];
-    }
-    models[provider].push(modelId);
+    models.add(match[1]);
   }
 
   return models;
@@ -135,7 +114,7 @@ function extractModelIdsFromArray(arrayContent) {
     while ((m = strPattern.exec(arrayContent)) !== null) {
       const v = m[1];
       // Filter out non-model-id strings (e.g., 'Recommended', 'Low cost')
-      if (getProviderFromModelId(v) && !seen.has(v)) {
+      if (looksLikeModelId(v) && !seen.has(v)) {
         ids.push(v);
         seen.add(v);
       }
@@ -170,12 +149,22 @@ function extractFixedModels(content) {
 }
 
 /**
+ * Escape message for GitHub Actions workflow commands
+ */
+function escapeActionsMessage(msg) {
+  return msg
+    .replace(/%/g, '%25')
+    .replace(/\r/g, '%0D')
+    .replace(/\n/g, '%0A');
+}
+
+/**
  * Output warning (GitHub Actions format if in CI)
  */
 function warn(message) {
   if (process.env.GITHUB_ACTIONS) {
     // GitHub Actions workflow command - shows in PR Checks
-    console.log(`::warning title=PRICING sync::${message}`);
+    console.log(`::warning title=PRICING sync::${escapeActionsMessage(message)}`);
   } else {
     console.warn(`⚠️  ${message}`);
   }
@@ -193,15 +182,12 @@ function main() {
     process.exit(0);
   }
 
-  const pricingModels = extractPricingModels(appJs);
+  const pricingSet = extractPricingModels(appJs);
   const fixedModels = extractFixedModels(registryJs);
 
   let warningCount = 0;
 
   for (const [registryProvider, models] of Object.entries(fixedModels)) {
-    const pricingProvider = PROVIDER_MAP[registryProvider] || registryProvider;
-    const pricingSet = new Set(pricingModels[pricingProvider] || []);
-
     for (const modelId of models) {
       if (!pricingSet.has(modelId)) {
         warn(`"${modelId}" (${registryProvider}) is in fixedModels but missing from PRICING`);
