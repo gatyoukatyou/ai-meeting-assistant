@@ -915,6 +915,16 @@ document.addEventListener('DOMContentLoaded', async function() {
     exportBtn.addEventListener('click', openExportModal);
   }
 
+  // Export preset buttons
+  const exportPresetAll = document.getElementById('exportPresetAll');
+  if (exportPresetAll) {
+    exportPresetAll.addEventListener('click', () => setExportPreset('all'));
+  }
+  const exportPresetClear = document.getElementById('exportPresetClear');
+  if (exportPresetClear) {
+    exportPresetClear.addEventListener('click', () => setExportPreset('none'));
+  }
+
   const clearTranscriptBtn = document.getElementById('clearTranscriptBtn');
   if (clearTranscriptBtn) {
     clearTranscriptBtn.addEventListener('click', clearTranscript);

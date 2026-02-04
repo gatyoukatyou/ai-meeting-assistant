@@ -1434,6 +1434,22 @@
       letter-spacing: 0.1em;
     }
 
+    /* CLI: Mobile bottom tabs - outline style */
+    @media (max-width: 767px) {
+      html[data-style="cli"] .main-tab {
+        background: var(--card-bg);
+        color: var(--primary);
+        border: 2px solid var(--primary);
+      }
+      html[data-style="cli"] .main-tab:active {
+        background: var(--surface-muted);
+      }
+      html[data-style="cli"] .main-tab.active {
+        background: var(--surface-muted);
+        border-color: var(--primary-hover);
+      }
+    }
+
     /* CLI: Dark mode override (chic emerald - same as base) */
     html[data-style="cli"][data-display-theme="dark"] {
       --bg: #0b0f0e;
@@ -2412,10 +2428,8 @@
             </label>
           </div>
           <div class="export-presets">
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('all')" data-i18n="export.presets.all">全選択</button>
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('minutes')" data-i18n="export.presets.minutesOnly">議事録のみ</button>
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('ai')" data-i18n="export.presets.aiOnly">AI回答のみ</button>
-            <button class="btn btn-ghost btn-sm" onclick="setExportPreset('none')" data-i18n="export.presets.clear">クリア</button>
+            <button class="btn btn-ghost btn-sm" id="exportPresetAll" data-i18n="export.presets.all">全選択</button>
+            <button class="btn btn-ghost btn-sm" id="exportPresetClear" data-i18n="export.presets.clear">クリア</button>
           </div>
         </div>
         <!-- プレビュー -->
