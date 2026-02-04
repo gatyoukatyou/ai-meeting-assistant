@@ -1779,6 +1779,16 @@
       max-width: 1600px;
     }
 
+    /* ===== PCフルサイズ時の横幅拡大（編集モードのみ） ===== */
+    @media (min-width: 1200px) {
+      body:not(.meeting-mode) .main-container {
+        width: min(1800px, calc(100vw - 32px));
+        max-width: none;
+        padding-left: 1rem;
+        padding-right: 1rem;
+      }
+    }
+
     /* ===== PR-3: ヘッダー統一感 (Task E) ===== */
     :root {
       --control-h: 42px;
