@@ -915,16 +915,6 @@ document.addEventListener('DOMContentLoaded', async function() {
     exportBtn.addEventListener('click', openExportModal);
   }
 
-  // Export preset buttons
-  const exportPresetAll = document.getElementById('exportPresetAll');
-  if (exportPresetAll) {
-    exportPresetAll.addEventListener('click', () => setExportPreset('all'));
-  }
-  const exportPresetClear = document.getElementById('exportPresetClear');
-  if (exportPresetClear) {
-    exportPresetClear.addEventListener('click', () => setExportPreset('none'));
-  }
-
   const clearTranscriptBtn = document.getElementById('clearTranscriptBtn');
   if (clearTranscriptBtn) {
     clearTranscriptBtn.addEventListener('click', clearTranscript);
@@ -4152,6 +4142,16 @@ function openExportModal() {
     cb.removeEventListener('change', updateExportPreview);
     cb.addEventListener('change', updateExportPreview);
   });
+
+  // プリセットボタンのイベントリスナー設定
+  const presetAllBtn = document.getElementById('exportPresetAll');
+  const presetClearBtn = document.getElementById('exportPresetClear');
+  if (presetAllBtn) {
+    presetAllBtn.onclick = function() { setExportPreset('all'); };
+  }
+  if (presetClearBtn) {
+    presetClearBtn.onclick = function() { setExportPreset('none'); };
+  }
 }
 
 function updateExportPreview() {
