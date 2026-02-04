@@ -20,6 +20,39 @@ function navigateTo(target) {
 }
 
 // =====================================
+// 親ウィンドウへのAPIキー同期
+// sessionStorageはタブ間で共有されないため、
+// 別タブで設定を開いた場合は親ウィンドウに直接保存する
+// =====================================
+function syncApiKeysToOpener() {
+  // 親ウィンドウがない場合は同期不要
+  if (!window.opener || window.opener.closed) {
+    return;
+  }
+
+  try {
+    // 親ウィンドウのsessionStorageに直接APIキーを保存
+    const providers = ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'];
+    providers.forEach(provider => {
+      const key = SecureStorage.getApiKey(provider);
+      const storageKey = `_ak_${provider}`;
+      if (key) {
+        window.opener.sessionStorage.setItem(storageKey, key);
+      } else {
+        window.opener.sessionStorage.removeItem(storageKey);
+      }
+    });
+
+    // 親ウィンドウに設定変更を通知してUIを更新させる
+    window.opener.postMessage({ type: 'settings-updated' }, window.location.origin);
+    console.log('[Config] API keys synced to opener window');
+  } catch (e) {
+    // クロスオリジンエラーなどの場合はログのみ
+    console.warn('[Config] Failed to sync API keys to opener:', e);
+  }
+}
+
+// =====================================
 // STTプロバイダー許可リスト
 // =====================================
 const ALLOWED_STT_PROVIDERS = new Set([
@@ -320,6 +353,9 @@ async function saveSettings() {
     }
     // 'valid' または 'unknown' の場合は続行
   }
+
+  // 別タブで開いている場合、親ウィンドウのsessionStorageにもAPIキーを同期
+  syncApiKeysToOpener();
 
   showSuccess(t('config.messages.saved'));
 

@@ -788,6 +788,17 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateLLMIndicator();
   });
 
+  // 設定画面（別タブ）からの設定変更通知を受信してUIを更新
+  window.addEventListener('message', function(e) {
+    // 同一オリジンからのメッセージのみ処理
+    if (e.origin !== window.location.origin) return;
+    if (e.data && e.data.type === 'settings-updated') {
+      console.log('[App] Settings updated from config tab, refreshing UI');
+      updateLLMIndicator();
+      updateLLMButtonsState();
+    }
+  });
+
   // ユーザー辞書を読み込み
   loadUserDictionary();
 
