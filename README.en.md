@@ -186,6 +186,9 @@ Click "📥 Export" to save meeting content, AI responses, and memos/TODOs as a 
 If you need post-processing into Word / Todoist / Asana formats, use the bundled tools in  
 [`tools/md-postprocess/README.md`](tools/md-postprocess/README.md).
 
+For meeting-type Pro Pack templates (30-title index / 12 completed in v1), see  
+[`docs/propack/README.md`](docs/propack/README.md).
+
 ## Settings Backup
 
 To transfer settings to another device:

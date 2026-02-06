@@ -198,6 +198,9 @@ AI回答・Q&A・メモ/TODOを時系列で整理し、フィルタ/検索/ピ�
 MarkdownをWord / Todoist / Asana向けに変換したい場合は  
 [`tools/md-postprocess/README.md`](tools/md-postprocess/README.md) の付属ツールを利用してください。
 
+会議タイプ別のPro Packテンプレ（30本一覧 / v1で12本完成）は  
+[`docs/propack/README.md`](docs/propack/README.md) を参照してください。
+
 ## 設定のバックアップ
 
 別のパソコンに移す時や、バックアップを取りたい時：
