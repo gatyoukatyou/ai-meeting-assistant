@@ -1,6 +1,6 @@
 # 利用規約 / Terms of Service
 
-最終更新日 / Last Updated: 2026-01-10
+最終更新日 / Last Updated: 2026-02-06
 
 ---
 
@@ -16,7 +16,8 @@
 
 ### ローカル保存について
 本アプリは利便性のため、会議履歴（文字起こし・AI回答）をブラウザのIndexedDBに保存します（最大5件）。
-会議コンテキスト（目的/参考情報/添付資料の抽出テキスト）はlocalStorageに保存されます。
+会議コンテキスト（目的/参考情報/添付資料の抽出テキスト）は、既定でsessionStorage（タブ/セッション限定）に保存されます。
+設定で「会議情報を次回も保持する」を有効にした場合のみ、会議コンテキストはlocalStorageに保存されます。
 不要になったデータは履歴削除や設定のクリアで削除してください。
 
 ### APIキー（BYOK）について
@@ -30,7 +31,8 @@
 - Deepgram API
 - その他対応するAIサービス
 
-APIキーはブラウザのローカルストレージに保存され、開発者のサーバーには送信されません。
+APIキーはブラウザのsessionStorage（タブ/セッション限定）に保存され、タブ/ブラウザを閉じると削除されます。
+APIキーは別タブへは共有されず、設定のエクスポートにも含まれません。開発者のサーバーには送信されません。
 
 ### 免責事項
 本アプリは「現状有姿」で提供されます。
@@ -56,7 +58,8 @@ The developer does not collect, store, or transmit meeting audio, transcripts, o
 
 ### Local Storage
 For convenience, the Application stores meeting history (transcripts and AI responses) in browser IndexedDB (max 5 records).
-Meeting context (goals, references, extracted attachment text) is stored in localStorage.
+Meeting context (goals, references, extracted attachment text) is stored in sessionStorage by default (tab/session scope).
+Only when the "Persist meeting context across sessions" option is enabled, meeting context is stored in localStorage.
 Remove this data via history clear or settings reset when no longer needed.
 
 ### API Keys (BYOK)
@@ -70,7 +73,8 @@ Users must provide their own API keys for supported AI services, such as:
 - Deepgram API
 - Other supported AI services
 
-API keys are stored only in the user's browser local storage and are never sent to the developer's servers.
+API keys are stored in browser sessionStorage (tab/session scope) and are cleared when the tab/browser is closed.
+API keys are not shared across tabs and are excluded from settings export. They are never sent to the developer's servers.
 
 ### Disclaimer
 The Application is provided "as is," without warranties of any kind.
