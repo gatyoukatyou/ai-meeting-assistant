@@ -435,6 +435,7 @@
       "aiWorkOrderRuleEvidence": "For key decisions, include supporting evidence from this markdown.",
       "aiWorkOrderRuleOrder": "Keep the output order fixed and do not reorder sections.",
       "aiWorkOrderRuleQuestionFirst": "Show clarification questions first, then provide deliverables.",
+      "aiWorkOrderAdditionalTitle": "Additional Instructions",
       "aiWorkOrderOutputTitle": "Output Order",
       "aiWorkOrderOutputQuestions": "Clarification questions for missing information",
       "aiWorkOrderOutputDeliverables": "Deliverables",

@@ -4403,6 +4403,59 @@ function openFullSettings() {
   );
 }
 
+function extractAiInstructionFromMemoLine(line) {
+  if (!line || typeof line !== 'string') return null;
+  const text = line.trim();
+  if (!text) return null;
+
+  const patterns = [
+    /^\s*(?:[-*•]\s*)?【\s*AI\s*】\s*(.+)$/i,
+    /^\s*(?:[-*•]\s*)?AI\s*[:：]\s*(.+)$/i,
+    /^\s*(?:[-*•]\s*)?[@＠]ai\b[\s:：-]*(.+)$/i
+  ];
+
+  for (let i = 0; i < patterns.length; i += 1) {
+    const match = text.match(patterns[i]);
+    if (match && match[1]) {
+      const instruction = match[1].trim();
+      if (instruction) return instruction;
+    }
+  }
+  return null;
+}
+
+function collectAiWorkOrderInstructions(memoItems = []) {
+  const instructions = [];
+  const cleanedContentById = {};
+  const seen = new Set();
+
+  memoItems.forEach(item => {
+    if (!item || typeof item.content !== 'string') return;
+
+    const remainingLines = [];
+    item.content.replace(/\r\n/g, '\n').split('\n').forEach(line => {
+      const instruction = extractAiInstructionFromMemoLine(line);
+      if (!instruction) {
+        remainingLines.push(line);
+        return;
+      }
+
+      const dedupeKey = instruction.toLowerCase();
+      if (!seen.has(dedupeKey)) {
+        seen.add(dedupeKey);
+        instructions.push({
+          text: instruction,
+          timestamp: item.timestamp || ''
+        });
+      }
+    });
+
+    cleanedContentById[item.id] = remainingLines.join('\n').trim();
+  });
+
+  return { instructions, cleanedContentById };
+}
+
 function generateExportMarkdown(options = null) {
   // デフォルトは全て有効
   const opts = options || {
@@ -4424,6 +4477,12 @@ function generateExportMarkdown(options = null) {
     return md;
   }
 
+  const aiInstructionData = opts.aiWorkOrder
+    ? collectAiWorkOrderInstructions(meetingMemos.items)
+    : { instructions: [], cleanedContentById: null };
+  const aiWorkOrderInstructions = aiInstructionData.instructions;
+  const cleanedMemoContentById = aiInstructionData.cleanedContentById;
+
   // 0. AIワークオーダー（先頭）
   if (opts.aiWorkOrder) {
     md += `---\n\n`;
@@ -4434,6 +4493,14 @@ function generateExportMarkdown(options = null) {
     md += `2. ${t('export.document.aiWorkOrderRuleEvidence') || 'For key decisions, include supporting evidence from this markdown.'}\n`;
     md += `3. ${t('export.document.aiWorkOrderRuleOrder') || 'Keep the output order fixed and do not reorder sections.'}\n`;
     md += `4. ${t('export.document.aiWorkOrderRuleQuestionFirst') || 'Show clarification questions first, then provide deliverables.'}\n\n`;
+    if (aiWorkOrderInstructions.length > 0) {
+      md += `### ${t('export.document.aiWorkOrderAdditionalTitle') || 'Additional Instructions'}\n`;
+      aiWorkOrderInstructions.forEach(instruction => {
+        const ts = instruction.timestamp ? `[${instruction.timestamp}] ` : '';
+        md += `- ${ts}${instruction.text}\n`;
+      });
+      md += '\n';
+    }
     md += `### ${t('export.document.aiWorkOrderOutputTitle') || 'Output Order'}\n`;
     md += `1. ${t('export.document.aiWorkOrderOutputQuestions') || 'Clarification questions for missing information'}\n`;
     md += `2. ${t('export.document.aiWorkOrderOutputDeliverables') || 'Deliverables'}\n\n`;
@@ -4487,7 +4554,18 @@ function generateExportMarkdown(options = null) {
 
   // 2.5 メモセクション
   if (opts.memos) {
-    const memos = meetingMemos.items.filter(m => m.type === 'memo');
+    const memos = meetingMemos.items
+      .filter(m => m.type === 'memo')
+      .map(memo => {
+        if (!cleanedMemoContentById || !Object.prototype.hasOwnProperty.call(cleanedMemoContentById, memo.id)) {
+          return memo;
+        }
+        return {
+          ...memo,
+          content: cleanedMemoContentById[memo.id]
+        };
+      })
+      .filter(memo => memo.content && memo.content.trim().length > 0);
     if (memos.length > 0) {
       md += `---\n\n## 📝 ${t('export.items.memos') || 'メモ'}\n\n`;
       memos.forEach(memo => {
@@ -4501,7 +4579,18 @@ function generateExportMarkdown(options = null) {
 
   // 2.6 TODOセクション
   if (opts.todos) {
-    const todos = meetingMemos.items.filter(m => m.type === 'todo');
+    const todos = meetingMemos.items
+      .filter(m => m.type === 'todo')
+      .map(todo => {
+        if (!cleanedMemoContentById || !Object.prototype.hasOwnProperty.call(cleanedMemoContentById, todo.id)) {
+          return todo;
+        }
+        return {
+          ...todo,
+          content: cleanedMemoContentById[todo.id]
+        };
+      })
+      .filter(todo => todo.content && todo.content.trim().length > 0);
     if (todos.length > 0) {
       md += `---\n\n## ☑️ ${t('export.items.todos') || 'TODO'}\n\n`;
       todos.forEach(todo => {
