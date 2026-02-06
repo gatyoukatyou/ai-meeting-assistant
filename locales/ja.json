@@ -352,6 +352,11 @@
       "openedInNewTab": "新しいタブで開きました。長押しまたは共有ボタンから保存できます",
       "copyFallback": "ポップアップがブロックされました。プレビューからコピーしてください"
     },
+    "diagnostic": {
+      "copied": "診断パックをコピーしました",
+      "downloaded": "診断JSONを保存しました",
+      "failed": "診断パックの出力に失敗しました"
+    },
     "llm": {
       "notConfigured": "LLM APIキーが未設定です。設定画面でAPIキーを登録してください。"
     },
@@ -478,6 +483,10 @@
     "notSupported": "このブラウザでは履歴機能を利用できません。",
     "missingRecord": "履歴が見つかりません",
     "import": "MDファイルを読み込む",
+    "diagnosticCopy": "診断パックをコピー",
+    "diagnosticDownload": "診断JSON保存",
+    "diagnosticTitle": "診断パック",
+    "diagnosticDescription": "以下をIssue本文に貼ってください（会議本文・音声・APIキーは含みません）",
     "importConfirmOverwrite": "現在の文字起こしとAI回答を上書きしますか？",
     "importSuccess": "MDファイルを読み込みました",
     "importFailed": "MDファイルの読み込みに失敗しました: {message}",
