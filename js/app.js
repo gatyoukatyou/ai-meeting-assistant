@@ -4200,6 +4200,7 @@ function getExportOptions() {
     todos: getChecked('exportTodos'),
     qa: getChecked('exportQA'),
     transcript: getChecked('exportTranscript'),
+    aiWorkOrder: getChecked('exportAiWorkOrder'),
     cost: getChecked('exportCost')
   };
 }
@@ -4213,14 +4214,15 @@ function setExportPreset(preset) {
     todos: document.getElementById('exportTodos'),
     qa: document.getElementById('exportQA'),
     transcript: document.getElementById('exportTranscript'),
+    aiWorkOrder: document.getElementById('exportAiWorkOrder'),
     cost: document.getElementById('exportCost')
   };
 
   const presets = {
-    all: { minutes: true, summary: true, consult: true, memos: true, todos: true, qa: true, transcript: true, cost: true },
-    minutes: { minutes: true, summary: false, consult: false, memos: false, todos: false, qa: false, transcript: false, cost: false },
-    ai: { minutes: false, summary: true, consult: true, memos: true, todos: true, qa: true, transcript: false, cost: false },
-    none: { minutes: false, summary: false, consult: false, memos: false, todos: false, qa: false, transcript: false, cost: false }
+    all: { minutes: true, summary: true, consult: true, memos: true, todos: true, qa: true, transcript: true, aiWorkOrder: true, cost: true },
+    minutes: { minutes: true, summary: false, consult: false, memos: false, todos: false, qa: false, transcript: false, aiWorkOrder: false, cost: false },
+    ai: { minutes: false, summary: true, consult: true, memos: true, todos: true, qa: true, transcript: false, aiWorkOrder: true, cost: false },
+    none: { minutes: false, summary: false, consult: false, memos: false, todos: false, qa: false, transcript: false, aiWorkOrder: false, cost: false }
   };
 
   const selected = presets[preset] || presets.all;
@@ -4405,7 +4407,7 @@ function generateExportMarkdown(options = null) {
   // デフォルトは全て有効
   const opts = options || {
     minutes: true, summary: true, consult: true, opinion: true, idea: true,
-    memos: true, todos: true, qa: true, transcript: true, cost: true
+    memos: true, todos: true, qa: true, transcript: true, aiWorkOrder: true, cost: true
   };
 
   const now = new Date().toLocaleString(I18n.getLanguage() === 'ja' ? 'ja-JP' : 'en-US');
@@ -4420,6 +4422,21 @@ function generateExportMarkdown(options = null) {
   if (!hasAnySelection) {
     md += `⚠️ ${t('export.document.noSelection')}\n`;
     return md;
+  }
+
+  // 0. AIワークオーダー（先頭）
+  if (opts.aiWorkOrder) {
+    md += `---\n\n`;
+    md += `## 🧭 ${t('export.document.sectionAiWorkOrder') || 'AI Work Order'}\n\n`;
+    md += `${t('export.document.aiWorkOrderIntro') || 'Treat this markdown as the primary source and follow the rules below.'}\n\n`;
+    md += `### ${t('export.document.aiWorkOrderRulesTitle') || 'Common Rules'}\n`;
+    md += `1. ${t('export.document.aiWorkOrderRuleNoGuess') || 'Do not guess. If information is missing, list it explicitly as missing information.'}\n`;
+    md += `2. ${t('export.document.aiWorkOrderRuleEvidence') || 'For key decisions, include supporting evidence from this markdown.'}\n`;
+    md += `3. ${t('export.document.aiWorkOrderRuleOrder') || 'Keep the output order fixed and do not reorder sections.'}\n`;
+    md += `4. ${t('export.document.aiWorkOrderRuleQuestionFirst') || 'Show clarification questions first, then provide deliverables.'}\n\n`;
+    md += `### ${t('export.document.aiWorkOrderOutputTitle') || 'Output Order'}\n`;
+    md += `1. ${t('export.document.aiWorkOrderOutputQuestions') || 'Clarification questions for missing information'}\n`;
+    md += `2. ${t('export.document.aiWorkOrderOutputDeliverables') || 'Deliverables'}\n\n`;
   }
 
   // 1. 議事録（最重要 - 一番上に配置）
