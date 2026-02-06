@@ -46,6 +46,37 @@ const CONTEXT_MAX_CHARS_PER_FILE = 2000;  // ファイルごとの文字数上�
 const CONTEXT_SUPPORTED_TYPES = ['text/plain', 'text/markdown'];
 const CONTEXT_SUPPORTED_EXTENSIONS = ['.txt', '.md'];
 
+const AI_WORK_ORDER_MODULES_PATH = 'modules/work-order-modules.json';
+const AI_WORK_ORDER_MODULES_FALLBACK = [
+  {
+    id: 'personnel-cost-focus',
+    title: { ja: '人件費重点分析', en: 'Personnel Cost Focus Analysis' },
+    triggers: ['人件費', '労務費', 'personnel cost', 'labor cost'],
+    promptText: {
+      ja: '人件費に関する論点を抽出し、現状・課題・改善アクションを整理してください。数値や期限があれば明示してください。',
+      en: 'Extract personnel-cost related points and summarize current status, issues, and actions. Include numbers and deadlines when available.'
+    },
+    outputSchema: {
+      ja: ['現状サマリー', '主要課題', '改善アクション', '不足情報'],
+      en: ['Current Summary', 'Key Issues', 'Action Items', 'Missing Information']
+    }
+  },
+  {
+    id: 'budget-vs-actual',
+    title: { ja: '予実差異レビュー', en: 'Budget vs Actual Variance Review' },
+    triggers: ['予実', '予算実績', 'budget vs actual', 'variance'],
+    promptText: {
+      ja: '予算と実績の差異を整理し、差異要因と対応策を提示してください。',
+      en: 'Summarize budget-versus-actual variances, explain key drivers, and propose responses.'
+    },
+    outputSchema: {
+      ja: ['差異サマリー', '主要差異要因', '対応策', '確認事項'],
+      en: ['Variance Summary', 'Variance Drivers', 'Response Plan', 'Open Questions']
+    }
+  }
+];
+let aiWorkOrderModules = AI_WORK_ORDER_MODULES_FALLBACK.slice();
+
 let meetingContext = {
   schemaVersion: CONTEXT_SCHEMA_VERSION,
   goal: '',
@@ -722,6 +753,78 @@ var MODEL_SHUTDOWN_DATES = {
   'gemini-2.0-flash-lite-001': '2026-03-31'
 };
 
+function normalizeAiWorkOrderModules(modules) {
+  if (!Array.isArray(modules)) return [];
+  return modules.filter(module =>
+    module &&
+    typeof module.id === 'string' &&
+    module.id.trim() &&
+    Array.isArray(module.triggers) &&
+    module.triggers.some(trigger => typeof trigger === 'string' && trigger.trim()) &&
+    module.promptText
+  );
+}
+
+function getLocalizedAiModuleField(field, lang, fallback) {
+  if (field == null) return fallback;
+  if (typeof field === 'string') return field;
+  if (Array.isArray(field)) return field;
+  if (typeof field === 'object') {
+    return field[lang] || field.ja || field.en || fallback;
+  }
+  return fallback;
+}
+
+function findAiWorkOrderModules(instructions) {
+  if (!Array.isArray(instructions) || instructions.length === 0 || aiWorkOrderModules.length === 0) {
+    return [];
+  }
+
+  const instructionText = instructions
+    .map(item => (item && typeof item.text === 'string') ? item.text : '')
+    .join('\n')
+    .toLowerCase();
+  if (!instructionText) return [];
+
+  const matched = [];
+  const seen = new Set();
+  aiWorkOrderModules.forEach(module => {
+    if (!module || seen.has(module.id)) return;
+    const triggers = Array.isArray(module.triggers) ? module.triggers : [];
+    const hasMatch = triggers.some(trigger =>
+      typeof trigger === 'string' &&
+      trigger.trim() &&
+      instructionText.includes(trigger.toLowerCase())
+    );
+    if (hasMatch) {
+      matched.push(module);
+      seen.add(module.id);
+    }
+  });
+  return matched;
+}
+
+async function loadAiWorkOrderModules() {
+  try {
+    const response = await fetch(AI_WORK_ORDER_MODULES_PATH, { cache: 'no-store' });
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    const payload = await response.json();
+    const rawModules = Array.isArray(payload) ? payload : payload.modules;
+    const normalized = normalizeAiWorkOrderModules(rawModules);
+    if (normalized.length > 0) {
+      aiWorkOrderModules = normalized;
+      console.log('[Modules] Loaded AI work-order modules:', aiWorkOrderModules.length);
+      return;
+    }
+    console.warn('[Modules] No valid modules in JSON, fallback will be used');
+  } catch (err) {
+    console.warn('[Modules] Failed to load module JSON, fallback will be used:', err.message);
+  }
+  aiWorkOrderModules = AI_WORK_ORDER_MODULES_FALLBACK.slice();
+}
+
 // =====================================
 // 初期化
 // =====================================
@@ -732,6 +835,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // i18n初期化（言語切り替えに必要）
   await I18n.init();
+  await loadAiWorkOrderModules();
 
   // テーマトグルボタンの初期化
   if (window.AIMeetingTheme && document.getElementById('themeToggleBtn')) {
@@ -4482,9 +4586,11 @@ function generateExportMarkdown(options = null) {
     : { instructions: [], cleanedContentById: null };
   const aiWorkOrderInstructions = aiInstructionData.instructions;
   const cleanedMemoContentById = aiInstructionData.cleanedContentById;
+  const matchedModules = opts.aiWorkOrder ? findAiWorkOrderModules(aiWorkOrderInstructions) : [];
 
   // 0. AIワークオーダー（先頭）
   if (opts.aiWorkOrder) {
+    const currentLang = I18n.getLanguage() === 'ja' ? 'ja' : 'en';
     md += `---\n\n`;
     md += `## 🧭 ${t('export.document.sectionAiWorkOrder') || 'AI Work Order'}\n\n`;
     md += `${t('export.document.aiWorkOrderIntro') || 'Treat this markdown as the primary source and follow the rules below.'}\n\n`;
@@ -4500,6 +4606,29 @@ function generateExportMarkdown(options = null) {
         md += `- ${ts}${instruction.text}\n`;
       });
       md += '\n';
+    }
+    if (matchedModules.length > 0) {
+      md += `### ${t('export.document.aiWorkOrderModulesTitle') || 'Additional Modules'}\n`;
+      matchedModules.forEach((module, i) => {
+        const moduleTitle = getLocalizedAiModuleField(module.title, currentLang, module.id);
+        const modulePrompt = getLocalizedAiModuleField(module.promptText, currentLang, '');
+        const outputSchemaRaw = getLocalizedAiModuleField(module.outputSchema, currentLang, []);
+        const outputSchema = Array.isArray(outputSchemaRaw)
+          ? outputSchemaRaw
+          : (outputSchemaRaw ? [outputSchemaRaw] : []);
+
+        md += `#### ${i + 1}. ${moduleTitle}\n`;
+        if (modulePrompt) {
+          md += `${modulePrompt}\n\n`;
+        }
+        if (outputSchema.length > 0) {
+          md += `${t('export.document.aiWorkOrderModuleOutputLabel') || 'Expected Output'}\n`;
+          outputSchema.forEach(item => {
+            md += `- ${item}\n`;
+          });
+          md += '\n';
+        }
+      });
     }
     md += `### ${t('export.document.aiWorkOrderOutputTitle') || 'Output Order'}\n`;
     md += `1. ${t('export.document.aiWorkOrderOutputQuestions') || 'Clarification questions for missing information'}\n`;

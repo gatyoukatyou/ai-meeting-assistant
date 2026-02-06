@@ -1,0 +1,158 @@
+{
+  "version": 1,
+  "modules": [
+    {
+      "id": "personnel-cost-focus",
+      "title": {
+        "ja": "人件費重点分析",
+        "en": "Personnel Cost Focus Analysis"
+      },
+      "triggers": [
+        "人件費",
+        "労務費",
+        "personnel cost",
+        "labor cost"
+      ],
+      "promptText": {
+        "ja": "人件費に関する論点を抽出し、現状・課題・改善アクションを整理してください。数値や期限があれば明示してください。",
+        "en": "Extract personnel-cost related points and summarize current status, issues, and actions. Include numbers and deadlines when available."
+      },
+      "outputSchema": {
+        "ja": [
+          "現状サマリー",
+          "主要課題",
+          "改善アクション",
+          "不足情報"
+        ],
+        "en": [
+          "Current Summary",
+          "Key Issues",
+          "Action Items",
+          "Missing Information"
+        ]
+      }
+    },
+    {
+      "id": "budget-vs-actual",
+      "title": {
+        "ja": "予実差異レビュー",
+        "en": "Budget vs Actual Variance Review"
+      },
+      "triggers": [
+        "予実",
+        "予算実績",
+        "budget vs actual",
+        "variance"
+      ],
+      "promptText": {
+        "ja": "予算と実績の差異を整理し、差異要因と対応策を提示してください。",
+        "en": "Summarize budget-versus-actual variances, explain key drivers, and propose responses."
+      },
+      "outputSchema": {
+        "ja": [
+          "差異サマリー",
+          "主要差異要因",
+          "対応策",
+          "確認事項"
+        ],
+        "en": [
+          "Variance Summary",
+          "Variance Drivers",
+          "Response Plan",
+          "Open Questions"
+        ]
+      }
+    },
+    {
+      "id": "cashflow-watch",
+      "title": {
+        "ja": "資金繰りウォッチ",
+        "en": "Cashflow Watch"
+      },
+      "triggers": [
+        "資金繰り",
+        "キャッシュフロー",
+        "cash flow",
+        "cashflow"
+      ],
+      "promptText": {
+        "ja": "資金繰りに関するリスクを時系列で整理し、短期対応と中期対応に分けて提案してください。",
+        "en": "Identify cashflow risks in timeline order and propose short-term and mid-term responses."
+      },
+      "outputSchema": {
+        "ja": [
+          "リスク一覧",
+          "短期対応（30日）",
+          "中期対応（90日）",
+          "モニタリング指標"
+        ],
+        "en": [
+          "Risk List",
+          "Short-term Responses (30 days)",
+          "Mid-term Responses (90 days)",
+          "Monitoring Metrics"
+        ]
+      }
+    },
+    {
+      "id": "raci-clarification",
+      "title": {
+        "ja": "RACI整理",
+        "en": "RACI Clarification"
+      },
+      "triggers": [
+        "RACI",
+        "役割分担",
+        "owner",
+        "担当者"
+      ],
+      "promptText": {
+        "ja": "論点ごとに責任分担をRACI形式で整理し、未確定の担当を明示してください。",
+        "en": "For each topic, summarize ownership in RACI format and mark unresolved owners."
+      },
+      "outputSchema": {
+        "ja": [
+          "RACI表",
+          "未確定担当",
+          "次回までの決定事項"
+        ],
+        "en": [
+          "RACI Table",
+          "Unassigned Owners",
+          "Decisions Needed by Next Meeting"
+        ]
+      }
+    },
+    {
+      "id": "fifteen-minute-decision",
+      "title": {
+        "ja": "15分意思決定モード",
+        "en": "15-Minute Decision Mode"
+      },
+      "triggers": [
+        "15分",
+        "15-minute",
+        "15 minute",
+        "短時間会議"
+      ],
+      "promptText": {
+        "ja": "15分で意思決定する前提で、必須論点のみを抽出し、決めるべき項目を優先順位付きで提示してください。",
+        "en": "Assume a 15-minute decision window. Extract only essential points and list decision items with priorities."
+      },
+      "outputSchema": {
+        "ja": [
+          "最重要3論点",
+          "決定事項（優先順）",
+          "先送り事項",
+          "次アクション"
+        ],
+        "en": [
+          "Top 3 Critical Points",
+          "Decision Items (Priority Order)",
+          "Deferred Items",
+          "Next Actions"
+        ]
+      }
+    }
+  ]
+}
