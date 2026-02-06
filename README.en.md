@@ -149,6 +149,9 @@ For app-like experience on mobile:
 2. Tap the menu (⋮)
 3. Select "Add to Home Screen"
 
+For day-to-day iPhone operation (shortcut template, PWA constraints, save flow), see:  
+[iOS Shortcut + PWA Guide](docs/IOS_PWA_GUIDE.md)
+
 ---
 
 ### 4. Start Recording
