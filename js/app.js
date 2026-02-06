@@ -4077,10 +4077,10 @@ function renderTimelineItem(item) {
   const aiTypeLabel = item.aiType ? ` (${item.aiType})` : '';
 
   const memoActions = item.source === 'memo' ? `
-    <button class="btn-icon" data-action="pin" title="${item.pinned ? 'ピン解除' : 'ピン留め'}">📌</button>
-    ${item.type === 'memo' ? '<button class="btn-icon" data-action="to-todo" title="TODOに変換">☑️</button>' : ''}
-    ${item.type === 'todo' ? '<button class="btn-icon" data-action="toggle" title="完了切替">✓</button>' : ''}
-    <button class="btn-icon" data-action="delete" title="削除">🗑️</button>
+    <button class="btn-icon" data-action="pin" title="${item.pinned ? escapeHtml(t('app.timeline.actions.unpin') || 'ピン解除') : escapeHtml(t('app.timeline.actions.pin') || 'ピン留め')}">📌</button>
+    ${item.type === 'memo' ? `<button class="btn-icon" data-action="to-todo" title="${escapeHtml(t('app.timeline.actions.toTodo') || 'TODOに変換')}">☑️</button>` : ''}
+    ${item.type === 'todo' ? `<button class="btn-icon" data-action="toggle" title="${escapeHtml(t('app.timeline.actions.toggleComplete') || '完了切替')}">✓</button>` : ''}
+    <button class="btn-icon" data-action="delete" title="${escapeHtml(t('app.timeline.actions.delete') || '削除')}">🗑️</button>
   ` : '';
 
   return `

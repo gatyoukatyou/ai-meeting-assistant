@@ -95,7 +95,14 @@
       "filterAI": "AI",
       "filterQA": "Q&A",
       "searchPlaceholder": "キーワード検索...",
-      "empty": "タイムラインにアイテムがありません"
+      "empty": "タイムラインにアイテムがありません",
+      "actions": {
+        "pin": "ピン留め",
+        "unpin": "ピン解除",
+        "toTodo": "TODOに変換",
+        "toggleComplete": "完了切替",
+        "delete": "削除"
+      }
     },
     "details": {
       "toggle": "詳細設定",
