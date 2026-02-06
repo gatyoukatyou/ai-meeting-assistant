@@ -153,6 +153,105 @@
           "Next Actions"
         ]
       }
+    },
+    {
+      "id": "minimum-start-15x3",
+      "title": {
+        "ja": "最小着手15分×3",
+        "en": "Minimum Start 15x3"
+      },
+      "triggers": [
+        "最小着手",
+        "15分×3",
+        "15分3本",
+        "quick win",
+        "quick start",
+        "15x3"
+      ],
+      "promptText": {
+        "ja": "共通ルールを守り、いま着手できる15分以内のタスクを3本に絞って提示してください。各タスクは誰が何をどこまでやれば完了かを明確にしてください。",
+        "en": "Follow the common rules and propose exactly three tasks that can be started now and completed within 15 minutes each. Clarify owner, scope, and completion criteria for every task."
+      },
+      "outputSchema": {
+        "ja": [
+          "着手タスク3本",
+          "各タスクの所要時間（15分以内）",
+          "完了条件",
+          "実行順"
+        ],
+        "en": [
+          "Three Starter Tasks",
+          "Estimated Time per Task (<=15 min)",
+          "Definition of Done",
+          "Execution Order"
+        ]
+      }
+    },
+    {
+      "id": "manager-three-line-report",
+      "title": {
+        "ja": "上司向け3行報告",
+        "en": "3-Line Manager Update"
+      },
+      "triggers": [
+        "上司報告",
+        "3行報告",
+        "上長",
+        "manager update",
+        "three-line report",
+        "3-line"
+      ],
+      "promptText": {
+        "ja": "共通ルールを守り、会議内容を上司向けの3行報告に圧縮してください。事実・課題・次アクションが一目で分かる形にしてください。",
+        "en": "Follow the common rules and compress the meeting into a 3-line update for managers. Make facts, blockers, and next actions immediately clear."
+      },
+      "outputSchema": {
+        "ja": [
+          "3行報告本文",
+          "補足（必要時のみ）",
+          "不足情報への確認質問"
+        ],
+        "en": [
+          "3-Line Report",
+          "Optional Note (Only If Needed)",
+          "Clarifying Questions for Missing Information"
+        ]
+      }
+    },
+    {
+      "id": "board-one-page-brief",
+      "title": {
+        "ja": "取締役会向け1枚要旨",
+        "en": "Board One-Page Brief"
+      },
+      "triggers": [
+        "取締役会",
+        "役員会",
+        "1枚要旨",
+        "board brief",
+        "board summary",
+        "executive summary"
+      ],
+      "promptText": {
+        "ja": "共通ルールを守り、取締役会向け1枚要旨として再構成してください。意思決定に必要な論点、財務インパクト、主要リスクを簡潔に示してください。",
+        "en": "Follow the common rules and restructure this into a one-page board brief. Summarize decision points, financial impact, and major risks concisely."
+      },
+      "outputSchema": {
+        "ja": [
+          "エグゼクティブサマリー",
+          "意思決定依頼",
+          "財務インパクト",
+          "主要リスクと対策",
+          "不足情報"
+        ],
+        "en": [
+          "Executive Summary",
+          "Decision Requests",
+          "Financial Impact",
+          "Major Risks and Mitigations",
+          "Missing Information"
+        ]
+      }
     }
   ]
 }
