@@ -435,6 +435,8 @@
       "aiWorkOrderRuleOrder": "出力順序は固定し、順番を変更しない。",
       "aiWorkOrderRuleQuestionFirst": "最初に確認質問を提示し、その後で成果物を提示する。",
       "aiWorkOrderAdditionalTitle": "追加指示",
+      "aiWorkOrderModulesTitle": "追加モジュール",
+      "aiWorkOrderModuleOutputLabel": "期待出力",
       "aiWorkOrderOutputTitle": "出力順序",
       "aiWorkOrderOutputQuestions": "不足情報の確認質問",
       "aiWorkOrderOutputDeliverables": "成果物",

@@ -436,6 +436,8 @@
       "aiWorkOrderRuleOrder": "Keep the output order fixed and do not reorder sections.",
       "aiWorkOrderRuleQuestionFirst": "Show clarification questions first, then provide deliverables.",
       "aiWorkOrderAdditionalTitle": "Additional Instructions",
+      "aiWorkOrderModulesTitle": "Additional Modules",
+      "aiWorkOrderModuleOutputLabel": "Expected Output",
       "aiWorkOrderOutputTitle": "Output Order",
       "aiWorkOrderOutputQuestions": "Clarification questions for missing information",
       "aiWorkOrderOutputDeliverables": "Deliverables",
