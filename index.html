@@ -2475,6 +2475,9 @@
         <div style="display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:flex-end;">
           <button class="btn btn-secondary" id="copyDiagnosticPackBtn">🩺 <span data-i18n="history.diagnosticCopy">診断パックをコピー</span></button>
           <button class="btn btn-secondary" id="downloadDiagnosticPackBtn">💾 <span data-i18n="history.diagnosticDownload">診断JSON保存</span></button>
+          <button class="btn btn-secondary" id="downloadHistoryBackupBtn">🗄️ <span data-i18n="history.backupDownload">履歴バックアップJSON</span></button>
+          <button class="btn btn-secondary" id="importHistoryBackupBtn">♻️ <span data-i18n="history.backupRestore">バックアップJSON復元</span></button>
+          <input type="file" id="importHistoryBackupInput" accept=".json,application/json" style="display:none;">
           <button class="btn btn-secondary" id="importHistoryBtn">📂 <span data-i18n="history.import">MDファイルを読み込む</span></button>
           <input type="file" id="importFileInput" accept=".md,text/markdown" style="display:none;">
           <button class="btn btn-secondary" id="closeHistoryModalFooterBtn" data-i18n="common.close">閉じる</button>

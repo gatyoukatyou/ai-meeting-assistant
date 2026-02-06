@@ -1217,6 +1217,28 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
+  const downloadHistoryBackupBtn = document.getElementById('downloadHistoryBackupBtn');
+  if (downloadHistoryBackupBtn) {
+    downloadHistoryBackupBtn.addEventListener('click', () => {
+      downloadHistoryBackup().catch(err => console.error('[HistoryBackup] download failed', err));
+    });
+  }
+
+  const importHistoryBackupBtn = document.getElementById('importHistoryBackupBtn');
+  const importHistoryBackupInput = document.getElementById('importHistoryBackupInput');
+  if (importHistoryBackupBtn && importHistoryBackupInput) {
+    importHistoryBackupBtn.addEventListener('click', () => {
+      importHistoryBackupInput.click();
+    });
+    importHistoryBackupInput.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) {
+        importHistoryBackupFromFile(file).catch(err => console.error('[HistoryBackup] import failed', err));
+        importHistoryBackupInput.value = '';
+      }
+    });
+  }
+
   const copyDiagnosticPackBtn = document.getElementById('copyDiagnosticPackBtn');
   if (copyDiagnosticPackBtn) {
     copyDiagnosticPackBtn.addEventListener('click', () => {
@@ -4879,7 +4901,7 @@ async function downloadMarkdownFile(md, fileName, toastNamespace = 'toast.export
   return true;
 }
 
-async function downloadJsonFile(jsonText, fileName) {
+async function downloadJsonFile(jsonText, fileName, successToastKey = 'toast.diagnostic.downloaded') {
   if (!jsonText) return false;
   const targetFileName = fileName || `diagnostic-pack-${new Date().toISOString().split('T')[0]}.json`;
   const mime = 'application/json;charset=utf-8';
@@ -4923,7 +4945,7 @@ async function downloadJsonFile(jsonText, fileName) {
   a.click();
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 60000);
-  showToast(t('toast.diagnostic.downloaded'), 'success');
+  showToast(t(successToastKey), 'success');
   return true;
 }
 
@@ -5604,6 +5626,103 @@ async function clearHistoryRecords() {
   await HistoryStore.clear();
   showToast(t('toast.history.cleared'), 'info');
   await renderHistoryList();
+}
+
+function normalizeHistoryBackupRecord(record, index) {
+  const nowIso = new Date().toISOString();
+  const normalized = deepCopy(record || {});
+  if (!normalized.id || typeof normalized.id !== 'string') {
+    normalized.id = `history_import_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`;
+  }
+  if (!normalized.createdAt || Number.isNaN(new Date(normalized.createdAt).getTime())) {
+    normalized.createdAt = nowIso;
+  }
+  if (!normalized.updatedAt || Number.isNaN(new Date(normalized.updatedAt).getTime())) {
+    normalized.updatedAt = nowIso;
+  }
+  return normalized;
+}
+
+function parseHistoryBackupRecords(rawJson) {
+  let parsed;
+  try {
+    parsed = JSON.parse(rawJson);
+  } catch (err) {
+    throw new Error(t('history.backupInvalidFormat'));
+  }
+
+  const records = Array.isArray(parsed)
+    ? parsed
+    : (Array.isArray(parsed?.records) ? parsed.records : null);
+
+  if (!records) {
+    throw new Error(t('history.backupInvalidFormat'));
+  }
+
+  const normalizedRecords = records
+    .filter(record => record && typeof record === 'object')
+    .map((record, index) => normalizeHistoryBackupRecord(record, index))
+    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+  return normalizedRecords;
+}
+
+async function downloadHistoryBackup() {
+  if (typeof HistoryStore === 'undefined') {
+    showToast(t('history.notSupported'), 'error');
+    return false;
+  }
+
+  const records = await HistoryStore.list();
+  if (!records.length) {
+    showToast(t('history.backupNoRecords'), 'warning');
+    return false;
+  }
+
+  const payload = {
+    schemaVersion: 1,
+    exportedAt: new Date().toISOString(),
+    app: 'ai-meeting-assistant',
+    recordCount: records.length,
+    records: records.map(record => deepCopy(record))
+  };
+
+  const fileName = `meeting-history-backup-${new Date().toISOString().split('T')[0]}.json`;
+  return downloadJsonFile(JSON.stringify(payload, null, 2), fileName, 'history.backupDownloadSuccess');
+}
+
+async function importHistoryBackupFromFile(file) {
+  if (!file || typeof HistoryStore === 'undefined') return;
+
+  try {
+    const raw = await file.text();
+    const records = parseHistoryBackupRecords(raw);
+    if (!records.length) {
+      showToast(t('history.backupImportNoRecords'), 'warning');
+      return false;
+    }
+
+    const appendMode = confirm(t('history.backupImportModePrompt'));
+    if (!appendMode) {
+      const confirmed = confirm(t('history.backupImportOverwriteConfirm'));
+      if (!confirmed) return false;
+      await HistoryStore.clear();
+    }
+
+    let importedCount = 0;
+    for (const record of records) {
+      await HistoryStore.save(record);
+      importedCount += 1;
+    }
+
+    await renderHistoryList();
+    showToast(t('history.backupImportSuccess', { count: importedCount }), 'success');
+    return true;
+  } catch (err) {
+    console.error('[HistoryBackup] import error:', err);
+    showToast(t('history.backupImportFailed', { message: err.message }), 'error');
+    return false;
+  }
 }
 
 function normalizeDiagnosticErrorCode(rawCode) {
