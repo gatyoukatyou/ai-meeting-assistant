@@ -1,6 +1,6 @@
 # プライバシーポリシー / Privacy Policy
 
-最終更新日 / Last Updated: 2026-01-10
+最終更新日 / Last Updated: 2026-02-06
 
 ---
 
@@ -25,11 +25,13 @@
 - ユーザー自身が取得したAIサービスのAPIキー
 
 ### データの保存場所
-APIキーや設定情報は、ユーザーのブラウザのローカルストレージにのみ保存されます。
+APIキーはユーザーのブラウザのsessionStorage（タブ/セッション限定）に保存され、タブ/ブラウザを閉じると削除されます。
+設定情報・モデル選択などはlocalStorageに保存されます。
 開発者が管理するサーバーには一切送信されません。
 
 会議履歴（文字起こし・AI回答）はブラウザのIndexedDBに保存されます（最大5件）。
-会議コンテキスト（目的/参考情報/添付資料の抽出テキスト）はlocalStorageに保存されます。
+会議コンテキスト（目的/参考情報/添付資料の抽出テキスト）は、既定でsessionStorageに保存されます。
+設定で「会議情報を次回も保持する」を有効にした場合のみ、会議コンテキストはlocalStorageに保存されます。
 不要になったデータは履歴削除や設定のクリアで削除できます。
 
 ### 外部サービス
@@ -65,11 +67,13 @@ To use the Application, the following are required:
 - API keys obtained by the user for supported AI services
 
 ### Data Storage
-API keys and settings are stored only in the user's browser local storage.
+API keys are stored in the user's browser sessionStorage (tab/session scope) and are cleared when the tab/browser closes.
+Settings and selected models are stored in localStorage.
 They are never transmitted to or stored on servers operated by the developer.
 
 Meeting history (transcripts and AI responses) is saved in browser IndexedDB (max 5 records).
-Meeting context (goals, references, extracted attachment text) is saved in localStorage.
+Meeting context (goals, references, extracted attachment text) is saved in sessionStorage by default.
+Only when the "Persist meeting context across sessions" option is enabled, meeting context is saved in localStorage.
 You can remove this data via history clear or settings reset.
 
 ### Third-Party Services
