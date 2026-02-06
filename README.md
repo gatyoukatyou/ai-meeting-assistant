@@ -195,6 +195,9 @@ AI回答・Q&A・メモ/TODOを時系列で整理し、フィルタ/検索/ピ�
 
 「📥 エクスポート」をクリックすると、会議の内容とAIの回答、メモ/TODOがファイルになります。
 
+MarkdownをWord / Todoist / Asana向けに変換したい場合は  
+[`tools/md-postprocess/README.md`](tools/md-postprocess/README.md) の付属ツールを利用してください。
+
 ## 設定のバックアップ
 
 別のパソコンに移す時や、バックアップを取りたい時：

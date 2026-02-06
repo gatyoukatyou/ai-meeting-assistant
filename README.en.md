@@ -183,6 +183,9 @@ Select specific text before asking to get responses about just that section. Use
 
 Click "📥 Export" to save meeting content, AI responses, and memos/TODOs as a Markdown file.
 
+If you need post-processing into Word / Todoist / Asana formats, use the bundled tools in  
+[`tools/md-postprocess/README.md`](tools/md-postprocess/README.md).
+
 ## Settings Backup
 
 To transfer settings to another device:
