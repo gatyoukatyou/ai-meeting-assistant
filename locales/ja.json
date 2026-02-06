@@ -24,7 +24,8 @@
       "title": "AI参加会議",
       "settings": "設定",
       "detailSettings": "詳細設定",
-      "more": "その他"
+      "more": "その他",
+      "demo": "30秒デモ"
     },
     "recording": {
       "start": "録音開始",
@@ -512,6 +513,7 @@
       "feature3": "APIキーはセッション内のみ保持",
       "feature4": "利用料金の概算をリアルタイム表示",
       "terms": "利用開始により、利用規約とプライバシーポリシーに同意したものとみなされます。",
+      "demoButton": "30秒デモを試す",
       "skipButton": "後で設定する",
       "startButton": "設定を開始する"
     }
@@ -603,5 +605,11 @@
     "nativeDocsFallback": "Native Docsに失敗、テキスト抽出にフォールバック",
     "badgeReasoningBoost": "Boost ON",
     "badgeNativeDocs": "Native Docs ON"
+  },
+  "demo": {
+    "overwriteConfirm": "現在の内容をデモデータで上書きしますか？",
+    "stopRecordingFirst": "デモを読み込む前に録音を停止してください",
+    "loaded": "デモ会議を読み込みました",
+    "loadedAndOpenedExport": "デモ会議を読み込み、エクスポートを開きました"
   }
 }

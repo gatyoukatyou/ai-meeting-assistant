@@ -78,6 +78,48 @@ const AI_WORK_ORDER_MODULES_FALLBACK = [
 let aiWorkOrderModules = AI_WORK_ORDER_MODULES_FALLBACK.slice();
 const DIAGNOSTIC_PACK_SCHEMA_VERSION = 1;
 const DIAGNOSTIC_RECENT_ERROR_LIMIT = 10;
+const DEMO_SESSION_TEMPLATES = {
+  ja: {
+    title: 'デモ会議: 採用広報施策の整理',
+    transcript: [
+      { timestamp: '10:00', text: '今日の目的は採用広報の施策を3つに絞ることです。' },
+      { timestamp: '10:02', text: '候補は採用LP改善、社員インタビュー記事、SNS短尺動画です。' },
+      { timestamp: '10:04', text: '採用LPは直帰率が高いので、CTA改善を優先したいです。' },
+      { timestamp: '10:06', text: 'SNSは週3投稿を目標にして、担当を2名で回します。' },
+      { timestamp: '10:08', text: '次回までに見積もりと予実インパクトを確認しましょう。' }
+    ],
+    memos: [
+      { type: 'memo', timestamp: '10:03', content: '候補施策: LP改善 / 記事 / SNS動画' },
+      { type: 'todo', timestamp: '10:07', content: '来週金曜までにSNS投稿案を3本作成', completed: false },
+      { type: 'memo', timestamp: '10:09', content: '【AI】この会議内容からAIワークオーダーを作成し、予実差異とRACIを含めてください。' }
+    ],
+    summary: '採用広報施策は「採用LP改善」「社員インタビュー記事」「SNS短尺動画」の3本柱で進める。次回までに予実影響と見積もりを確認する。',
+    consult: '優先順位は LP改善 → SNS運用体制 → 記事制作。KPIは直帰率、応募数、投稿反応率の3指標に絞ると実行しやすいです。',
+    minutes: '## 決定事項\n- 採用広報施策を3本柱で進行\n\n## TODO\n- SNS投稿案3本（期限: 来週金曜）\n- LP改善案と見積もり確認',
+    qaQuestion: '最初に着手すべき施策は？',
+    qaAnswer: '最初は採用LP改善です。短期間で効果測定しやすく、他施策の受け皿にもなるためです。'
+  },
+  en: {
+    title: 'Demo Meeting: Hiring PR Plan',
+    transcript: [
+      { timestamp: '10:00', text: 'Today we need to narrow hiring PR initiatives to three items.' },
+      { timestamp: '10:02', text: 'Candidates are landing page improvements, employee interview posts, and short social videos.' },
+      { timestamp: '10:04', text: 'The hiring landing page has a high bounce rate, so CTA improvements should be first.' },
+      { timestamp: '10:06', text: 'For social media, target three posts per week with two owners.' },
+      { timestamp: '10:08', text: 'By next meeting, confirm estimated impact and budget variance.' }
+    ],
+    memos: [
+      { type: 'memo', timestamp: '10:03', content: 'Candidate initiatives: LP improvement / interview post / social short video' },
+      { type: 'todo', timestamp: '10:07', content: 'Create 3 social post drafts by next Friday', completed: false },
+      { type: 'memo', timestamp: '10:09', content: 'AI: Create an AI work order from this meeting and include budget-vs-actual and RACI.' }
+    ],
+    summary: 'The team will proceed with three hiring PR initiatives: landing page improvements, interview posts, and short social videos. Budget impact will be validated by next meeting.',
+    consult: 'Recommended priority is landing page updates first, then social operating cadence, then content production. Track bounce rate, applications, and engagement as KPIs.',
+    minutes: '## Decisions\n- Proceed with 3 hiring PR initiatives\n\n## TODO\n- Create 3 social post drafts (due next Friday)\n- Validate LP improvement estimate and budget impact',
+    qaQuestion: 'Which initiative should start first?',
+    qaAnswer: 'Start with landing page improvements. It is fastest to measure and supports downstream initiatives.'
+  }
+};
 
 let meetingContext = {
   schemaVersion: CONTEXT_SCHEMA_VERSION,
@@ -1292,6 +1334,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   const skipWelcomeBtn = document.getElementById('skipWelcomeBtn');
   if (skipWelcomeBtn) {
     skipWelcomeBtn.addEventListener('click', closeWelcomeModal);
+  }
+
+  const loadDemoSessionBtn = document.getElementById('loadDemoSessionBtn');
+  if (loadDemoSessionBtn) {
+    loadDemoSessionBtn.addEventListener('click', () => {
+      loadDemoMeetingSession({ openExportModal: true });
+    });
   }
 
   // LLM設定モーダル
@@ -4408,6 +4457,101 @@ function closeWelcomeModal() {
   document.getElementById('welcomeModal').classList.remove('active');
 }
 
+function getDemoSessionTemplate() {
+  const language = I18n.getLanguage() === 'ja' ? 'ja' : 'en';
+  return DEMO_SESSION_TEMPLATES[language] || DEMO_SESSION_TEMPLATES.ja;
+}
+
+function buildDemoSessionData() {
+  const template = getDemoSessionTemplate();
+  const now = new Date();
+  const baseDate = new Date(now.getTime() - (template.transcript.length + 2) * 60000);
+
+  const transcriptText = template.transcript
+    .map(line => `[${line.timestamp}] ${line.text}`)
+    .join('\n');
+  const transcriptData = parseTranscriptToChunks(transcriptText);
+
+  const memos = template.memos.map((memo, index) => {
+    const createdAt = new Date(baseDate.getTime() + (index + 1) * 60000).toISOString();
+    return {
+      id: `memo_demo_${index + 1}`,
+      timestamp: memo.timestamp,
+      elapsedSec: (index + 1) * 60,
+      type: memo.type,
+      content: memo.content,
+      quote: '',
+      quotedChunkIds: [],
+      completed: Boolean(memo.completed),
+      pinned: false,
+      createdAt
+    };
+  });
+
+  return {
+    title: template.title,
+    transcriptChunks: transcriptData,
+    aiResponses: {
+      summary: [{ timestamp: '10:10', content: template.summary }],
+      opinion: [],
+      idea: [],
+      consult: [{ timestamp: '10:11', content: template.consult }],
+      minutes: template.minutes,
+      custom: [{ q: template.qaQuestion, a: template.qaAnswer }]
+    },
+    meetingMemos: { items: memos },
+    memoIdCounter: memos.length + 1
+  };
+}
+
+function loadDemoMeetingSession(options = {}) {
+  if (isRecording) {
+    showToast(t('demo.stopRecordingFirst'), 'warning');
+    return false;
+  }
+
+  if ((transcriptChunks.length > 0 || hasAnyAiResponse()) && !confirm(t('demo.overwriteConfirm'))) {
+    return false;
+  }
+
+  const demo = buildDemoSessionData();
+  transcriptChunks = demo.transcriptChunks;
+  chunkIdCounter = transcriptChunks.length;
+  meetingStartMarkerId = transcriptChunks.length > 0 ? transcriptChunks[0].id : null;
+  fullTranscript = getFullTranscriptText();
+  aiResponses = demo.aiResponses;
+  meetingMemos = demo.meetingMemos;
+  memoIdCounter = demo.memoIdCounter;
+  restoredHistoryId = null;
+
+  const titleInput = document.getElementById('meetingTitleInput');
+  if (titleInput) {
+    titleInput.value = demo.title;
+    localStorage.setItem(MEETING_TITLE_STORAGE_KEY, demo.title);
+  }
+
+  const minutesBtn = document.getElementById('minutesBtn');
+  if (minutesBtn) {
+    minutesBtn.disabled = false;
+  }
+
+  renderTranscriptChunks();
+  renderAIResponsesFromState();
+  updateCostDisplayFromState();
+  updateContextIndicators();
+
+  closeWelcomeModal();
+
+  if (options.openExportModal) {
+    openExportModal();
+    showToast(t('demo.loadedAndOpenedExport'), 'success');
+  } else {
+    showToast(t('demo.loaded'), 'success');
+  }
+
+  return true;
+}
+
 // =====================================
 // LLM設定モーダル
 // =====================================
@@ -6909,6 +7053,7 @@ function initMoreMenu() {
       // 既存ボタンのクリックに委譲（イベント・状態管理を既存実装に任せる）
       if (action === 'context') document.getElementById('openContextModalBtn')?.click();
       if (action === 'export') document.getElementById('openExportBtn')?.click();
+      if (action === 'demo') loadDemoMeetingSession({ openExportModal: true });
       if (action === 'history') document.getElementById('openHistoryBtn')?.click();
       if (action === 'settings') document.getElementById('openFullSettingsBtn')?.click();
     });
