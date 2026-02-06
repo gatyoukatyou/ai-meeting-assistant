@@ -353,6 +353,11 @@
       "openedInNewTab": "Opened in new tab. Long-press or use share button to save",
       "copyFallback": "Popup blocked. Please copy from the preview"
     },
+    "diagnostic": {
+      "copied": "Diagnostic pack copied",
+      "downloaded": "Diagnostic JSON saved",
+      "failed": "Failed to generate diagnostic pack"
+    },
     "llm": {
       "notConfigured": "LLM API key not set. Please register an API key in settings."
     },
@@ -479,6 +484,10 @@
     "notSupported": "History is not available in this browser.",
     "missingRecord": "Record not found",
     "import": "Import MD file",
+    "diagnosticCopy": "Copy Diagnostic Pack",
+    "diagnosticDownload": "Save Diagnostic JSON",
+    "diagnosticTitle": "Diagnostic Pack",
+    "diagnosticDescription": "Paste the following into your issue body (no meeting text, audio, or API keys included)",
     "importConfirmOverwrite": "Overwrite current transcript and AI responses?",
     "importSuccess": "MD file imported successfully",
     "importFailed": "Failed to import MD file: {message}",

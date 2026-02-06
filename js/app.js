@@ -76,6 +76,8 @@ const AI_WORK_ORDER_MODULES_FALLBACK = [
   }
 ];
 let aiWorkOrderModules = AI_WORK_ORDER_MODULES_FALLBACK.slice();
+const DIAGNOSTIC_PACK_SCHEMA_VERSION = 1;
+const DIAGNOSTIC_RECENT_ERROR_LIMIT = 10;
 
 let meetingContext = {
   schemaVersion: CONTEXT_SCHEMA_VERSION,
@@ -1215,6 +1217,20 @@ document.addEventListener('DOMContentLoaded', async function() {
     });
   }
 
+  const copyDiagnosticPackBtn = document.getElementById('copyDiagnosticPackBtn');
+  if (copyDiagnosticPackBtn) {
+    copyDiagnosticPackBtn.addEventListener('click', () => {
+      copyDiagnosticPackToClipboard().catch(err => console.error('[Diagnostic] copy failed', err));
+    });
+  }
+
+  const downloadDiagnosticPackBtn = document.getElementById('downloadDiagnosticPackBtn');
+  if (downloadDiagnosticPackBtn) {
+    downloadDiagnosticPackBtn.addEventListener('click', () => {
+      downloadDiagnosticPackJson().catch(err => console.error('[Diagnostic] download failed', err));
+    });
+  }
+
   const historyList = document.getElementById('historyList');
   if (historyList) {
     historyList.addEventListener('click', handleHistoryListAction);
@@ -1855,6 +1871,28 @@ function copyTextFallback(text) {
   }
 
   document.body.removeChild(textarea);
+}
+
+function copyTextFallbackRaw(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.left = '-9999px';
+  textarea.style.top = '0';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+
+  let successful = false;
+  try {
+    successful = document.execCommand('copy');
+  } catch (err) {
+    console.error('execCommand copy failed:', err);
+    successful = false;
+  }
+
+  document.body.removeChild(textarea);
+  return successful;
 }
 
 // 会議開始マーカーを設定
@@ -4841,6 +4879,54 @@ async function downloadMarkdownFile(md, fileName, toastNamespace = 'toast.export
   return true;
 }
 
+async function downloadJsonFile(jsonText, fileName) {
+  if (!jsonText) return false;
+  const targetFileName = fileName || `diagnostic-pack-${new Date().toISOString().split('T')[0]}.json`;
+  const mime = 'application/json;charset=utf-8';
+
+  if (navigator.share && navigator.canShare && typeof File !== 'undefined') {
+    try {
+      const file = new File([jsonText], targetFileName, { type: mime });
+      if (navigator.canShare({ files: [file] })) {
+        await navigator.share({ files: [file], title: targetFileName });
+        showToast(t('toast.export.shared'), 'success');
+        return true;
+      }
+    } catch (e) {
+      if (e?.name === 'AbortError') {
+        return false;
+      }
+      console.warn('[Diagnostic] Web Share failed, falling back:', e);
+    }
+  }
+
+  const blob = new Blob([jsonText], { type: mime });
+  const url = URL.createObjectURL(blob);
+
+  if (isIOSWebKit()) {
+    const opened = window.open(url, '_blank');
+    if (opened) {
+      showToast(t('toast.export.openedInNewTab'), 'info');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return true;
+    }
+    showToast(t('toast.export.copyFallback'), 'warning');
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return false;
+  }
+
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = targetFileName;
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 60000);
+  showToast(t('toast.diagnostic.downloaded'), 'success');
+  return true;
+}
+
 async function downloadExport() {
   const options = getExportOptions();
 
@@ -5518,6 +5604,240 @@ async function clearHistoryRecords() {
   await HistoryStore.clear();
   showToast(t('toast.history.cleared'), 'info');
   await renderHistoryList();
+}
+
+function normalizeDiagnosticErrorCode(rawCode) {
+  if (!rawCode) return '';
+  const text = String(rawCode).trim();
+  if (!text) return '';
+
+  const tokenMatch = text.match(/[A-Z][A-Z0-9_]{2,}/);
+  if (tokenMatch) {
+    return tokenMatch[0];
+  }
+
+  const httpMatch = text.match(/HTTP\s+(\d{3})/i);
+  if (httpMatch) {
+    return `HTTP_${httpMatch[1]}`;
+  }
+
+  if (/timeout/i.test(text)) {
+    return 'TIMEOUT';
+  }
+
+  return text
+    .replace(/[^a-zA-Z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toUpperCase()
+    .slice(0, 64);
+}
+
+function dedupeDiagnosticCodes(codes, limit = DIAGNOSTIC_RECENT_ERROR_LIMIT) {
+  const seen = new Set();
+  const result = [];
+  (codes || []).forEach(code => {
+    const normalized = normalizeDiagnosticErrorCode(code);
+    if (!normalized || seen.has(normalized)) return;
+    seen.add(normalized);
+    result.push(normalized);
+  });
+  return result.slice(0, limit);
+}
+
+function summarizeContextFileDiagnostics(files) {
+  const summary = {
+    total: 0,
+    byStatus: {
+      success: 0,
+      warning: 0,
+      error: 0,
+      loading: 0
+    },
+    warningCodes: [],
+    errorCodes: []
+  };
+
+  if (!Array.isArray(files)) return summary;
+  summary.total = files.length;
+  files.forEach(file => {
+    const status = file?.status || 'unknown';
+    if (Object.prototype.hasOwnProperty.call(summary.byStatus, status)) {
+      summary.byStatus[status] += 1;
+    }
+    if (status === 'warning' && file?.errorMessage) {
+      summary.warningCodes.push(file.errorMessage);
+    }
+    if (status === 'error' && file?.errorMessage) {
+      summary.errorCodes.push(file.errorMessage);
+    }
+  });
+  summary.warningCodes = dedupeDiagnosticCodes(summary.warningCodes);
+  summary.errorCodes = dedupeDiagnosticCodes(summary.errorCodes);
+  return summary;
+}
+
+function collectRecentDiagnosticErrorCodes(contextSummary) {
+  const candidates = [];
+
+  if (contextSummary) {
+    candidates.push(...(contextSummary.errorCodes || []));
+    candidates.push(...(contextSummary.warningCodes || []));
+  }
+
+  for (let i = qaEventLog.length - 1; i >= 0; i -= 1) {
+    const entry = qaEventLog[i];
+    if (!entry) continue;
+
+    if (entry.event === 'timeout') {
+      candidates.push('TIMEOUT');
+      continue;
+    }
+
+    if (entry.event === 'failed') {
+      const fromMessage = normalizeDiagnosticErrorCode(entry.error || '');
+      candidates.push(fromMessage || 'LLM_CALL_FAILED');
+    }
+
+    if (candidates.length >= DIAGNOSTIC_RECENT_ERROR_LIMIT * 3) {
+      break;
+    }
+  }
+
+  return dedupeDiagnosticCodes(candidates);
+}
+
+function getConfiguredLlmProvidersForDiagnostic() {
+  const providers = ['claude', 'openai_llm', 'gemini', 'groq'];
+  return providers.filter(provider => Boolean(SecureStorage.getApiKey(provider)));
+}
+
+function getSelectedSttModelForDiagnostic(provider) {
+  if (provider === 'deepgram_realtime') {
+    return SecureStorage.getModel('deepgram') || 'nova-3-general';
+  }
+  return SecureStorage.getModel('openai') || 'whisper-1';
+}
+
+function getBuildMetaForDiagnostic() {
+  const versionMeta = document.querySelector('meta[name="app-version"]');
+  const commitMeta = document.querySelector('meta[name="app-commit"]');
+  return {
+    version: versionMeta ? versionMeta.content : null,
+    commit: commitMeta ? commitMeta.content : null
+  };
+}
+
+async function buildDiagnosticPackData() {
+  const now = new Date();
+  const sttProvider = SecureStorage.getOption('sttProvider', 'openai_stt');
+  const llm = getAvailableLlm();
+  const contextSummary = summarizeContextFileDiagnostics(meetingContext.files || []);
+  const recentErrorCodes = collectRecentDiagnosticErrorCodes(contextSummary);
+  const buildMeta = getBuildMetaForDiagnostic();
+  const settingsExport = SecureStorage.exportAll();
+
+  if (settingsExport?.options && typeof settingsExport.options.sttUserDictionary === 'string') {
+    settingsExport.options.sttUserDictionaryLength = settingsExport.options.sttUserDictionary.length;
+    delete settingsExport.options.sttUserDictionary;
+  }
+
+  let historyRecordCount = null;
+  if (typeof HistoryStore !== 'undefined') {
+    try {
+      const records = await HistoryStore.list();
+      historyRecordCount = records.length;
+    } catch (err) {
+      console.warn('[Diagnostic] Failed to read history records:', err);
+      historyRecordCount = null;
+    }
+  }
+
+  return {
+    schemaVersion: DIAGNOSTIC_PACK_SCHEMA_VERSION,
+    generatedAt: now.toISOString(),
+    app: {
+      name: 'ai-meeting-assistant',
+      version: buildMeta.version,
+      commit: buildMeta.commit,
+      path: window.location.pathname || null
+    },
+    environment: {
+      appLanguage: I18n.getLanguage(),
+      browserLanguage: navigator.language || '',
+      browserLanguages: Array.isArray(navigator.languages) ? navigator.languages.slice(0, 5) : [],
+      userAgent: navigator.userAgent || '',
+      platform: navigator.platform || '',
+      online: navigator.onLine,
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+      viewport: `${window.innerWidth}x${window.innerHeight}`
+    },
+    selectedProviders: {
+      sttProvider,
+      sttProviderLabel: getProviderDisplayName(sttProvider),
+      sttModel: getSelectedSttModelForDiagnostic(sttProvider),
+      sttLanguage: SecureStorage.getOption('sttLanguage', 'ja'),
+      llmPriority: SecureStorage.getOption('llmPriority', 'auto'),
+      llmActiveProvider: llm ? llm.provider : null,
+      llmActiveModel: llm ? llm.model : null,
+      llmConfiguredProviders: getConfiguredLlmProvidersForDiagnostic()
+    },
+    runtime: {
+      isRecording,
+      isPaused,
+      transcriptChunkCount: transcriptChunks.length,
+      memoCount: meetingMemos.items.filter(item => item.type === 'memo').length,
+      todoCount: meetingMemos.items.filter(item => item.type === 'todo').length,
+      historyRecordCount
+    },
+    recentErrorCodes,
+    contextFiles: contextSummary,
+    settingsExport
+  };
+}
+
+function buildDiagnosticPackMarkdown(pack) {
+  const json = JSON.stringify(pack, null, 2);
+  return [
+    `## ${t('history.diagnosticTitle')}`,
+    '',
+    t('history.diagnosticDescription'),
+    '',
+    '```json',
+    json,
+    '```'
+  ].join('\n');
+}
+
+async function copyDiagnosticPackToClipboard() {
+  const pack = await buildDiagnosticPackData();
+  const markdown = buildDiagnosticPackMarkdown(pack);
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    try {
+      await navigator.clipboard.writeText(markdown);
+      showToast(t('toast.diagnostic.copied'), 'success');
+      return true;
+    } catch (err) {
+      console.warn('[Diagnostic] Clipboard API failed, fallback to execCommand:', err);
+    }
+  }
+
+  const copied = copyTextFallbackRaw(markdown);
+  showToast(t(copied ? 'toast.diagnostic.copied' : 'toast.diagnostic.failed'), copied ? 'success' : 'error');
+  return copied;
+}
+
+async function downloadDiagnosticPackJson() {
+  try {
+    const pack = await buildDiagnosticPackData();
+    const date = new Date().toISOString().split('T')[0];
+    const fileName = `diagnostic-pack-${date}.json`;
+    return await downloadJsonFile(JSON.stringify(pack, null, 2), fileName);
+  } catch (err) {
+    console.error('[Diagnostic] Failed to build/download diagnostic pack:', err);
+    showToast(t('toast.diagnostic.failed'), 'error');
+    return false;
+  }
 }
 
 async function refreshHistoryListIfOpen() {

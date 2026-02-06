@@ -2472,7 +2472,9 @@
       </div>
       <div class="modal-footer" style="justify-content:space-between;">
         <button class="btn btn-ghost" id="clearHistoryBtn">🧹 <span data-i18n="history.clearAll">履歴を全て削除</span></button>
-        <div style="display:flex; gap:0.5rem;">
+        <div style="display:flex; gap:0.5rem; flex-wrap:wrap; justify-content:flex-end;">
+          <button class="btn btn-secondary" id="copyDiagnosticPackBtn">🩺 <span data-i18n="history.diagnosticCopy">診断パックをコピー</span></button>
+          <button class="btn btn-secondary" id="downloadDiagnosticPackBtn">💾 <span data-i18n="history.diagnosticDownload">診断JSON保存</span></button>
           <button class="btn btn-secondary" id="importHistoryBtn">📂 <span data-i18n="history.import">MDファイルを読み込む</span></button>
           <input type="file" id="importFileInput" accept=".md,text/markdown" style="display:none;">
           <button class="btn btn-secondary" id="closeHistoryModalFooterBtn" data-i18n="common.close">閉じる</button>
