@@ -2,3 +2,5 @@
 .serena/
 .DS_Store
 node_modules/
+__pycache__/
+*.py[cod]
