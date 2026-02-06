@@ -24,7 +24,8 @@
       "title": "AI Meeting Assistant",
       "settings": "Settings",
       "detailSettings": "Details",
-      "more": "More"
+      "more": "More",
+      "demo": "30-sec Demo"
     },
     "recording": {
       "start": "Start Recording",
@@ -513,6 +514,7 @@
       "feature3": "API keys are session-only and cleared on close",
       "feature4": "Real-time display of estimated usage costs",
       "terms": "By starting, you agree to the Terms of Service and Privacy Policy.",
+      "demoButton": "Try 30-sec Demo",
       "skipButton": "Configure later",
       "startButton": "Start Configuration"
     }
@@ -604,5 +606,11 @@
     "nativeDocsFallback": "Native Docs failed, falling back to text extraction",
     "badgeReasoningBoost": "Boost ON",
     "badgeNativeDocs": "Native Docs ON"
+  },
+  "demo": {
+    "overwriteConfirm": "Overwrite current content with demo data?",
+    "stopRecordingFirst": "Stop recording before loading demo data",
+    "loaded": "Demo meeting loaded",
+    "loadedAndOpenedExport": "Demo meeting loaded and export opened"
   }
 }
