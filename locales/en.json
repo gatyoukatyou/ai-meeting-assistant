@@ -95,7 +95,14 @@
       "filterAI": "AI",
       "filterQA": "Q&A",
       "searchPlaceholder": "Search keywords...",
-      "empty": "No items in timeline"
+      "empty": "No items in timeline",
+      "actions": {
+        "pin": "Pin",
+        "unpin": "Unpin",
+        "toTodo": "Convert to TODO",
+        "toggleComplete": "Toggle complete",
+        "delete": "Delete"
+      }
     },
     "details": {
       "toggle": "Details",
