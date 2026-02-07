@@ -3,7 +3,7 @@
   "private": true,
   "description": "CI dependencies for smoke tests",
   "scripts": {
-    "test:unit": "node --test \"tests/unit/**/*.test.mjs\"",
+    "test:unit": "node --test tests/unit/*.test.mjs",
     "test:generate": "node scripts/generate-test-files.mjs",
     "test:i18n": "node scripts/check-i18n-keys.mjs",
     "test:ui-smoke": "node scripts/ui_smoke_check.mjs",
