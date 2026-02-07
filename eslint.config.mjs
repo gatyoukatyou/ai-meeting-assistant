@@ -27,6 +27,7 @@ export default [
         AIMeetingTheme: 'writable',
         RecordingMonitor: 'writable',
         FileExtractor: 'writable',
+        FormatUtils: 'readonly',
         STTProviders: 'writable',
         PCMStreamProcessor: 'writable',
         AudioResampler: 'writable',
