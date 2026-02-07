@@ -169,6 +169,11 @@ var isRateLimitOrServerError = ModelUtils.isRateLimitOrServerError;
 var getAlternativeModels = ModelUtils.getAlternativeModels;
 var getFallbackModel = ModelUtils.getFallbackModel;
 
+// --- Text utilities (delegated to js/lib/text-utils.js) ---
+var fixBrokenNumbers = TextUtils.fixBrokenNumbers;
+var parseTimestampToMs = TextUtils.parseTimestampToMs;
+var extractAiInstructionFromMemoLine = TextUtils.extractAiInstructionFromMemoLine;
+
 // Handle fatal errors - show modal and safely stop recording
 function handleFatalError(error) {
   // Prevent recursive error handling
@@ -1813,16 +1818,6 @@ async function startStreamingRecording(provider) {
  * 注意: 通常の「1,234,567」を壊さないよう、4桁以上の連続に限定
  * （1,2,3 のような短い列挙は変換しない）
  */
-function fixBrokenNumbers(text) {
-  // 単桁がカンマで連なるパターンを検出して結合
-  // パターン: 数字1桁 + (カンマ + 数字1桁) が3回以上繰り返し
-  // → 4桁以上の崩れた数値のみ対象（1,2,3のような短い列挙は除外）
-  return text.replace(/\b(\d)(,\d){3,}\b/g, (match) => {
-    // カンマを除去して数字だけにする
-    return match.replace(/,/g, '');
-  });
-}
-
 // 文字起こし結果を処理
 function handleTranscriptResult(text, isFinal) {
   if (!text || !text.trim()) return;
@@ -4240,16 +4235,6 @@ function attachTimelineListeners() {
   });
 }
 
-function parseTimestampToMs(timestamp) {
-  if (!timestamp) return 0;
-  const parts = timestamp.split(':').map(Number);
-  if (parts.length === 2) {
-    const [h, m] = parts;
-    return (h * 60 + m) * 60 * 1000;
-  }
-  return 0;
-}
-
 function initTimelineFilters() {
   document.querySelectorAll('.timeline-filter').forEach(btn => {
     btn.addEventListener('click', () => {
@@ -4625,27 +4610,6 @@ function openFullSettings() {
     'settings',
     'width=650,height=850,scrollbars=yes,resizable=yes'
   );
-}
-
-function extractAiInstructionFromMemoLine(line) {
-  if (!line || typeof line !== 'string') return null;
-  const text = line.trim();
-  if (!text) return null;
-
-  const patterns = [
-    /^\s*(?:[-*•]\s*)?【\s*AI\s*】\s*(.+)$/i,
-    /^\s*(?:[-*•]\s*)?AI\s*[:：]\s*(.+)$/i,
-    /^\s*(?:[-*•]\s*)?[@＠]ai\b[\s:：-]*(.+)$/i
-  ];
-
-  for (let i = 0; i < patterns.length; i += 1) {
-    const match = text.match(patterns[i]);
-    if (match && match[1]) {
-      const instruction = match[1].trim();
-      if (instruction) return instruction;
-    }
-  }
-  return null;
 }
 
 function collectAiWorkOrderInstructions(memoItems = []) {

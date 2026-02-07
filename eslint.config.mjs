@@ -31,6 +31,7 @@ export default [
         CapabilityUtils: 'readonly',
         SanitizeUtils: 'readonly',
         ModelUtils: 'readonly',
+        TextUtils: 'readonly',
         STTProviders: 'writable',
         PCMStreamProcessor: 'writable',
         AudioResampler: 'writable',
