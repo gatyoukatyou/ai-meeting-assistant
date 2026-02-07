@@ -2,7 +2,7 @@
 
 [🇯🇵 日本語](README.md) | 🇺🇸 English
 
-[![Version](https://img.shields.io/badge/version-v1.3.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.3.0)
+[![Version](https://img.shields.io/badge/version-v1.4.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.4.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A lightweight, browser-based meeting assistant that records audio, transcribes speech, and generates summaries, consult responses, minutes, and memos using AI.

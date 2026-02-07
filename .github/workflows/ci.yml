@@ -37,6 +37,9 @@ jobs:
           done
           echo "All JSON files are valid"
 
+      - name: Check i18n locale key completeness
+        run: node scripts/check-i18n-keys.mjs
+
       - name: Check required docs exist
         run: |
           echo "Checking required documentation..."
