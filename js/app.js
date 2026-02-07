@@ -145,6 +145,12 @@ let qaEventLog = [];
 // Issue #40: Global error handling
 let errorHandlerActive = false;
 
+// --- Format utilities (delegated to js/lib/format-utils.js) ---
+var formatCost = FormatUtils.formatCost;
+var formatNumber = FormatUtils.formatNumber;
+var sanitizeFileName = FormatUtils.sanitizeFileName;
+var deepCopy = FormatUtils.deepCopy;
+
 // Sanitize error logs to remove potential API key leaks
 function sanitizeErrorLog(str) {
   if (typeof str !== 'string') return String(str);
@@ -3776,13 +3782,6 @@ function updateCosts() {
   syncChipValues();
 }
 
-function formatCost(yen) {
-  if (yen < 1) {
-    return `¥${yen.toFixed(2)}`;
-  }
-  return `¥${Math.round(yen).toLocaleString()}`;
-}
-
 function formatDuration(seconds) {
   if (seconds < 60) {
     return t('app.cost.seconds', { n: Math.round(seconds) });
@@ -3790,10 +3789,6 @@ function formatDuration(seconds) {
   const mins = Math.floor(seconds / 60);
   const secs = Math.round(seconds % 60);
   return t('app.cost.minSec', { min: mins, sec: secs });
-}
-
-function formatNumber(num) {
-  return num.toLocaleString();
 }
 
 function updateCostBadge(badge, cost) {
@@ -5129,19 +5124,6 @@ function getDefaultMeetingTitle(date = new Date()) {
   });
 }
 
-// ディープコピー用ヘルパー（structuredClone優先、フォールバックはJSON）
-function deepCopy(obj) {
-  if (obj === null || obj === undefined) return obj;
-  if (typeof structuredClone === 'function') {
-    try {
-      return structuredClone(obj);
-    } catch (e) {
-      // structuredCloneが失敗した場合はJSONフォールバック
-    }
-  }
-  return JSON.parse(JSON.stringify(obj));
-}
-
 function buildHistoryRecord() {
   if (typeof HistoryStore === 'undefined') return null;
   const transcriptText = getFilteredTranscriptText();
@@ -6128,11 +6110,6 @@ function truncateText(text, limit = 160) {
   const trimmed = text.trim();
   if (trimmed.length <= limit) return trimmed;
   return `${trimmed.slice(0, limit)}…`;
-}
-
-function sanitizeFileName(name) {
-  if (!name) return 'meeting';
-  return name.replace(/[<>:"/\\|?*\n\r]+/g, '').trim() || 'meeting';
 }
 
 // =====================================
