@@ -6,12 +6,12 @@
  * - isShutdownDatePassed() - shutdown date logic stable
  *
  * Run: node scripts/model-registry-smoke.mjs
- * Requires: Playwright, local server running on port 3000
+ * Requires: Playwright, local server running on PORT (default 8080)
  */
 
 import { chromium } from 'playwright';
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 8080;
 const BASE_URL = `http://localhost:${PORT}`;
 
 async function runTests() {

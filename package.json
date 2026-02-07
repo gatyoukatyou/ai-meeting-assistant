@@ -2,6 +2,17 @@
   "name": "ai-meeting-assistant",
   "private": true,
   "description": "CI dependencies for smoke tests",
+  "scripts": {
+    "test:generate": "node scripts/generate-test-files.mjs",
+    "test:ui-smoke": "node scripts/ui_smoke_check.mjs",
+    "test:model-registry": "node scripts/model-registry-smoke.mjs",
+    "test:upload-basic": "node scripts/test-upload-basic.mjs",
+    "test:upload-formats": "node scripts/test-upload-formats.mjs",
+    "test:upload-edge": "node scripts/test-upload-edge.mjs",
+    "test:upload": "npm run test:upload-basic && npm run test:upload-formats && npm run test:upload-edge",
+    "test:e2e": "npm run test:model-registry && npm run test:upload",
+    "test": "npm run test:ui-smoke && npm run test:e2e"
+  },
   "devDependencies": {
     "docx": "^9.5.1",
     "pdf-lib": "^1.17.1",

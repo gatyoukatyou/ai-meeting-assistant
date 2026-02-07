@@ -1,0 +1,66 @@
+name: E2E Tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  schedule:
+    - cron: '0 10 * * 3'   # Every Wednesday 10:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  PORT: 8080
+
+jobs:
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - run: npm ci && npx playwright install chromium --with-deps
+
+      - run: npm run test:generate
+
+      - name: Start local server
+        run: |
+          set -euo pipefail
+          python3 -m http.server $PORT &
+          SERVER_PID=$!
+          READY=false
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:$PORT/index.html > /dev/null 2>&1; then
+              echo "Server ready (PID=$SERVER_PID)"
+              READY=true
+              break
+            fi
+            echo "Waiting for server... ($i/30)"
+            sleep 1
+          done
+          if [ "$READY" != "true" ]; then
+            echo "::error::Server failed to start within 30s"
+            exit 1
+          fi
+
+      - run: npm run test:model-registry
+
+      - run: npm run test:upload-basic
+
+      - run: npm run test:upload-formats
+
+      - run: npm run test:upload-edge
+
+      - name: Upload test results on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-test-results
+          path: scripts/test-files/results-*.json
+          retention-days: 14

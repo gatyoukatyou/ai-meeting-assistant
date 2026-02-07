@@ -9,75 +9,9 @@
 
 import { chromium } from 'playwright';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { TEST_FILES, createResultTracker, setupPage, openContextModal, uploadAndWait, writeSummary } from './test-helpers.mjs';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const TEST_FILES = path.join(__dirname, 'test-files');
-const PORT = process.env.PORT || 8080;
-const BASE_URL = `http://localhost:${PORT}`;
-
-const results = [];
-
-function record(section, file, expected, actual) {
-  const passed = actual.status === expected;
-  results.push({ section, file, expected, ...actual, passed });
-  const icon = passed ? '✓' : '✗';
-  const color = passed ? '\x1b[32m' : '\x1b[31m';
-  console.log(`${color}${icon}\x1b[0m [${section}] ${file}: ${actual.status} (expected: ${expected})`);
-  if (!passed) {
-    console.log(`    actual: ${JSON.stringify(actual)}`);
-  }
-}
-
-async function setupPage(browser) {
-  const context = await browser.newContext();
-  const page = await context.newPage();
-
-  // Collect console for debugging
-  const logs = [];
-  page.on('console', msg => logs.push(`[${msg.type()}] ${msg.text()}`));
-
-  // Navigate
-  await page.goto(`${BASE_URL}/index.html`, { waitUntil: 'networkidle', timeout: 30000 });
-
-  // Enable enhanced context
-  await page.evaluate(() => {
-    SecureStorage.setOption('enhancedContext', true);
-    SecureStorage.setOption('persistMeetingContext', true);
-  });
-  await page.reload({ waitUntil: 'networkidle' });
-
-  return { page, context, logs };
-}
-
-async function openContextModal(page) {
-  await page.click('#openContextModalBtn');
-  await page.waitForSelector('#contextModal.active', { timeout: 5000 });
-}
-
-async function uploadAndWait(page, filePath) {
-  await page.setInputFiles('#contextFileInput', filePath);
-
-  // Wait for processing to complete
-  await page.waitForFunction(() => {
-    const ctx = meetingContext;
-    if (!ctx || !ctx.files || ctx.files.length === 0) return false;
-    return !ctx.files.some(f => f.status === 'loading');
-  }, { timeout: 30000 });
-
-  // Get file result
-  return page.evaluate(() => {
-    const files = meetingContext?.files || [];
-    const last = files[files.length - 1];
-    if (!last) return { status: 'no_file' };
-    return {
-      status: last.status,
-      charCount: last.charCount || 0,
-      warning: last.errorMessage || '',
-      errorType: last.errorMessage || ''
-    };
-  });
-}
+const { results, record } = createResultTracker();
 
 // ==========================
 // §1 UI Tests
@@ -197,7 +131,7 @@ async function testTxtBasic(browser) {
 // ==========================
 async function main() {
   console.log('=== Upload Basic Tests (§1-§2) ===');
-  console.log(`Server: ${BASE_URL}\n`);
+  console.log(`Server: http://localhost:${process.env.PORT || 8080}\n`);
 
   const browser = await chromium.launch();
 
@@ -214,17 +148,7 @@ async function main() {
     await browser.close();
   }
 
-  // Summary
-  const passed = results.filter(r => r.passed).length;
-  const failed = results.filter(r => !r.passed).length;
-  console.log(`\n=== Basic Tests: ${passed} passed, ${failed} failed ===`);
-
-  // Output JSON for aggregation
-  const outPath = path.join(__dirname, 'test-files', 'results-basic.json');
-  const fs = await import('node:fs');
-  fs.writeFileSync(outPath, JSON.stringify(results, null, 2));
-  console.log(`Results written to ${outPath}`);
-
+  const failed = await writeSummary('Basic Tests', results, 'results-basic.json');
   if (failed > 0) process.exit(1);
 }
 
