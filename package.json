@@ -3,6 +3,7 @@
   "private": true,
   "description": "CI dependencies for smoke tests",
   "scripts": {
+    "test:unit": "node --test 'tests/unit/**/*.test.mjs'",
     "test:generate": "node scripts/generate-test-files.mjs",
     "test:i18n": "node scripts/check-i18n-keys.mjs",
     "test:ui-smoke": "node scripts/ui_smoke_check.mjs",
@@ -12,11 +13,11 @@
     "test:upload-edge": "node scripts/test-upload-edge.mjs",
     "test:upload": "npm run test:upload-basic && npm run test:upload-formats && npm run test:upload-edge",
     "test:e2e": "npm run test:model-registry && npm run test:upload",
-    "test": "npm run test:ui-smoke && npm run test:e2e",
+    "test": "npm run test:unit && npm run test:ui-smoke && npm run test:e2e",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
-    "format": "prettier --write \"js/**/*.js\" \"scripts/**/*.{js,mjs}\"",
-    "format:check": "prettier --check \"js/**/*.js\" \"scripts/**/*.{js,mjs}\""
+    "format": "prettier --write \"js/**/*.js\" \"scripts/**/*.{js,mjs}\" \"tests/**/*.mjs\"",
+    "format:check": "prettier --check \"js/**/*.js\" \"scripts/**/*.{js,mjs}\" \"tests/**/*.mjs\""
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

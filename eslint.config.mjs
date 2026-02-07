@@ -90,6 +90,20 @@ export default [
     }
   },
 
+  // Unit tests — ESM (.mjs), node:test + node:assert
+  {
+    files: ['tests/**/*.mjs'],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: 'module',
+      globals: { ...globals.node },
+    },
+    rules: {
+      ...js.configs.recommended.rules,
+      'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
+    },
+  },
+
   // Disable rules that conflict with Prettier
   prettier
 ];
