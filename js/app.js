@@ -159,6 +159,16 @@ var isReasoningCapableModel = CapabilityUtils.isReasoningCapableModel;
 var sanitizeErrorLog = SanitizeUtils.sanitizeErrorLog;
 var truncateText = SanitizeUtils.truncateText;
 
+// --- Model utilities (delegated to js/lib/model-utils.js) ---
+var getProviderDisplayName = ModelUtils.getProviderDisplayName;
+var normalizeGeminiModelId = ModelUtils.normalizeGeminiModelId;
+var getDefaultModel = ModelUtils.getDefaultModel;
+var isModelNotFoundOrDeprecatedError = ModelUtils.isModelNotFoundOrDeprecatedError;
+var isModelDeprecatedError = ModelUtils.isModelDeprecatedError;
+var isRateLimitOrServerError = ModelUtils.isRateLimitOrServerError;
+var getAlternativeModels = ModelUtils.getAlternativeModels;
+var getFallbackModel = ModelUtils.getFallbackModel;
+
 // Handle fatal errors - show modal and safely stop recording
 function handleFatalError(error) {
   // Prevent recursive error handling
@@ -1674,15 +1684,6 @@ async function validateSTTProviderForRecording(provider) {
   }
 }
 
-// プロバイダー表示名を取得
-function getProviderDisplayName(provider) {
-  const names = {
-    'openai_stt': 'OpenAI Whisper',
-    'deepgram_realtime': 'Deepgram Realtime'
-  };
-  return names[provider] || provider;
-}
-
 // =====================================
 // Chunked系録音（OpenAI Whisper）
 // =====================================
@@ -2825,17 +2826,6 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 }
 
 // =====================================
-// Gemini モデルID正規化（"models/" prefix除去で二重パス防止）
-// =====================================
-function normalizeGeminiModelId(model) {
-  if (!model) return model;
-  if (model.startsWith('models/')) {
-    return model.slice(7); // "models/".length === 7
-  }
-  return model;
-}
-
-// =====================================
 // Gemini API呼び出しヘルパー（v1 → v1beta, header → query フォールバック）
 // =====================================
 async function callGeminiApi(model, apiKey, body, signal = null) {
@@ -3316,24 +3306,6 @@ async function callLLM(provider, prompt, signal = null) {
   }
 }
 
-// Error classification helpers
-function isModelNotFoundOrDeprecatedError(error) {
-  var msg = (error.message || '').toLowerCase();
-  return msg.includes('not found')
-    || msg.includes('not supported')
-    || msg.includes('does not exist')
-    || msg.includes('model not available')
-    || msg.includes('invalid model')
-    || msg.includes('decommissioned')
-    || msg.includes('no longer supported')
-    || msg.includes('deprecated')
-    || error.status === 404;
-}
-
-function isRateLimitOrServerError(error) {
-  return error.status === 429 || (error.status >= 500 && error.status < 600);
-}
-
 // LLM呼び出し（1回のみ、フォールバックなし）
 // signal: AbortSignal for cancellation (#50)
 async function callLLMOnce(provider, model, prompt, signal = null) {
@@ -3524,39 +3496,6 @@ async function callLLMOnce(provider, model, prompt, signal = null) {
   return text;
 }
 
-function getDefaultModel(provider) {
-  var defaults = {
-    gemini: 'gemini-2.5-flash',
-    claude: 'claude-sonnet-4-20250514',
-    openai: 'gpt-4o',
-    openai_llm: 'gpt-4o',
-    groq: 'llama-3.3-70b-versatile'
-  };
-  return defaults[provider];
-}
-
-// プロバイダーごとの代替モデルリスト（優先順）
-// 現時点では Groq のみ（他プロバイダーは必要時に追加）
-const ALTERNATIVE_MODELS = {
-  groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
-};
-
-// モデル廃止エラーかどうかを判定
-function isModelDeprecatedError(error) {
-  var msg = (error.message || '').toLowerCase();
-  return msg.includes('decommissioned') ||
-         msg.includes('no longer supported') ||
-         msg.includes('deprecated') ||
-         msg.includes('model not found') ||
-         msg.includes('does not exist');
-}
-
-// 代替モデルリストを取得（現在のモデルを除外）
-function getAlternativeModels(provider, currentModel) {
-  var alts = ALTERNATIVE_MODELS[provider] || [];
-  return alts.filter(function(m) { return m !== currentModel; });
-}
-
 // プロバイダー名から設定画面のselect IDへのマッピング
 const MODEL_SELECT_ID = {
   groq: 'groqModel',
@@ -3578,21 +3517,6 @@ async function autoUpdateSavedModel(provider, newModel) {
   } catch (e) {
     console.error('[Model] Failed to auto-update:', e);
   }
-}
-
-// フォールバック用モデルを取得（リクエストモデルと同じなら null を返す）
-function getFallbackModel(provider, requestedModel) {
-  var fallbacks = {
-    gemini: 'gemini-2.5-flash',
-    claude: 'claude-sonnet-4-20250514',
-    openai: 'gpt-4o',
-    openai_llm: 'gpt-4o',
-    groq: 'llama-3.3-70b-versatile'
-  };
-  var fb = fallbacks[provider];
-  // フォールバックが同じモデルなら再試行しない
-  if (!fb || fb === requestedModel) return null;
-  return fb;
 }
 
 // =====================================
