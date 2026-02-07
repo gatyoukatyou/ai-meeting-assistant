@@ -2,7 +2,7 @@
 
 🇯🇵 日本語 | [🇺🇸 English](README.en.md)
 
-[![Version](https://img.shields.io/badge/version-v1.3.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.3.0)
+[![Version](https://img.shields.io/badge/version-v1.4.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.4.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 会議中にAIがリアルタイムで参加し、文字起こし・要約・相談・議事録・メモを行うWebアプリです。

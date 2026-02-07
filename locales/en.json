@@ -244,7 +244,6 @@
       "priorityGroq": "Prefer Groq",
       "priorityHint": "Auto-select order: Claude → OpenAI → Gemini → Groq (uses first available)",
       "notConfiguredWarning": "If no LLM API key is set, AI features like summary, opinion, and minutes will not be available. Please configure at least one above.",
-      "notConfiguredTitle": "If no LLM API key is set",
       "getFromGemini": "Get from Google AI Studio (for summary/AI responses)",
       "getFromClaude": "Get from Anthropic Console",
       "getFromOpenAILLM": "Get from OpenAI Platform (separate key from STT recommended)",
