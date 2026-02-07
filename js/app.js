@@ -151,6 +151,10 @@ var formatNumber = FormatUtils.formatNumber;
 var sanitizeFileName = FormatUtils.sanitizeFileName;
 var deepCopy = FormatUtils.deepCopy;
 
+// --- Capability utilities (delegated to js/lib/capability-utils.js) ---
+var getCapabilities = CapabilityUtils.getCapabilities;
+var isReasoningCapableModel = CapabilityUtils.isReasoningCapableModel;
+
 // Sanitize error logs to remove potential API key leaks
 function sanitizeErrorLog(str) {
   if (typeof str !== 'string') return String(str);
@@ -6115,36 +6119,6 @@ function truncateText(text, limit = 160) {
 // =====================================
 // プロバイダ能力判定（Issue #14 two-toggles）
 // =====================================
-
-/**
- * プロバイダとモデルの能力を判定する
- * @param {string} provider - プロバイダ名 (anthropic, gemini, openai, groq)
- * @param {string} model - モデル名
- * @returns {{supportsReasoningControl: boolean, supportsNativeDocs: boolean, supportsVisionImages: boolean}}
- */
-function getCapabilities(provider, model) {
-  return {
-    supportsReasoningControl: provider === 'anthropic' && isReasoningCapableModel(model),
-    supportsNativeDocs: provider === 'gemini',
-    supportsVisionImages: false  // 将来拡張用
-  };
-}
-
-/**
- * Anthropicのthinking系パラメータを受け付けるモデルか判定
- * @param {string} model - モデル名
- * @returns {boolean}
- */
-function isReasoningCapableModel(model) {
-  if (!model) return false;
-  // Extended thinking対応モデル
-  const reasoningModels = [
-    'claude-sonnet-4',
-    'claude-opus-4',
-    'claude-3-7-sonnet'  // claude-3.7-sonnet系も対応
-  ];
-  return reasoningModels.some(m => model.includes(m));
-}
 
 /**
  * 現在のLLM設定から能力を取得

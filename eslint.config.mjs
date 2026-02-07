@@ -28,6 +28,7 @@ export default [
         RecordingMonitor: 'writable',
         FileExtractor: 'writable',
         FormatUtils: 'readonly',
+        CapabilityUtils: 'readonly',
         STTProviders: 'writable',
         PCMStreamProcessor: 'writable',
         AudioResampler: 'writable',
