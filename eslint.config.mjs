@@ -29,6 +29,7 @@ export default [
         FileExtractor: 'writable',
         FormatUtils: 'readonly',
         CapabilityUtils: 'readonly',
+        SanitizeUtils: 'readonly',
         STTProviders: 'writable',
         PCMStreamProcessor: 'writable',
         AudioResampler: 'writable',

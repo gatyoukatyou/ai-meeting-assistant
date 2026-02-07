@@ -155,16 +155,9 @@ var deepCopy = FormatUtils.deepCopy;
 var getCapabilities = CapabilityUtils.getCapabilities;
 var isReasoningCapableModel = CapabilityUtils.isReasoningCapableModel;
 
-// Sanitize error logs to remove potential API key leaks
-function sanitizeErrorLog(str) {
-  if (typeof str !== 'string') return String(str);
-  // Common API key patterns: sk-..., AIza..., dg_..., etc.
-  return str
-    .replace(/sk-[a-zA-Z0-9_-]{20,}/g, 'sk-***REDACTED***')
-    .replace(/AIza[a-zA-Z0-9_-]{30,}/g, 'AIza***REDACTED***')
-    .replace(/dg_[a-zA-Z0-9_-]{20,}/g, 'dg_***REDACTED***')
-    .replace(/[a-f0-9]{32,}/gi, '***HASH_REDACTED***');
-}
+// --- Sanitize utilities (delegated to js/lib/sanitize-utils.js) ---
+var sanitizeErrorLog = SanitizeUtils.sanitizeErrorLog;
+var truncateText = SanitizeUtils.truncateText;
 
 // Handle fatal errors - show modal and safely stop recording
 function handleFatalError(error) {
@@ -6107,13 +6100,6 @@ function formatHistoryDuration(seconds) {
   if (!seconds || Number.isNaN(seconds)) return '0m';
   const mins = Math.max(1, Math.round(seconds / 60));
   return `${mins}m`;
-}
-
-function truncateText(text, limit = 160) {
-  if (!text) return '';
-  const trimmed = text.trim();
-  if (trimmed.length <= limit) return trimmed;
-  return `${trimmed.slice(0, limit)}…`;
 }
 
 // =====================================
