@@ -21,8 +21,7 @@ function navigateTo(target) {
 
 // =====================================
 // 親ウィンドウへのAPIキー同期
-// sessionStorageはタブ間で共有されないため、
-// 別タブで設定を開いた場合は親ウィンドウに直接保存する
+// 別タブで設定を開いた場合、親側ストレージにも反映する
 // =====================================
 function syncApiKeysToOpener() {
   // 親ウィンドウがない場合は同期不要
@@ -31,21 +30,27 @@ function syncApiKeysToOpener() {
   }
 
   try {
-    // 親ウィンドウのsessionStorageに直接APIキーを保存
+    const persistApiKeys = SecureStorage.isPersistApiKeysEnabled();
+    const targetStorage = persistApiKeys ? window.opener.localStorage : window.opener.sessionStorage;
+    const cleanupStorage = persistApiKeys ? window.opener.sessionStorage : window.opener.localStorage;
+
+    // 現在の保存ポリシーに合わせて親ウィンドウ側にも同期
     const providers = ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'];
     providers.forEach(provider => {
       const key = SecureStorage.getApiKey(provider);
       const storageKey = `_ak_${provider}`;
       if (key) {
-        window.opener.sessionStorage.setItem(storageKey, key);
+        targetStorage.setItem(storageKey, key);
+        cleanupStorage.removeItem(storageKey);
       } else {
-        window.opener.sessionStorage.removeItem(storageKey);
+        targetStorage.removeItem(storageKey);
+        cleanupStorage.removeItem(storageKey);
       }
     });
 
     // 親ウィンドウに設定変更を通知してUIを更新させる
     window.opener.postMessage({ type: 'settings-updated' }, window.location.origin);
-    console.log('[Config] API keys synced to opener window');
+    console.log('[Config] API keys synced to opener window:', persistApiKeys ? 'localStorage' : 'sessionStorage');
   } catch (e) {
     // クロスオリジンエラーなどの場合はログのみ
     console.warn('[Config] Failed to sync API keys to opener:', e);
@@ -104,6 +109,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // 言語変更時の再レンダリング
   window.addEventListener('languagechange', function() {
+    updatePersistApiKeysControl();
     // API検証ステータスの再翻訳
     const statusElements = document.querySelectorAll('.validation-status');
     statusElements.forEach(el => {
@@ -161,6 +167,35 @@ function updateSTTProviderUI(provider) {
   const selectedSettings = document.getElementById(`${provider}_settings`);
   if (selectedSettings) {
     selectedSettings.style.display = 'block';
+  }
+}
+
+function updatePersistApiKeysControl() {
+  const persistApiKeysEl = document.getElementById('persistApiKeys');
+  if (!persistApiKeysEl) return;
+
+  const labelEl = document.getElementById('persistApiKeysLabel');
+  const hintEl = document.getElementById('persistApiKeysHint');
+  const isSupported = SecureStorage.isPersistentApiKeysSupported();
+
+  persistApiKeysEl.disabled = !isSupported;
+  persistApiKeysEl.checked = isSupported ? SecureStorage.isPersistApiKeysEnabled() : false;
+
+  if (labelEl) {
+    labelEl.setAttribute(
+      'data-i18n',
+      isSupported ? 'config.storage.persistLabelEnabled' : 'config.storage.persistLabel'
+    );
+  }
+  if (hintEl) {
+    hintEl.setAttribute(
+      'data-i18n',
+      isSupported ? 'config.storage.persistWarningEnabled' : 'config.storage.persistWarning'
+    );
+  }
+
+  if (window.I18n && typeof I18n.applyToDOM === 'function' && I18n.isReady && I18n.isReady()) {
+    I18n.applyToDOM();
   }
 }
 
@@ -244,12 +279,7 @@ function loadSavedSettings() {
   if (userDictEl) userDictEl.value = userDictionary;
 
   // オプション
-  const persistApiKeysEl = document.getElementById('persistApiKeys');
-  if (persistApiKeysEl) {
-    persistApiKeysEl.checked = false;
-    persistApiKeysEl.disabled = true;
-  }
-  SecureStorage.setOption('persistApiKeys', false);
+  updatePersistApiKeysControl();
   document.getElementById('clearOnClose').checked = SecureStorage.getOption('clearOnClose', false);
   const persistMeetingContextEl = document.getElementById('persistMeetingContext');
   if (persistMeetingContextEl) {
@@ -278,9 +308,16 @@ function showMigrationNotice() {
 // =====================================
 async function saveSettings() {
   const sttProvider = document.getElementById('sttProvider').value;
+  const persistApiKeysEl = document.getElementById('persistApiKeys');
+  const persistApiKeys = Boolean(
+    persistApiKeysEl &&
+    !persistApiKeysEl.disabled &&
+    persistApiKeysEl.checked
+  );
 
   // STTプロバイダーを保存
   SecureStorage.setOption('sttProvider', sttProvider);
+  SecureStorage.setPersistApiKeys(persistApiKeys);
 
   // LLM用APIキーを保存
   const llmProviders = ['gemini', 'claude', 'groq'];
@@ -319,7 +356,6 @@ async function saveSettings() {
   if (userDictEl) SecureStorage.setOption('sttUserDictionary', userDictEl.value.trim());
 
   // オプションを保存
-  SecureStorage.setOption('persistApiKeys', false);
   SecureStorage.setOption('clearOnClose', document.getElementById('clearOnClose').checked);
   const persistMeetingContextEl = document.getElementById('persistMeetingContext');
   if (persistMeetingContextEl) {

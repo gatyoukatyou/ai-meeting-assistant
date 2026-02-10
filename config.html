@@ -946,9 +946,9 @@
         <div class="security-options-title">🛡️ <span data-i18n="config.options.securityTitle">Security Options</span></div>
         <div class="checkbox-group">
           <input type="checkbox" id="persistApiKeys" disabled>
-          <label for="persistApiKeys" data-i18n="config.storage.persistLabel">API keys are session-only (cannot be persisted)</label>
+          <label id="persistApiKeysLabel" for="persistApiKeys" data-i18n="config.storage.persistLabel">API keys are session-only (cannot be persisted)</label>
         </div>
-        <div class="setting-hint" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0.5rem;" data-i18n="config.storage.persistWarning">Keys are cleared when the tab/browser closes. Export does not include API keys. Not shared across tabs.</div>
+        <div id="persistApiKeysHint" class="setting-hint" style="font-size: 0.75rem; color: var(--text-secondary); margin-top: 0.25rem; margin-bottom: 0.5rem;" data-i18n="config.storage.persistWarning">Keys are cleared when the tab/browser closes. Export does not include API keys. Not shared across tabs.</div>
         <div class="checkbox-group">
           <input type="checkbox" id="clearOnClose">
           <label for="clearOnClose" data-i18n="config.options.clearOnClose">Auto-delete API keys when browser closes (for shared PCs)</label>

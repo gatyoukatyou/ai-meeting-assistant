@@ -23,7 +23,7 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - 📥 **Export to Markdown** – Save meeting content, AI responses, memos/TODOs
 - 🧠 **Richer meeting context** – Goals, participants, handoff notes, references
 - 📎 **Attachments & enhancements** – TXT/MD/PDF/DOCX/CSV + Native Docs/Thinking Boost
-- 🔒 **Session-only storage** – API keys live only in the current session (cleared when the tab/browser closes)
+- 🔒 **API key storage policy** – Session-only by default. Optional device persistence is available only in desktop app mode (not recommended)
 - 🎨 **Theme/style switcher** – Light/Dark + 6 accents + Brutalism/Paper
 - 🗂️ **Meeting history** – Auto-save (up to 5), restore and MD import
 - 🎯 **Meeting mode** – Toggle focus view vs. edit mode
@@ -39,7 +39,8 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 
 ### Protection Features
 
-- ✅ API keys are **session-only** (deleted when you close the tab/browser)
+- ✅ API keys are **session-only by default** (deleted when you close the tab/browser)
+- ✅ In desktop app mode (Chrome/Edge app), keys can be persisted only when explicitly enabled (not recommended)
 - ✅ **Never sent** to external servers (direct API calls only)
 - ✅ **Settings export/import** is available (API keys are excluded)
 
@@ -50,7 +51,7 @@ See [Security Details](docs/SECURITY.md) for more information.
 - **Never enter your API key on unofficial URLs**
   - Official: https://gatyoukatyou.github.io/ai-meeting-assistant/
   - Fake sites or modified copies may steal your keys
-- **On shared PCs, use "Session only" or enable "Delete on browser close"**
+- **On shared PCs, keep "Remember API keys" OFF and enable "Delete on browser close"**
   - Settings > Security Settings
 - **Manually delete keys when finished** (recommended)
 
@@ -225,7 +226,7 @@ A: Transcription will still work. AI features (summary, consult, minutes, Q&A) w
 A: Audio and transcripts are sent only to your selected providers. Nothing is sent to the app developer.
 
 **Q: Is it dangerous if my API key leaks?**
-A: Yes. Others could use your key and charges would appear on your account. API keys are session-only and cleared when the tab/browser closes, but protection is still not perfect. On shared PCs, close the tab/browser and manually clear keys when done.
+A: Yes. Others could use your key and charges would appear on your account. API keys are session-only by default, but desktop app mode can optionally persist them on device. On shared PCs, keep persistence OFF, close the tab/browser, and manually clear keys when done.
 
 **Q: What if I get an error?**
 A: Check that your API keys are correct and that you have available credits with the provider.

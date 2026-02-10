@@ -1,6 +1,6 @@
 # セキュリティ / Security
 
-最終更新日 / Last Updated: 2026-02-02
+最終更新日 / Last Updated: 2026-02-10
 
 ---
 
@@ -12,7 +12,7 @@
 
 - 共有PC・公共PCではAPIキーの安全性を保証できません
 - マルウェアやブラウザ拡張機能による漏洩リスクは防げません
-- APIキーはセッション内のみ保持されますが、完璧な保護ではありません
+- APIキーは既定でセッション内のみ保持されますが、完璧な保護ではありません
 - APIキーの管理は、最終的にユーザー自身の責任です
 - 重要なAPIキーには、プロバイダー側で使用金額の上限を設定してください
 
@@ -30,7 +30,8 @@
 - 不要になったデータは履歴削除や設定のクリアで消去してください
 
 ### APIキーの扱い
-- APIキーはセッション内のみ保持され、タブ/ブラウザを閉じると消えます
+- APIキーは既定でセッション内のみ保持され、タブ/ブラウザを閉じると消えます
+- デスクトップアプリ（Chrome/Edgeアプリ）のみ、設定で任意に端末保存を有効化できます（非推奨）
 - 開発者のサーバーに送信されることはありません
 - HTTPS通信のみを使用します
 
@@ -39,9 +40,9 @@
 | 脅威 | 保護状況 | 詳細 |
 |------|----------|------|
 | 他のWebサイトからのアクセス | ✅ 対応 | ブラウザが自動的にブロック |
-| 保存場所を直接閲覧 | ⚠️ 部分的 | セッション内のみだが、実行中は閲覧可能 |
+| 保存場所を直接閲覧 | ⚠️ 部分的 | 既定はセッション内のみだが、実行中は閲覧可能 |
 | 通信の盗聴 | ✅ 対応 | HTTPS暗号化で保護 |
-| 共用パソコンでの使用 | ⚠️ 部分的 | セッション内のみ。終了時はタブ/ブラウザを閉じる |
+| 共用パソコンでの使用 | ⚠️ 部分的 | 記憶OFFを推奨。終了時はタブ/ブラウザを閉じる |
 | マルウェア・悪意ある拡張機能 | ❌ 非対応 | ブラウザ内データにアクセス可能 |
 
 ### ユーザーへの推奨事項
@@ -64,7 +65,7 @@
 
 - API key security cannot be guaranteed on shared or public PCs
 - Leakage risks from malware or browser extensions cannot be prevented
-- API keys are session-only, but protection is not perfect
+- API keys are session-only by default, but protection is not perfect
 - API key management is ultimately the user's responsibility
 - Set spending limits with your API provider for important keys
 
@@ -82,7 +83,8 @@ The Application is designed to minimize security risks.
 - Remove data via history clear or settings reset when no longer needed
 
 ### Handling of API Keys
-- API keys are session-only and cleared when the tab/browser closes
+- API keys are session-only by default and cleared when the tab/browser closes
+- Desktop app mode (Chrome/Edge app) can optionally persist API keys on device via explicit user opt-in (not recommended)
 - They are never transmitted to developer-controlled servers
 - All communication uses HTTPS
 
@@ -91,9 +93,9 @@ The Application is designed to minimize security risks.
 | Threat | Protection | Details |
 |--------|------------|---------|
 | Access from other websites | ✅ Protected | Blocked automatically by browser |
-| Direct storage inspection | ⚠️ Partial | Session-only, but readable during an active session |
+| Direct storage inspection | ⚠️ Partial | Session-only by default, but readable during an active session |
 | Network eavesdropping | ✅ Protected | HTTPS encryption |
-| Shared computer usage | ⚠️ Partial | Session-only. Close the tab/browser when done |
+| Shared computer usage | ⚠️ Partial | Keep persistence OFF. Close the tab/browser when done |
 | Malware / malicious extensions | ❌ Not protected | Can access browser data |
 
 ### Recommendations for Users
