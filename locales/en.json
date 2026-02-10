@@ -283,7 +283,7 @@
       "costAlertEnabled": "Show warning at 80% of limit",
       "enhancedContextTitle": "Enhanced Context",
       "enhancedContextEnabled": "Enable file attachments for meeting context",
-      "enhancedContextHint": "When enabled, you can attach TXT/MD files to provide additional meeting materials to AI."
+      "enhancedContextHint": "When enabled, you can attach TXT/MD/PDF/DOCX/CSV files to provide additional meeting materials to AI."
     },
     "theme": {
       "title": "Appearance",
@@ -601,7 +601,11 @@
     "reasoningBoostDisabled": "Not available for this provider/model",
     "nativeDocsLabel": "Native Docs",
     "nativeDocsHint": "Send PDFs directly - may improve accuracy/increase cost",
+    "nativeDocsApiGuide": "Required API: Gemini API (model examples: gemini-2.5-flash / gemini-2.5-pro / gemini-2.0-flash)",
     "nativeDocsDisabled": "Only available with Gemini + PDF attached",
+    "nativeDocsNeedsGeminiKey": "Gemini API key (LLM settings) is required",
+    "nativeDocsNeedsGeminiPriority": "Set LLM priority to Gemini (or keep auto so Gemini is selected)",
+    "nativeDocsNeedsPdf": "Attach at least one PDF file to enable this",
     "nativeDocsFallback": "Native Docs failed, falling back to text extraction",
     "badgeReasoningBoost": "Boost ON",
     "badgeNativeDocs": "Native Docs ON"

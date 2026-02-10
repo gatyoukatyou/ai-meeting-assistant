@@ -55,6 +55,74 @@ describe('getCapabilities', () => {
 });
 
 // ========================================
+// normalizeCapabilityProvider()
+// ========================================
+
+describe('normalizeCapabilityProvider', () => {
+  it('maps claude to anthropic', () => {
+    assert.equal(CapabilityUtils.normalizeCapabilityProvider('claude'), 'anthropic');
+  });
+
+  it('maps openai_llm to openai', () => {
+    assert.equal(CapabilityUtils.normalizeCapabilityProvider('openai_llm'), 'openai');
+  });
+
+  it('keeps gemini unchanged', () => {
+    assert.equal(CapabilityUtils.normalizeCapabilityProvider('gemini'), 'gemini');
+  });
+
+  it('returns empty string for falsy input', () => {
+    assert.equal(CapabilityUtils.normalizeCapabilityProvider(''), '');
+    assert.equal(CapabilityUtils.normalizeCapabilityProvider(null), '');
+  });
+});
+
+// ========================================
+// resolveEffectiveLlmProvider()
+// ========================================
+
+describe('resolveEffectiveLlmProvider', () => {
+  it('returns priority provider when key exists', () => {
+    const hasApiKey = (provider) => provider === 'gemini';
+    assert.equal(
+      CapabilityUtils.resolveEffectiveLlmProvider('gemini', hasApiKey),
+      'gemini'
+    );
+  });
+
+  it('falls back to default order when priority has no key', () => {
+    const hasApiKey = (provider) => provider === 'openai_llm';
+    assert.equal(
+      CapabilityUtils.resolveEffectiveLlmProvider('gemini', hasApiKey),
+      'openai_llm'
+    );
+  });
+
+  it('uses auto order when priority is auto', () => {
+    const hasApiKey = (provider) => provider === 'groq';
+    assert.equal(
+      CapabilityUtils.resolveEffectiveLlmProvider('auto', hasApiKey),
+      'groq'
+    );
+  });
+
+  it('returns null when no provider has a key', () => {
+    const hasApiKey = () => false;
+    assert.equal(
+      CapabilityUtils.resolveEffectiveLlmProvider('auto', hasApiKey),
+      null
+    );
+  });
+
+  it('returns null when hasApiKey callback is missing', () => {
+    assert.equal(
+      CapabilityUtils.resolveEffectiveLlmProvider('auto'),
+      null
+    );
+  });
+});
+
+// ========================================
 // isReasoningCapableModel()
 // ========================================
 

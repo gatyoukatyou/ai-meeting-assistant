@@ -283,7 +283,7 @@
       "costAlertEnabled": "上限の80%で警告を表示",
       "enhancedContextTitle": "強化コンテキスト",
       "enhancedContextEnabled": "ファイル添付による会議資料の提供を有効化",
-      "enhancedContextHint": "有効にすると、TXT/MDファイルを添付してAIに追加の会議資料を提供できます。"
+      "enhancedContextHint": "有効にすると、TXT/MD/PDF/DOCX/CSVファイルを添付してAIに追加の会議資料を提供できます。"
     },
     "theme": {
       "title": "外観",
@@ -601,7 +601,11 @@
     "reasoningBoostDisabled": "このプロバイダ/モデルでは使用不可",
     "nativeDocsLabel": "資料そのまま送信",
     "nativeDocsHint": "PDFをそのまま送信・精度向上/コスト増の可能性",
+    "nativeDocsApiGuide": "必要API: Gemini API（モデル例: gemini-2.5-flash / gemini-2.5-pro / gemini-2.0-flash）",
     "nativeDocsDisabled": "GeminiプロバイダーでPDF添付がある場合のみ",
+    "nativeDocsNeedsGeminiKey": "Gemini APIキー（LLM設定）が必要です",
+    "nativeDocsNeedsGeminiPriority": "LLM優先順位をGeminiに設定（またはautoでGeminiが選ばれる状態）してください",
+    "nativeDocsNeedsPdf": "PDFファイルを添付すると有効になります",
     "nativeDocsFallback": "Native Docsに失敗、テキスト抽出にフォールバック",
     "badgeReasoningBoost": "Boost ON",
     "badgeNativeDocs": "Native Docs ON"
