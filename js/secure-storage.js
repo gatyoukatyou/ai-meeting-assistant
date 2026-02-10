@@ -5,19 +5,54 @@ const SecureStorage = {
   // API key storage providers list
   _providers: ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'],
 
-  // APIキーを保存 (session-only)
-  setApiKey: function(provider, key) {
-    const storageKey = `_ak_${provider}`;
-    if (!key) {
-      sessionStorage.removeItem(storageKey);
-      return;
-    }
-    sessionStorage.setItem(storageKey, key);
+  isPersistentApiKeysSupported: function() {
+    if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+    if (typeof window.matchMedia !== 'function') return false;
+    const userAgent = navigator.userAgent || '';
+    const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
+    if (isMobile) return false;
+    return (
+      window.matchMedia('(display-mode: standalone)').matches ||
+      window.matchMedia('(display-mode: window-controls-overlay)').matches
+    );
   },
 
-  // APIキーを取得 (session-only)
+  isPersistApiKeysEnabled: function() {
+    return this.isPersistentApiKeysSupported() && this.getOption('persistApiKeys', false) === true;
+  },
+
+  setPersistApiKeys: function(enabled) {
+    // Keep persisted preference independent from UA-derived capability checks.
+    // Effective usage is gated by isPersistApiKeysEnabled().
+    this.setOption('persistApiKeys', Boolean(enabled));
+  },
+
+  _getApiKeyStorages: function() {
+    const usePersistent = this.isPersistApiKeysEnabled();
+    return {
+      primary: usePersistent ? localStorage : sessionStorage,
+      secondary: usePersistent ? sessionStorage : localStorage
+    };
+  },
+
+  // APIキーを保存
+  setApiKey: function(provider, key) {
+    const storageKey = `_ak_${provider}`;
+    const storages = this._getApiKeyStorages();
+    if (!key) {
+      storages.primary.removeItem(storageKey);
+      storages.secondary.removeItem(storageKey);
+      return;
+    }
+    storages.primary.setItem(storageKey, key);
+    // Keep a single source of truth for API keys.
+    storages.secondary.removeItem(storageKey);
+  },
+
+  // APIキーを取得
   getApiKey: function(provider) {
-    return sessionStorage.getItem(`_ak_${provider}`) || '';
+    const storages = this._getApiKeyStorages();
+    return storages.primary.getItem(`_ak_${provider}`) || '';
   },
 
   // モデルを保存（暗号化不要）
@@ -80,6 +115,7 @@ const SecureStorage = {
       deepgram: { model: this.getModel('deepgram') },
       options: {
         clearOnClose: this.getOption('clearOnClose', false),
+        persistApiKeys: this.getOption('persistApiKeys', false),
         costAlertEnabled: this.getOption('costAlertEnabled', true),
         costLimit: this.getOption('costLimit', 100),
         llmPriority: this.getOption('llmPriority', 'auto'),
@@ -134,7 +170,7 @@ const SecureStorage = {
         if (data.options.sttUserDictionary) this.setOption('sttUserDictionary', data.options.sttUserDictionary);
         if (data.options.sttLanguage) this.setOption('sttLanguage', data.options.sttLanguage);
         this.setOption('persistMeetingContext', data.options.persistMeetingContext || false);
-        this.setOption('persistApiKeys', false);
+        this.setPersistApiKeys(data.options.persistApiKeys === true);
       }
 
       return true;
@@ -154,6 +190,7 @@ const SecureStorage = {
       localStorage.removeItem(`_mc_${p}`);
     });
     localStorage.removeItem('_opt_clearOnClose');
+    localStorage.removeItem('_opt_persistApiKeys');
     localStorage.removeItem('_opt_costAlertEnabled');
     localStorage.removeItem('_opt_costLimit');
     localStorage.removeItem('_opt_llmPriority');

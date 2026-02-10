@@ -1,6 +1,6 @@
 # プライバシーポリシー / Privacy Policy
 
-最終更新日 / Last Updated: 2026-02-06
+最終更新日 / Last Updated: 2026-02-10
 
 ---
 
@@ -25,7 +25,8 @@
 - ユーザー自身が取得したAIサービスのAPIキー
 
 ### データの保存場所
-APIキーはユーザーのブラウザのsessionStorage（タブ/セッション限定）に保存され、タブ/ブラウザを閉じると削除されます。
+APIキーは既定でユーザーのブラウザのsessionStorage（タブ/セッション限定）に保存され、タブ/ブラウザを閉じると削除されます。
+デスクトップアプリ（Chrome/Edgeアプリ）で「APIキーを記憶する」を有効にした場合のみ、端末内で次回セッションにも保持されます（非推奨）。
 設定情報・モデル選択などはlocalStorageに保存されます。
 開発者が管理するサーバーには一切送信されません。
 
@@ -67,7 +68,8 @@ To use the Application, the following are required:
 - API keys obtained by the user for supported AI services
 
 ### Data Storage
-API keys are stored in the user's browser sessionStorage (tab/session scope) and are cleared when the tab/browser closes.
+API keys are stored in browser sessionStorage by default (tab/session scope) and are cleared when the tab/browser closes.
+Only when "Remember API keys" is enabled in desktop app mode (Chrome/Edge app), API keys may be retained on the device across sessions (not recommended).
 Settings and selected models are stored in localStorage.
 They are never transmitted to or stored on servers operated by the developer.
 
