@@ -32,7 +32,7 @@
 - その他対応するAIサービス
 
 APIキーは既定でブラウザのsessionStorage（タブ/セッション限定）に保存され、タブ/ブラウザを閉じると削除されます。
-デスクトップアプリ（Chrome/Edgeアプリ）で「APIキーを記憶する」を有効にした場合のみ、localStorageに保存されます（非推奨）。
+デスクトップアプリ（Chrome/Edgeアプリ）で「APIキーを記憶する」を有効にした場合のみ、端末内で次回セッションにも保持されます（非推奨）。
 APIキーは別タブへは共有されず、設定のエクスポートにも含まれません。開発者のサーバーには送信されません。
 
 ### 免責事項
@@ -75,7 +75,7 @@ Users must provide their own API keys for supported AI services, such as:
 - Other supported AI services
 
 API keys are stored in browser sessionStorage by default (tab/session scope) and are cleared when the tab/browser is closed.
-Only when "Remember API keys" is enabled in desktop app mode (Chrome/Edge app), API keys are stored in localStorage (not recommended).
+Only when "Remember API keys" is enabled in desktop app mode (Chrome/Edge app), API keys may be retained on the device across sessions (not recommended).
 API keys are not shared across tabs and are excluded from settings export. They are never sent to the developer's servers.
 
 ### Disclaimer

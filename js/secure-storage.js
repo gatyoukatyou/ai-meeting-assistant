@@ -22,8 +22,9 @@ const SecureStorage = {
   },
 
   setPersistApiKeys: function(enabled) {
-    const shouldPersist = Boolean(enabled) && this.isPersistentApiKeysSupported();
-    this.setOption('persistApiKeys', shouldPersist);
+    // Keep persisted preference independent from UA-derived capability checks.
+    // Effective usage is gated by isPersistApiKeysEnabled().
+    this.setOption('persistApiKeys', Boolean(enabled));
   },
 
   _getApiKeyStorages: function() {

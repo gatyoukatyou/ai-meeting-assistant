@@ -76,14 +76,14 @@ describe('SecureStorage persistApiKeys policy', () => {
     assert.equal(sessionStorage.getItem('_ak_openai'), null);
   });
 
-  it('does not allow persistApiKeys on non-standalone browser tabs', () => {
+  it('keeps preference but disables effective persistApiKeys on non-standalone browser tabs', () => {
     const { SecureStorage, localStorage } = createSecureStorageContext();
 
     SecureStorage.setPersistApiKeys(true);
 
     assert.equal(SecureStorage.isPersistentApiKeysSupported(), false);
     assert.equal(SecureStorage.isPersistApiKeysEnabled(), false);
-    assert.equal(localStorage.getItem('_opt_persistApiKeys'), 'false');
+    assert.equal(localStorage.getItem('_opt_persistApiKeys'), 'true');
   });
 
   it('does not read localStorage keys in unsupported contexts even if option is true', () => {
