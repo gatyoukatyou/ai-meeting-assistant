@@ -1,0 +1,9 @@
+{
+  "hooks": {
+    "SessionEnd": [
+      {
+        "command": "bash scripts/export-session.sh $TRANSCRIPT_PATH"
+      }
+    ]
+  }
+}

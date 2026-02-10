@@ -1,0 +1,4 @@
+# AI session raw logs - do NOT commit (may contain secrets/sensitive context)
+# Only committed education reports go in docs/ai/reports/
+*
+!.gitignore
