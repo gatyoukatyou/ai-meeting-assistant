@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # export-session.sh - SessionEnd hook for Claude Code
 # Copies the session transcript to docs/ai/sessions/claude/
+# Also checks whether /wrapup was executed during the session.
 #
 # Called automatically by Claude Code's SessionEnd hook.
 # Input: $1 = transcript_path (provided by Claude Code)
@@ -21,6 +22,17 @@ fi
 if [ ! -f "$TRANSCRIPT_PATH" ]; then
   echo "[export-session] Transcript not found: $TRANSCRIPT_PATH"
   exit 0
+fi
+
+# --- /wrapup execution check ---
+# Look for evidence that /wrapup was run during this session.
+# The wrapup command outputs "=== Session Wrapup ===" as its first step.
+if ! grep -q "Session Wrapup" "$TRANSCRIPT_PATH" 2>/dev/null; then
+  echo ""
+  echo "⚠️  WARNING: /wrapup was NOT executed in this session."
+  echo "   Please run /wrapup before ending sessions to ensure proper"
+  echo "   session summaries and handoff notes are generated."
+  echo ""
 fi
 
 # Ensure target directory exists
