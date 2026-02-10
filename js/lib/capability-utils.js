@@ -2,6 +2,7 @@
 // Consumed by app.js via thin aliases (e.g. var getCapabilities = CapabilityUtils.getCapabilities).
 const CapabilityUtils = (function () {
   'use strict';
+  var LLM_PROVIDER_PRIORITY = ['claude', 'openai_llm', 'gemini', 'groq'];
 
   /**
    * プロバイダとモデルの能力を判定する
@@ -16,6 +17,41 @@ const CapabilityUtils = (function () {
       supportsNativeDocs: provider === 'gemini',
       supportsVisionImages: false // 将来拡張用
     };
+  }
+
+  /**
+   * アプリ内プロバイダIDを capability 判定用IDへ正規化
+   * @param {string} provider
+   * @returns {string}
+   */
+  function normalizeCapabilityProvider(provider) {
+    if (!provider) return '';
+    if (provider === 'claude') return 'anthropic';
+    if (provider === 'openai_llm') return 'openai';
+    return provider;
+  }
+
+  /**
+   * 実際に利用されるLLMプロバイダを決定
+   * @param {string} priority - llmPriority設定値
+   * @param {(provider:string)=>boolean} hasApiKey - プロバイダのキー有無判定
+   * @returns {string|null}
+   */
+  function resolveEffectiveLlmProvider(priority, hasApiKey) {
+    if (typeof hasApiKey !== 'function') return null;
+
+    if (priority && priority !== 'auto' && hasApiKey(priority)) {
+      return priority;
+    }
+
+    for (var i = 0; i < LLM_PROVIDER_PRIORITY.length; i++) {
+      var provider = LLM_PROVIDER_PRIORITY[i];
+      if (hasApiKey(provider)) {
+        return provider;
+      }
+    }
+
+    return null;
   }
 
   /**
@@ -34,7 +70,12 @@ const CapabilityUtils = (function () {
     return reasoningModels.some((m) => model.includes(m));
   }
 
-  return { getCapabilities, isReasoningCapableModel };
+  return {
+    getCapabilities,
+    normalizeCapabilityProvider,
+    resolveEffectiveLlmProvider,
+    isReasoningCapableModel
+  };
 })();
 
 if (typeof window !== 'undefined') {

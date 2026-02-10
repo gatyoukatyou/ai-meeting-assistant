@@ -153,6 +153,8 @@ var deepCopy = FormatUtils.deepCopy;
 
 // --- Capability utilities (delegated to js/lib/capability-utils.js) ---
 var getCapabilities = CapabilityUtils.getCapabilities;
+var normalizeCapabilityProvider = CapabilityUtils.normalizeCapabilityProvider;
+var resolveEffectiveLlmProvider = CapabilityUtils.resolveEffectiveLlmProvider;
 var isReasoningCapableModel = CapabilityUtils.isReasoningCapableModel;
 
 // --- Sanitize utilities (delegated to js/lib/sanitize-utils.js) ---
@@ -5995,26 +5997,33 @@ function formatHistoryDuration(seconds) {
 // =====================================
 
 /**
+ * 現在の設定から実際に選択されるLLMプロバイダを取得
+ * @returns {string|null}
+ */
+function getEffectiveLlmProvider() {
+  const priority = SecureStorage.getOption('llmPriority', 'auto');
+  return resolveEffectiveLlmProvider(priority, function(provider) {
+    return Boolean(SecureStorage.getApiKey(provider));
+  });
+}
+
+/**
  * 現在のLLM設定から能力を取得
  * @returns {{supportsReasoningControl: boolean, supportsNativeDocs: boolean, supportsVisionImages: boolean}}
  */
 function getCurrentCapabilities() {
-  const provider = SecureStorage.getOption('llmPriority', 'auto');
-  let actualProvider = provider;
-
-  // auto の場合は設定されている最優先プロバイダを取得
-  if (provider === 'auto') {
-    const priorityOrder = ['anthropic', 'openai', 'gemini', 'groq'];
-    for (const p of priorityOrder) {
-      if (SecureStorage.getApiKey(p)) {
-        actualProvider = p;
-        break;
-      }
-    }
+  const actualProvider = getEffectiveLlmProvider();
+  if (!actualProvider) {
+    return {
+      supportsReasoningControl: false,
+      supportsNativeDocs: false,
+      supportsVisionImages: false
+    };
   }
 
+  const capabilityProvider = normalizeCapabilityProvider(actualProvider);
   const model = SecureStorage.getEffectiveModel(actualProvider, getDefaultModel(actualProvider));
-  return getCapabilities(actualProvider, model);
+  return getCapabilities(capabilityProvider, model);
 }
 
 /**
@@ -6076,9 +6085,7 @@ function initEnhancementToggles() {
 
   const caps = getCurrentCapabilities();
   // P0-2: Native Docsは「PDFかつbase64あり」の場合のみ有効
-  const hasNativeDocsPayload = (meetingContext.files || []).some(
-    f => f.type === 'application/pdf' && f.base64Data
-  );
+  const hasNativeDocsPayloadNow = hasNativeDocsPayload();
 
   // Reasoning Boost トグル
   if (reasoningToggle) {
@@ -6103,7 +6110,7 @@ function initEnhancementToggles() {
   // Native Docs トグル
   if (nativeDocsToggle) {
     // P0-2: Gemini かつ PDF base64ありの場合のみ有効
-    if (caps.supportsNativeDocs && hasNativeDocsPayload) {
+    if (caps.supportsNativeDocs && hasNativeDocsPayloadNow) {
       nativeDocsToggle.disabled = false;
       nativeDocsToggle.checked = meetingContext.nativeDocsEnabled || false;
       if (nativeDocsDisabledReason) {
@@ -6115,7 +6122,7 @@ function initEnhancementToggles() {
       // P1-4: disable時はmeetingContext側もfalseに寄せる（状態ズレ防止）
       meetingContext.nativeDocsEnabled = false;
       if (nativeDocsDisabledReason) {
-        nativeDocsDisabledReason.textContent = t('context.nativeDocsDisabled');
+        nativeDocsDisabledReason.textContent = getNativeDocsDisabledReasonText();
         nativeDocsDisabledReason.style.display = 'block';
       }
     }
@@ -6130,6 +6137,22 @@ function hasNativeDocsPayload() {
   return (meetingContext.files || []).some(
     f => f.type === 'application/pdf' && f.base64Data
   );
+}
+
+function getNativeDocsDisabledReasonText() {
+  const effectiveProvider = getEffectiveLlmProvider();
+  const hasGeminiKey = Boolean(SecureStorage.getApiKey('gemini'));
+
+  if (!hasGeminiKey) {
+    return t('context.nativeDocsNeedsGeminiKey') || 'Gemini APIキー（LLM設定）が必要です';
+  }
+  if (effectiveProvider !== 'gemini') {
+    return t('context.nativeDocsNeedsGeminiPriority') || 'LLM優先順位をGeminiに設定してください';
+  }
+  if (!hasNativeDocsPayload()) {
+    return t('context.nativeDocsNeedsPdf') || 'PDFファイルを添付すると有効になります';
+  }
+  return t('context.nativeDocsDisabled') || 'GeminiプロバイダーでPDF添付がある場合のみ';
 }
 
 /**
