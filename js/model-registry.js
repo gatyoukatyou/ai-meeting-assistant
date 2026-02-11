@@ -10,7 +10,10 @@ const ModelRegistry = (function() {
   // =====================================
   // Constants
   // =====================================
-  const STORAGE_KEY = '_model_registry';
+  const STORAGE_KEY =
+    (typeof ModelRegistryCacheStore !== 'undefined' && ModelRegistryCacheStore.STORAGE_KEY)
+      ? ModelRegistryCacheStore.STORAGE_KEY
+      : '_model_registry';
   const MODEL_LIST_TTL = 24 * 60 * 60 * 1000;  // 24 hours
   const HEALTH_TTL = 6 * 60 * 60 * 1000;       // 6 hours
   const FLAKY_COOLDOWN = 5 * 60 * 1000;        // 5 minutes (for 429/5xx)
@@ -214,7 +217,10 @@ const ModelRegistry = (function() {
    */
   function loadCache() {
     try {
-      var raw = localStorage.getItem(STORAGE_KEY);
+      var raw =
+        (typeof ModelRegistryCacheStore !== 'undefined' && typeof ModelRegistryCacheStore.read === 'function')
+          ? ModelRegistryCacheStore.read()
+          : localStorage.getItem(STORAGE_KEY);
       if (!raw) return createEmptyCache();
       var cache = JSON.parse(raw);
       if (cache.version !== 2) return createEmptyCache();
@@ -230,7 +236,15 @@ const ModelRegistry = (function() {
    */
   function saveCache(cache) {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(cache));
+      var serialized = JSON.stringify(cache);
+      if (
+        typeof ModelRegistryCacheStore !== 'undefined' &&
+        typeof ModelRegistryCacheStore.write === 'function'
+      ) {
+        ModelRegistryCacheStore.write(serialized);
+      } else {
+        localStorage.setItem(STORAGE_KEY, serialized);
+      }
     } catch (e) {
       console.warn('[ModelRegistry] Failed to save cache:', e);
     }

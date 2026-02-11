@@ -33,9 +33,8 @@ let isMeetingMode = false;
 let recordingStartTime = null;
 let meetingModeTimerId = null;
 
-const MEETING_TITLE_STORAGE_KEY = '_meetingTitle';
-const MEETING_CONTEXT_STORAGE_KEY = '_meetingContext';
-const LEGACY_MEETING_CONTEXT_STORAGE_KEY = '__meetingContext';
+const MEETING_TITLE_STORE = (typeof MeetingTitleStore !== 'undefined') ? MeetingTitleStore : null;
+const MEETING_CONTEXT_STORE = (typeof MeetingContextStore !== 'undefined') ? MeetingContextStore : null;
 
 // ファイルアップロード関連の定数
 const CONTEXT_SCHEMA_VERSION = 3;  // v3: participants, handoff, toggles追加
@@ -1220,12 +1219,14 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   const meetingTitleInput = document.getElementById('meetingTitleInput');
   if (meetingTitleInput) {
-    const savedTitle = localStorage.getItem(MEETING_TITLE_STORAGE_KEY) || '';
+    const savedTitle = MEETING_TITLE_STORE ? MEETING_TITLE_STORE.get() : '';
     if (savedTitle) {
       meetingTitleInput.value = savedTitle;
     }
     meetingTitleInput.addEventListener('input', (event) => {
-      localStorage.setItem(MEETING_TITLE_STORAGE_KEY, event.target.value || '');
+      if (MEETING_TITLE_STORE) {
+        MEETING_TITLE_STORE.set(event.target.value || '');
+      }
     });
   }
 
@@ -3952,7 +3953,9 @@ function clearTranscript() {
     renderTranscriptChunks();
 
     // 会議タイトルをクリア (#55, #52)
-    localStorage.removeItem(MEETING_TITLE_STORAGE_KEY);
+    if (MEETING_TITLE_STORE) {
+      MEETING_TITLE_STORE.clear();
+    }
     const meetingTitleInput = document.getElementById('meetingTitleInput');
     if (meetingTitleInput) {
       meetingTitleInput.value = '';
@@ -4420,7 +4423,9 @@ function loadDemoMeetingSession(options = {}) {
   const titleInput = document.getElementById('meetingTitleInput');
   if (titleInput) {
     titleInput.value = demo.title;
-    localStorage.setItem(MEETING_TITLE_STORAGE_KEY, demo.title);
+    if (MEETING_TITLE_STORE) {
+      MEETING_TITLE_STORE.set(demo.title);
+    }
   }
 
   const minutesBtn = document.getElementById('minutesBtn');
@@ -6272,46 +6277,25 @@ function clearContextData() {
   showToast(t('context.toastCleared') || '会議情報を削除しました', 'info');
 }
 
-function getMeetingContextStorage() {
-  return SecureStorage.getOption('persistMeetingContext', false) ? localStorage : sessionStorage;
-}
-
-function findMeetingContextEntry(storage) {
-  const primary = storage.getItem(MEETING_CONTEXT_STORAGE_KEY);
-  if (primary) return { key: MEETING_CONTEXT_STORAGE_KEY, value: primary };
-  const legacy = storage.getItem(LEGACY_MEETING_CONTEXT_STORAGE_KEY);
-  if (legacy) return { key: LEGACY_MEETING_CONTEXT_STORAGE_KEY, value: legacy };
-  return null;
-}
-
-function clearMeetingContextKeys(storage) {
-  storage.removeItem(MEETING_CONTEXT_STORAGE_KEY);
-  storage.removeItem(LEGACY_MEETING_CONTEXT_STORAGE_KEY);
-}
-
 function migrateMeetingContextStorage() {
   const persist = SecureStorage.getOption('persistMeetingContext', false);
+  if (MEETING_CONTEXT_STORE && typeof MEETING_CONTEXT_STORE.readRaw === 'function') {
+    return MEETING_CONTEXT_STORE.readRaw(persist);
+  }
   const primary = persist ? localStorage : sessionStorage;
   const secondary = persist ? sessionStorage : localStorage;
-
-  const primaryEntry = findMeetingContextEntry(primary);
-  const secondaryEntry = findMeetingContextEntry(secondary);
-  let didSetPrimary = false;
-
-  if (!primaryEntry && secondaryEntry) {
-    primary.setItem(MEETING_CONTEXT_STORAGE_KEY, secondaryEntry.value);
-    didSetPrimary = true;
+  const primaryRaw = primary.getItem('_meetingContext') || primary.getItem('__meetingContext');
+  const secondaryRaw = secondary.getItem('_meetingContext') || secondary.getItem('__meetingContext');
+  if (!primaryRaw && secondaryRaw) {
+    primary.setItem('_meetingContext', secondaryRaw);
   }
-  if (primaryEntry && primaryEntry.key !== MEETING_CONTEXT_STORAGE_KEY) {
-    primary.setItem(MEETING_CONTEXT_STORAGE_KEY, primaryEntry.value);
-    didSetPrimary = true;
+  secondary.removeItem('_meetingContext');
+  secondary.removeItem('__meetingContext');
+  if (primary.getItem('__meetingContext')) {
+    primary.setItem('_meetingContext', primary.getItem('__meetingContext'));
+    primary.removeItem('__meetingContext');
   }
-
-  clearMeetingContextKeys(secondary);
-  if (didSetPrimary) {
-    primary.removeItem(LEGACY_MEETING_CONTEXT_STORAGE_KEY);
-  }
-  return primary.getItem(MEETING_CONTEXT_STORAGE_KEY);
+  return primary.getItem('_meetingContext');
 }
 
 function loadMeetingContextFromStorage() {
@@ -6359,8 +6343,7 @@ function createEmptyMeetingContext() {
 }
 
 function persistMeetingContext() {
-  const storage = getMeetingContextStorage();
-  const otherStorage = storage === localStorage ? sessionStorage : localStorage;
+  const persist = SecureStorage.getOption('persistMeetingContext', false);
   if (hasMeetingContext()) {
     // P0: base64Dataを永続化しない（localStorage上限対策）
     // replacerでbase64Dataキーを除外
@@ -6368,11 +6351,25 @@ function persistMeetingContext() {
       if (key === 'base64Data') return undefined;  // 除外
       return value;
     });
-    storage.setItem(MEETING_CONTEXT_STORAGE_KEY, serialized);
-    clearMeetingContextKeys(otherStorage);
+    if (MEETING_CONTEXT_STORE && typeof MEETING_CONTEXT_STORE.saveRaw === 'function') {
+      MEETING_CONTEXT_STORE.saveRaw(serialized, persist);
+    } else {
+      const primary = persist ? localStorage : sessionStorage;
+      const secondary = persist ? sessionStorage : localStorage;
+      primary.setItem('_meetingContext', serialized);
+      primary.removeItem('__meetingContext');
+      secondary.removeItem('_meetingContext');
+      secondary.removeItem('__meetingContext');
+    }
   } else {
-    clearMeetingContextKeys(storage);
-    clearMeetingContextKeys(otherStorage);
+    if (MEETING_CONTEXT_STORE && typeof MEETING_CONTEXT_STORE.clear === 'function') {
+      MEETING_CONTEXT_STORE.clear(persist);
+    } else {
+      localStorage.removeItem('_meetingContext');
+      localStorage.removeItem('__meetingContext');
+      sessionStorage.removeItem('_meetingContext');
+      sessionStorage.removeItem('__meetingContext');
+    }
   }
 }
 
