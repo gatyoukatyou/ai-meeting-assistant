@@ -27,42 +27,81 @@ const ModelRegistry = (function() {
   // =====================================
   // Provider Configurations
   // =====================================
-  const PROVIDER_CONFIG = {
+  function parseGeminiModels(data) {
+    if (!data || !data.models) return [];
+    return data.models
+      .filter(function(m) {
+        // Field variations: supportedGenerationMethods / supportedActions / supported_actions
+        var methods = m.supportedGenerationMethods
+          || m.supportedActions
+          || m.supported_actions
+          || [];
+        return methods.includes('generateContent');
+      })
+      .map(function(m) {
+        var id = m.name.replace('models/', '');
+        var deprecated = m.lifecycle && m.lifecycle.status === 'DEPRECATED';
+        var shutdownDate = m.lifecycle && m.lifecycle.shutdownDate;
+
+        // Mark Gemini 2.0 Flash GA models as deprecated
+        if (GEMINI_2_FLASH_GA.has(id)) {
+          deprecated = true;
+          shutdownDate = shutdownDate || '2026-03-31';
+        }
+
+        return {
+          id: id,
+          rawName: m.name,
+          displayName: m.displayName || id,
+          deprecated: deprecated || false,
+          shutdownDate: shutdownDate || null
+        };
+      });
+  }
+
+  function parseOpenAIModels(data) {
+    if (!data || !data.data) return [];
+    return data.data
+      .filter(function(m) {
+        // Filter to chat models only
+        return m.id.startsWith('gpt-');
+      })
+      .map(function(m) {
+        return {
+          id: m.id,
+          displayName: m.id,
+          deprecated: false
+        };
+      });
+  }
+
+  function parseClaudeModels(data) {
+    if (!data || !data.data) return [];
+    return data.data.map(function(m) {
+      return {
+        id: m.id,
+        displayName: m.display_name || m.id,
+        deprecated: false
+      };
+    });
+  }
+
+  function parseGroqModels(data) {
+    if (!data || !data.data) return [];
+    return data.data.map(function(m) {
+      return {
+        id: m.id,
+        displayName: m.id,
+        deprecated: false
+      };
+    });
+  }
+
+  const FALLBACK_PROVIDER_CONFIG_BASE = {
     gemini: {
       endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
       authHeader: 'x-goog-api-key',
       canListModels: true,
-      parseModels: function(data) {
-        if (!data || !data.models) return [];
-        return data.models
-          .filter(function(m) {
-            // Field variations: supportedGenerationMethods / supportedActions / supported_actions
-            var methods = m.supportedGenerationMethods
-              || m.supportedActions
-              || m.supported_actions
-              || [];
-            return methods.includes('generateContent');
-          })
-          .map(function(m) {
-            var id = m.name.replace('models/', '');
-            var deprecated = m.lifecycle && m.lifecycle.status === 'DEPRECATED';
-            var shutdownDate = m.lifecycle && m.lifecycle.shutdownDate;
-
-            // Mark Gemini 2.0 Flash GA models as deprecated
-            if (GEMINI_2_FLASH_GA.has(id)) {
-              deprecated = true;
-              shutdownDate = shutdownDate || '2026-03-31';
-            }
-
-            return {
-              id: id,
-              rawName: m.name,
-              displayName: m.displayName || id,
-              deprecated: deprecated || false,
-              shutdownDate: shutdownDate || null
-            };
-          });
-      },
       fixedModels: [
         { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', deprecated: false },
         { id: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash', deprecated: false },
@@ -73,23 +112,8 @@ const ModelRegistry = (function() {
       endpoint: 'https://api.openai.com/v1/models',
       authHeader: 'Authorization',
       authPrefix: 'Bearer ',
-      canListModels: false,  // CORS issues - use fixed list
+      canListModels: false,
       canListModelsWithProxy: true,
-      parseModels: function(data) {
-        if (!data || !data.data) return [];
-        return data.data
-          .filter(function(m) {
-            // Filter to chat models only
-            return m.id.startsWith('gpt-');
-          })
-          .map(function(m) {
-            return {
-              id: m.id,
-              displayName: m.id,
-              deprecated: false
-            };
-          });
-      },
       fixedModels: [
         { id: 'gpt-4o', displayName: 'GPT-4o (Recommended)', deprecated: false },
         { id: 'gpt-4o-mini', displayName: 'GPT-4o Mini (Low cost)', deprecated: false },
@@ -104,17 +128,7 @@ const ModelRegistry = (function() {
         'anthropic-version': '2023-06-01',
         'anthropic-dangerous-direct-browser-access': 'true'
       },
-      canListModels: true,  // Try -> fallback to fixed
-      parseModels: function(data) {
-        if (!data || !data.data) return [];
-        return data.data.map(function(m) {
-          return {
-            id: m.id,
-            displayName: m.display_name || m.id,
-            deprecated: false
-          };
-        });
-      },
+      canListModels: true,
       fixedModels: [
         { id: 'claude-sonnet-4-20250514', displayName: 'Claude Sonnet 4', deprecated: false },
         { id: 'claude-3-5-sonnet-20241022', displayName: 'Claude 3.5 Sonnet', deprecated: false }
@@ -125,21 +139,24 @@ const ModelRegistry = (function() {
       authHeader: 'Authorization',
       authPrefix: 'Bearer ',
       canListModels: true,
-      parseModels: function(data) {
-        if (!data || !data.data) return [];
-        return data.data.map(function(m) {
-          return {
-            id: m.id,
-            displayName: m.id,
-            deprecated: false
-          };
-        });
-      },
       fixedModels: [
         { id: 'llama-3.3-70b-versatile', displayName: 'LLaMA 3.3 70B (Recommended)', deprecated: false },
         { id: 'llama-3.1-8b-instant', displayName: 'LLaMA 3.1 8B (Low cost)', deprecated: false }
       ]
     }
+  };
+
+  const PROVIDER_CONFIG_BASE =
+    (typeof ProviderCatalog !== 'undefined' &&
+      typeof ProviderCatalog.getModelRegistryProviderConfigBase === 'function')
+      ? ProviderCatalog.getModelRegistryProviderConfigBase()
+      : FALLBACK_PROVIDER_CONFIG_BASE;
+
+  const PROVIDER_CONFIG = {
+    gemini: Object.assign({}, PROVIDER_CONFIG_BASE.gemini, { parseModels: parseGeminiModels }),
+    openai_llm: Object.assign({}, PROVIDER_CONFIG_BASE.openai_llm, { parseModels: parseOpenAIModels }),
+    claude: Object.assign({}, PROVIDER_CONFIG_BASE.claude, { parseModels: parseClaudeModels }),
+    groq: Object.assign({}, PROVIDER_CONFIG_BASE.groq, { parseModels: parseGroqModels })
   };
 
   // =====================================
@@ -153,10 +170,15 @@ const ModelRegistry = (function() {
    * @returns {string} - Model ID without "models/" prefix
    */
   function normalizeGeminiModelId(model) {
+    if (
+      typeof ProviderCatalog !== 'undefined' &&
+      typeof ProviderCatalog.normalizeGeminiModelId === 'function'
+    ) {
+      return ProviderCatalog.normalizeGeminiModelId(model);
+    }
     if (!model) return model;
-    // Remove "models/" prefix if present
     if (model.startsWith('models/')) {
-      return model.slice(7); // "models/".length === 7
+      return model.slice(7);
     }
     return model;
   }

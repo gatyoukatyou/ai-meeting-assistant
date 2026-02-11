@@ -104,6 +104,33 @@ describe('ProviderCatalog provider lists', () => {
       'deepgram',
     ]);
   });
+
+  it('returns llm provider priority order', () => {
+    assert.deepEqual(Array.from(ProviderCatalog.getLlmProviderPriority()), [
+      'claude',
+      'openai_llm',
+      'gemini',
+      'groq',
+    ]);
+  });
+});
+
+describe('ProviderCatalog model-registry config base', () => {
+  it('exposes base config for each llm provider', () => {
+    const config = ProviderCatalog.getModelRegistryProviderConfigBase();
+    assert.equal(typeof config, 'object');
+    assert.equal(Boolean(config.gemini), true);
+    assert.equal(Boolean(config.openai_llm), true);
+    assert.equal(Boolean(config.claude), true);
+    assert.equal(Boolean(config.groq), true);
+  });
+
+  it('returns defensive copies', () => {
+    const config1 = ProviderCatalog.getModelRegistryProviderConfigBase();
+    const config2 = ProviderCatalog.getModelRegistryProviderConfigBase();
+    config1.gemini.endpoint = 'https://example.invalid';
+    assert.notEqual(config1.gemini.endpoint, config2.gemini.endpoint);
+  });
 });
 
 describe('ProviderCatalog.normalizeGeminiModelId', () => {

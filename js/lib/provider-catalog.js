@@ -4,6 +4,7 @@ const ProviderCatalog = (function () {
   'use strict';
 
   var LLM_PROVIDER_IDS = ['gemini', 'claude', 'openai_llm', 'groq'];
+  var LLM_PROVIDER_PRIORITY = ['claude', 'openai_llm', 'gemini', 'groq'];
   var LLM_PROVIDER_IDS_WITH_LEGACY = ['gemini', 'claude', 'openai_llm', 'groq', 'openai'];
   var STT_PROVIDER_IDS = ['openai_stt', 'deepgram_realtime'];
   var API_KEY_PROVIDER_IDS = ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'];
@@ -82,6 +83,57 @@ const ProviderCatalog = (function () {
     openai_llm: 'openai'
   };
 
+  // Shared provider configuration metadata for ModelRegistry.
+  // ModelRegistry adds parseModels() so this stays data-only.
+  var MODEL_REGISTRY_PROVIDER_CONFIG_BASE = {
+    gemini: {
+      endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
+      authHeader: 'x-goog-api-key',
+      canListModels: true,
+      fixedModels: [
+        { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', deprecated: false },
+        { id: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash', deprecated: false },
+        { id: 'gemini-2.0-flash', displayName: 'Gemini 2.0 Flash (2026-03-31 shutdown)', deprecated: true, shutdownDate: '2026-03-31' }
+      ]
+    },
+    openai_llm: {
+      endpoint: 'https://api.openai.com/v1/models',
+      authHeader: 'Authorization',
+      authPrefix: 'Bearer ',
+      canListModels: false,
+      canListModelsWithProxy: true,
+      fixedModels: [
+        { id: 'gpt-4o', displayName: 'GPT-4o (Recommended)', deprecated: false },
+        { id: 'gpt-4o-mini', displayName: 'GPT-4o Mini (Low cost)', deprecated: false },
+        { id: 'gpt-4-turbo', displayName: 'GPT-4 Turbo', deprecated: false }
+      ],
+      allowCustomModel: true
+    },
+    claude: {
+      endpoint: 'https://api.anthropic.com/v1/models',
+      authHeader: 'x-api-key',
+      extraHeaders: {
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      canListModels: true,
+      fixedModels: [
+        { id: 'claude-sonnet-4-20250514', displayName: 'Claude Sonnet 4', deprecated: false },
+        { id: 'claude-3-5-sonnet-20241022', displayName: 'Claude 3.5 Sonnet', deprecated: false }
+      ]
+    },
+    groq: {
+      endpoint: 'https://api.groq.com/openai/v1/models',
+      authHeader: 'Authorization',
+      authPrefix: 'Bearer ',
+      canListModels: true,
+      fixedModels: [
+        { id: 'llama-3.3-70b-versatile', displayName: 'LLaMA 3.3 70B (Recommended)', deprecated: false },
+        { id: 'llama-3.1-8b-instant', displayName: 'LLaMA 3.1 8B (Low cost)', deprecated: false }
+      ]
+    }
+  };
+
   function getProvider(providerId) {
     var provider = PROVIDER_DEFINITIONS[providerId];
     if (!provider) return null;
@@ -156,9 +208,37 @@ const ProviderCatalog = (function () {
     return API_KEY_PROVIDER_IDS.slice();
   }
 
+  function getLlmProviderPriority() {
+    return LLM_PROVIDER_PRIORITY.slice();
+  }
+
+  function cloneModelRegistryProviderConfigBase() {
+    var cloned = {};
+
+    Object.keys(MODEL_REGISTRY_PROVIDER_CONFIG_BASE).forEach(function (providerId) {
+      var config = MODEL_REGISTRY_PROVIDER_CONFIG_BASE[providerId];
+      var copied = Object.assign({}, config);
+
+      if (config.fixedModels) {
+        copied.fixedModels = config.fixedModels.map(function (model) {
+          return Object.assign({}, model);
+        });
+      }
+
+      if (config.extraHeaders) {
+        copied.extraHeaders = Object.assign({}, config.extraHeaders);
+      }
+
+      cloned[providerId] = copied;
+    });
+
+    return cloned;
+  }
+
   return {
     PROVIDER_DEFINITIONS: Object.assign({}, PROVIDER_DEFINITIONS),
     CAPABILITY_PROVIDER_MAP: Object.assign({}, CAPABILITY_PROVIDER_MAP),
+    MODEL_REGISTRY_PROVIDER_CONFIG_BASE: cloneModelRegistryProviderConfigBase(),
     getProvider: getProvider,
     getDefaultModel: getDefaultModel,
     getApiKeyProviderId: getApiKeyProviderId,
@@ -171,8 +251,10 @@ const ProviderCatalog = (function () {
     isLlmProvider: isLlmProvider,
     isSttProvider: isSttProvider,
     getLlmProviderIds: getLlmProviderIds,
+    getLlmProviderPriority: getLlmProviderPriority,
     getSttProviderIds: getSttProviderIds,
-    getApiKeyProviderIds: getApiKeyProviderIds
+    getApiKeyProviderIds: getApiKeyProviderIds,
+    getModelRegistryProviderConfigBase: cloneModelRegistryProviderConfigBase
   };
 })();
 
