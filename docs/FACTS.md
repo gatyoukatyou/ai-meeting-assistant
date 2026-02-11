@@ -25,6 +25,15 @@ README・TERMS・その他ドキュメントを更新する際は、必ずこの
 
 ---
 
+## Provider/Model の参照方針（SSoT）
+
+- **Provider ID / 既定モデル / 正規化ルール / APIキー保存IDマップ** は `js/lib/provider-catalog.js` を一次参照とする
+- 既存実装との同期確認では、必要に応じて `js/app.js` / `js/config.js` / `js/model-registry.js` を併読する
+
+**ソース**: `js/lib/provider-catalog.js`
+
+---
+
 ## 文字起こし（STT: Speech-to-Text）
 
 ### 対応プロバイダー
