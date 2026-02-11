@@ -32,6 +32,7 @@ export default [
         SanitizeUtils: 'readonly',
         ModelUtils: 'readonly',
         TextUtils: 'readonly',
+        ProviderCatalog: 'readonly',
         STTProviders: 'writable',
         PCMStreamProcessor: 'writable',
         AudioResampler: 'writable',

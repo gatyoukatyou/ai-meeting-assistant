@@ -1,14 +1,13 @@
-function safeURL(input) {
-  try {
-    const url = new URL(input, window.location.href);
-    if (url.protocol === 'http:' || url.protocol === 'https:') {
-      return url.href;
-    }
-  } catch (e) {
-    console.warn('Invalid URL rejected:', input);
-  }
-  return null;
-}
+const safeURL = SanitizeUtils.safeURL;
+const API_KEY_PROVIDER_IDS =
+  (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getApiKeyProviderIds === 'function')
+    ? ProviderCatalog.getApiKeyProviderIds()
+    : ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'];
+const ALLOWED_STT_PROVIDER_IDS =
+  (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getSttProviderIds === 'function')
+    ? ProviderCatalog.getSttProviderIds()
+    : ['openai_stt', 'deepgram_realtime'];
+const ALLOWED_STT_PROVIDERS = new Set(ALLOWED_STT_PROVIDER_IDS);
 
 function navigateTo(target) {
   const safe = safeURL(target);
@@ -35,10 +34,12 @@ function syncApiKeysToOpener() {
     const cleanupStorage = persistApiKeys ? window.opener.sessionStorage : window.opener.localStorage;
 
     // 現在の保存ポリシーに合わせて親ウィンドウ側にも同期
-    const providers = ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'];
-    providers.forEach(provider => {
+    API_KEY_PROVIDER_IDS.forEach(provider => {
       const key = SecureStorage.getApiKey(provider);
-      const storageKey = `_ak_${provider}`;
+      const storageKey =
+        (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getApiKeyStorageKey === 'function')
+          ? ProviderCatalog.getApiKeyStorageKey(provider)
+          : `_ak_${provider}`;
       if (key) {
         targetStorage.setItem(storageKey, key);
         cleanupStorage.removeItem(storageKey);
@@ -56,14 +57,6 @@ function syncApiKeysToOpener() {
     console.warn('[Config] Failed to sync API keys to opener:', e);
   }
 }
-
-// =====================================
-// STTプロバイダー許可リスト
-// =====================================
-const ALLOWED_STT_PROVIDERS = new Set([
-  'openai_stt',
-  'deepgram_realtime'
-]);
 
 // =====================================
 // 初期化
@@ -124,9 +117,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 // =====================================
 function setupApiKeyButtons() {
   // 各プロバイダーのボタンにイベントリスナーを追加
-  const providers = ['openai', 'deepgram', 'gemini', 'claude', 'openai_llm', 'groq'];
-  
-  providers.forEach(provider => {
+  API_KEY_PROVIDER_IDS.forEach(provider => {
     // 認証チェックボタン
     const validateBtns = document.querySelectorAll(`[data-validate="${provider}"]`);
     validateBtns.forEach(btn => {
@@ -206,18 +197,23 @@ function loadSavedSettings() {
   // STTプロバイダーを読み込み（旧設定からの移行も処理）
   let sttProvider = SecureStorage.getOption('sttProvider', 'openai_stt');
 
-  // 旧設定からの移行: gemini/openai -> openai_stt
-  if (sttProvider === 'gemini' || sttProvider === 'openai') {
-    console.warn(`Migrating old STT provider "${sttProvider}" to "openai_stt"`);
-    sttProvider = 'openai_stt';
+  // 旧設定からの移行: catalog正規化ルールに従う
+  const normalizedSttProvider =
+    (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.normalizeSttProviderId === 'function')
+      ? ProviderCatalog.normalizeSttProviderId(sttProvider)
+      : sttProvider;
+  if (normalizedSttProvider !== sttProvider) {
+    console.warn(`Migrating old STT provider "${sttProvider}" to "${normalizedSttProvider}"`);
+    sttProvider = normalizedSttProvider;
     SecureStorage.setOption('sttProvider', sttProvider);
     showMigrationNotice();
   }
 
-  // 許可リストにないプロバイダーは強制的にopenai_sttに
+  // 許可リストにないプロバイダーは先頭の許可値へフォールバック
   if (!ALLOWED_STT_PROVIDERS.has(sttProvider)) {
-    console.warn(`Unknown STT provider "${sttProvider}", falling back to "openai_stt"`);
-    sttProvider = 'openai_stt';
+    const fallbackSttProvider = ALLOWED_STT_PROVIDER_IDS[0] || 'openai_stt';
+    console.warn(`Unknown STT provider "${sttProvider}", falling back to "${fallbackSttProvider}"`);
+    sttProvider = fallbackSttProvider;
   }
 
   const sttSelector = document.getElementById('sttProvider');
@@ -755,6 +751,9 @@ function clearApiKey(provider) {
 // LLMプロバイダー判定
 // =====================================
 function isLLMProvider(provider) {
+  if (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.isLlmProvider === 'function') {
+    return ProviderCatalog.isLlmProvider(provider);
+  }
   return ['gemini', 'claude', 'openai_llm', 'groq'].includes(provider);
 }
 

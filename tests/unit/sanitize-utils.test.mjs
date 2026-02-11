@@ -2,7 +2,12 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScript } from '../helpers/load-script.mjs';
 
-const { SanitizeUtils } = loadScript('js/lib/sanitize-utils.js');
+const { SanitizeUtils } = loadScript('js/lib/sanitize-utils.js', {
+  URL,
+  window: {
+    location: { href: 'https://example.com/app/index.html' }
+  }
+});
 
 // Dynamic fake-key generators — avoid literal key strings that trigger secret scanning
 const fakeSk = () => 'sk' + '-' + 'a'.repeat(32);
@@ -92,5 +97,22 @@ describe('truncateText', () => {
     const result = SanitizeUtils.truncateText(long);
     assert.equal(result.length, 161); // 160 + ellipsis
     assert.ok(result.endsWith('\u2026'));
+  });
+});
+
+// ========================================
+// safeURL()
+// ========================================
+
+describe('safeURL', () => {
+  it('returns absolute URL for same-origin relative path', () => {
+    assert.equal(
+      SanitizeUtils.safeURL('config.html'),
+      'https://example.com/app/config.html'
+    );
+  });
+
+  it('returns null for unsupported schemes', () => {
+    assert.equal(SanitizeUtils.safeURL('javascript:alert(1)'), null);
   });
 });

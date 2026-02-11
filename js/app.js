@@ -160,6 +160,7 @@ var isReasoningCapableModel = CapabilityUtils.isReasoningCapableModel;
 // --- Sanitize utilities (delegated to js/lib/sanitize-utils.js) ---
 var sanitizeErrorLog = SanitizeUtils.sanitizeErrorLog;
 var truncateText = SanitizeUtils.truncateText;
+var safeURL = SanitizeUtils.safeURL;
 
 // --- Model utilities (delegated to js/lib/model-utils.js) ---
 var getProviderDisplayName = ModelUtils.getProviderDisplayName;
@@ -268,10 +269,11 @@ function getActiveDurationMs(now = Date.now()) {
 // =====================================
 // chunked系: HTTP経由でBlobを送信（擬似リアルタイム）
 // streaming系: WebSocket経由でPCMストリーム送信（真のリアルタイム）
-const ALLOWED_STT_PROVIDERS = new Set([
-  'openai_stt',       // chunked (HTTP)
-  'deepgram_realtime' // streaming (WebSocket)
-]);
+const ALLOWED_STT_PROVIDERS = new Set(
+  (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getSttProviderIds === 'function')
+    ? ProviderCatalog.getSttProviderIds()
+    : ['openai_stt', 'deepgram_realtime']
+);
 
 // chunked系プロバイダー
 const CHUNKED_PROVIDERS = new Set(['openai_stt']);
@@ -574,18 +576,6 @@ let currentTimelineSearch = '';
 
 // 履歴復元用（上書き保存のため）
 let restoredHistoryId = null;
-
-function safeURL(input) {
-  try {
-    const url = new URL(input, window.location.href);
-    if (url.protocol === 'http:' || url.protocol === 'https:') {
-      return url.href;
-    }
-  } catch (e) {
-    console.warn('Invalid URL rejected:', input);
-  }
-  return null;
-}
 
 function navigateTo(target) {
   const safe = safeURL(target);
