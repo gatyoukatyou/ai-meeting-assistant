@@ -32,6 +32,30 @@ describe('getCapabilities', () => {
     assert.equal(caps.supportsReasoningControl, false);
   });
 
+  it('enables reasoning control for openai + o-series model', () => {
+    const caps = CapabilityUtils.getCapabilities(
+      'openai',
+      'o3-mini'
+    );
+    assert.equal(caps.supportsReasoningControl, true);
+  });
+
+  it('enables reasoning control for openai + gpt-5 model', () => {
+    const caps = CapabilityUtils.getCapabilities(
+      'openai',
+      'models/gpt-5'
+    );
+    assert.equal(caps.supportsReasoningControl, true);
+  });
+
+  it('disables reasoning control for openai + non-reasoning model', () => {
+    const caps = CapabilityUtils.getCapabilities(
+      'openai',
+      'gpt-4o'
+    );
+    assert.equal(caps.supportsReasoningControl, false);
+  });
+
   it('disables reasoning control for anthropic + non-reasoning model', () => {
     const caps = CapabilityUtils.getCapabilities(
       'anthropic',
@@ -162,5 +186,37 @@ describe('isReasoningCapableModel', () => {
 
   it('returns false for empty string', () => {
     assert.equal(CapabilityUtils.isReasoningCapableModel(''), false);
+  });
+});
+
+// ========================================
+// isOpenAiReasoningCapableModel()
+// ========================================
+
+describe('isOpenAiReasoningCapableModel', () => {
+  it('returns true for o-series model', () => {
+    assert.equal(
+      CapabilityUtils.isOpenAiReasoningCapableModel('o4-mini'),
+      true
+    );
+  });
+
+  it('returns true for gpt-5 model', () => {
+    assert.equal(
+      CapabilityUtils.isOpenAiReasoningCapableModel('models/gpt-5-mini'),
+      true
+    );
+  });
+
+  it('returns false for non-reasoning model', () => {
+    assert.equal(
+      CapabilityUtils.isOpenAiReasoningCapableModel('gpt-4o'),
+      false
+    );
+  });
+
+  it('returns false for null/undefined input', () => {
+    assert.equal(CapabilityUtils.isOpenAiReasoningCapableModel(null), false);
+    assert.equal(CapabilityUtils.isOpenAiReasoningCapableModel(undefined), false);
   });
 });

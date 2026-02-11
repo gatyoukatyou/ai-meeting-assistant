@@ -16,10 +16,23 @@ const CapabilityUtils = (function () {
   function getCapabilities(provider, model) {
     return {
       supportsReasoningControl:
-        provider === 'anthropic' && isReasoningCapableModel(model),
+        (provider === 'anthropic' && isReasoningCapableModel(model)) ||
+        (provider === 'openai' && isOpenAiReasoningCapableModel(model)),
       supportsNativeDocs: provider === 'gemini',
       supportsVisionImages: false // 将来拡張用
     };
+  }
+
+  function normalizeModelForCapabilityMatch(model) {
+    if (!model) return '';
+    var normalized = String(model).trim().toLowerCase();
+    if (normalized.startsWith('models/')) {
+      normalized = normalized.slice(7);
+    }
+    if (normalized.indexOf('/') !== -1) {
+      normalized = normalized.split('/').pop();
+    }
+    return normalized;
   }
 
   /**
@@ -69,21 +82,36 @@ const CapabilityUtils = (function () {
    * @returns {boolean}
    */
   function isReasoningCapableModel(model) {
-    if (!model) return false;
+    const normalizedModel = normalizeModelForCapabilityMatch(model);
+    if (!normalizedModel) return false;
     // Extended thinking対応モデル
     const reasoningModels = [
       'claude-sonnet-4',
       'claude-opus-4',
       'claude-3-7-sonnet' // claude-3.7-sonnet系も対応
     ];
-    return reasoningModels.some((m) => model.includes(m));
+    return reasoningModels.some((m) => normalizedModel.includes(m));
+  }
+
+  /**
+   * OpenAIのreasoning_effortパラメータを受け付けるモデルか判定
+   * - o-series (o1/o3/o4...)
+   * - gpt-5 系
+   * @param {string} model - モデル名
+   * @returns {boolean}
+   */
+  function isOpenAiReasoningCapableModel(model) {
+    const normalizedModel = normalizeModelForCapabilityMatch(model);
+    if (!normalizedModel) return false;
+    return /^o\d/.test(normalizedModel) || normalizedModel.startsWith('gpt-5');
   }
 
   return {
     getCapabilities,
     normalizeCapabilityProvider,
     resolveEffectiveLlmProvider,
-    isReasoningCapableModel
+    isReasoningCapableModel,
+    isOpenAiReasoningCapableModel
   };
 })();
 

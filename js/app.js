@@ -6015,7 +6015,7 @@ function getCurrentCapabilities() {
 }
 
 /**
- * Anthropic extended thinking を適用
+ * 対応プロバイダの推論強化パラメータを適用
  * @param {string} provider - プロバイダー名
  * @param {string} model - モデル名
  * @param {Object} payload - APIリクエストペイロード
@@ -6027,27 +6027,31 @@ function applyReasoningBoost(provider, model, payload) {
     return payload;
   }
 
-  // Anthropicかつ対応モデルでなければ何もしない
-  const caps = getCapabilities(provider, model);
+  const capabilityProvider = normalizeCapabilityProvider(provider);
+  const caps = getCapabilities(capabilityProvider, model);
   if (!caps.supportsReasoningControl) {
     return payload;
   }
 
   try {
-    // Extended thinking パラメータを追加
-    // budget_tokens: 思考に使用する最大トークン数
-    payload.thinking = {
-      type: 'enabled',
-      budget_tokens: 10000  // 10kトークンまで思考に使用
-    };
+    if (capabilityProvider === 'anthropic') {
+      // Anthropic Extended thinking
+      payload.thinking = {
+        type: 'enabled',
+        budget_tokens: 10000  // 10kトークンまで思考に使用
+      };
 
-    // Extended thinking使用時はmax_tokensを増やす必要がある場合がある
-    // budget_tokens + 通常出力 < max_tokens である必要があるので調整
-    if (payload.max_tokens < 12048) {
-      payload.max_tokens = 16000;  // 思考 + 出力に十分な量
+      // Extended thinking使用時はmax_tokensを増やす必要がある場合がある
+      // budget_tokens + 通常出力 < max_tokens である必要があるので調整
+      if (payload.max_tokens < 12048) {
+        payload.max_tokens = 16000;  // 思考 + 出力に十分な量
+      }
+    } else if (capabilityProvider === 'openai') {
+      // OpenAI reasoning対応モデルでは reasoning_effort を付与
+      payload.reasoning_effort = 'medium';
     }
 
-    console.log('[LLM] Reasoning boost applied for:', provider, model);
+    console.log('[LLM] Reasoning boost applied for:', capabilityProvider, model);
   } catch (e) {
     console.warn('[LLM] Failed to apply reasoning boost:', e);
     // 失敗時はそのままのペイロードを返す

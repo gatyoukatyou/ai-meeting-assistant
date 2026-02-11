@@ -173,16 +173,21 @@ const LLMClientService = (function () {
 
       case 'openai':
       case 'openai_llm': {
+        let openaiPayload = {
+          model: model,
+          messages: [{ role: 'user', content: prompt }]
+        };
+        if (typeof applyReasoningBoost === 'function') {
+          openaiPayload = applyReasoningBoost('openai', model, openaiPayload);
+        }
+
         response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer ' + apiKey
           },
-          body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'user', content: prompt }]
-          }),
+          body: JSON.stringify(openaiPayload),
           signal: signal
         });
         data = await response.json();
