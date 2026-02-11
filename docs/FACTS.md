@@ -3,7 +3,7 @@
 このドキュメントは、コード実装に基づく「唯一の真実」です。
 README・TERMS・その他ドキュメントを更新する際は、必ずこのファイルを参照してください。
 
-最終更新: 2026-02-10
+最終更新: 2026-02-11
 
 ---
 
@@ -22,6 +22,25 @@ README・TERMS・その他ドキュメントを更新する際は、必ずこの
 - **エクスポート除外**: 設定バックアップにはAPIキーを含めない
 
 **ソース**: `js/secure-storage.js`, `js/config.js`, `config.html`
+
+---
+
+## Provider/Model の参照方針（SSoT）
+
+- **Provider ID / 既定モデル / 正規化ルール / APIキー保存IDマップ** は `js/lib/provider-catalog.js` を一次参照とする
+- 既存実装との同期確認では、必要に応じて `js/app.js` / `js/config.js` / `js/model-registry.js` を併読する
+
+**ソース**: `js/lib/provider-catalog.js`
+
+---
+
+## フロントエンド資産境界（HTML/CSS）
+
+- `index.html` の主要スタイルは `css/index.css` を一次参照とする
+- `config.html` の主要スタイルは `css/config.css` を一次参照とする
+- UI見た目の変更は CSS ファイル更新を優先し、HTML 側は構造と最小限の inline style のみに留める
+
+**ソース**: `index.html`, `css/index.css`, `config.html`, `css/config.css`
 
 ---
 
@@ -133,6 +152,7 @@ README・TERMS・その他ドキュメントを更新する際は、必ずこの
 
 ## 更新履歴
 
+- 2026-02-11: index/config のスタイル一次参照を CSS ファイル運用へ統一（`css/index.css`, `css/config.css`）
 - 2026-02-10: APIキー保存仕様を実装に同期（既定sessionStorage / デスクトップアプリ任意localStorage）
 - 2024-12-29: 初版作成（STT/LLM分離の明確化、BYOK方式の明記）
 - 2026-01-10: 会議コンテキスト拡張（添付ファイル/Enhanced Context/プロンプト注入対策）

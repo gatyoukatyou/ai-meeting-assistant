@@ -31,7 +31,25 @@ const SanitizeUtils = (function () {
     return `${trimmed.slice(0, limit)}\u2026`;
   }
 
-  return { sanitizeErrorLog, truncateText };
+  /**
+   * Return an absolute safe URL for in-app navigation.
+   * Only http/https schemes are allowed.
+   * @param {string} input
+   * @returns {string|null}
+   */
+  function safeURL(input) {
+    try {
+      const url = new URL(input, window.location.href);
+      if (url.protocol === 'http:' || url.protocol === 'https:') {
+        return url.href;
+      }
+    } catch (e) {
+      console.warn('Invalid URL rejected:', input);
+    }
+    return null;
+  }
+
+  return { sanitizeErrorLog, truncateText, safeURL };
 })();
 
 if (typeof window !== 'undefined') {

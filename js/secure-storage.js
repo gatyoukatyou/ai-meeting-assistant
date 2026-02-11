@@ -3,7 +3,10 @@
 // =====================================
 const SecureStorage = {
   // API key storage providers list
-  _providers: ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'],
+  _providers:
+    (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getApiKeyProviderIds === 'function')
+      ? ProviderCatalog.getApiKeyProviderIds()
+      : ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'],
 
   isPersistentApiKeysSupported: function() {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;

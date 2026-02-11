@@ -2,7 +2,10 @@
 // Consumed by app.js via thin aliases (e.g. var getCapabilities = CapabilityUtils.getCapabilities).
 const CapabilityUtils = (function () {
   'use strict';
-  var LLM_PROVIDER_PRIORITY = ['claude', 'openai_llm', 'gemini', 'groq'];
+  var LLM_PROVIDER_PRIORITY =
+    (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getLlmProviderPriority === 'function')
+      ? ProviderCatalog.getLlmProviderPriority()
+      : ['claude', 'openai_llm', 'gemini', 'groq'];
 
   /**
    * プロバイダとモデルの能力を判定する
@@ -26,6 +29,12 @@ const CapabilityUtils = (function () {
    */
   function normalizeCapabilityProvider(provider) {
     if (!provider) return '';
+    if (
+      typeof ProviderCatalog !== 'undefined' &&
+      typeof ProviderCatalog.normalizeCapabilityProviderId === 'function'
+    ) {
+      return ProviderCatalog.normalizeCapabilityProviderId(provider);
+    }
     if (provider === 'claude') return 'anthropic';
     if (provider === 'openai_llm') return 'openai';
     return provider;

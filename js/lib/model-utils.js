@@ -22,9 +22,15 @@ const ModelUtils = (function () {
    * @returns {string}
    */
   function normalizeGeminiModelId(model) {
+    if (
+      typeof ProviderCatalog !== 'undefined' &&
+      typeof ProviderCatalog.normalizeGeminiModelId === 'function'
+    ) {
+      return ProviderCatalog.normalizeGeminiModelId(model);
+    }
     if (!model) return model;
     if (model.startsWith('models/')) {
-      return model.slice(7); // "models/".length === 7
+      return model.slice(7);
     }
     return model;
   }
@@ -35,6 +41,12 @@ const ModelUtils = (function () {
    * @returns {string|undefined}
    */
   function getDefaultModel(provider) {
+    if (
+      typeof ProviderCatalog !== 'undefined' &&
+      typeof ProviderCatalog.getDefaultModel === 'function'
+    ) {
+      return ProviderCatalog.getDefaultModel(provider);
+    }
     var defaults = {
       gemini: 'gemini-2.5-flash',
       claude: 'claude-sonnet-4-20250514',
