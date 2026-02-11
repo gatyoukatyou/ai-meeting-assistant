@@ -18,6 +18,14 @@ function navigateTo(target) {
   }
 }
 
+function triggerBackToMain() {
+  if (typeof handleBackToMain === 'function') {
+    handleBackToMain();
+    return;
+  }
+  navigateTo('index.html');
+}
+
 // =====================================
 // 親ウィンドウへのAPIキー同期
 // 別タブで設定を開いた場合、親側ストレージにも反映する
@@ -98,6 +106,16 @@ document.addEventListener('DOMContentLoaded', async function() {
   const saveBtn = document.getElementById('saveSettingsBtn');
   if (saveBtn) {
     saveBtn.addEventListener('click', saveSettings);
+  }
+
+  const backToMainBtn = document.getElementById('backToMainBtn');
+  if (backToMainBtn) {
+    backToMainBtn.addEventListener('click', triggerBackToMain);
+  }
+
+  const cancelSettingsBtn = document.getElementById('cancelSettingsBtn');
+  if (cancelSettingsBtn) {
+    cancelSettingsBtn.addEventListener('click', triggerBackToMain);
   }
 
   // 言語変更時の再レンダリング
