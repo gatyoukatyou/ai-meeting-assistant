@@ -25,6 +25,9 @@ jobs:
       - name: Run unit tests
         run: npm run test:unit
 
+      - name: Run config smoke check
+        run: npm run test:config-smoke
+
       - name: Run ESLint
         run: npm run lint
 
@@ -35,7 +38,7 @@ jobs:
       - name: Check JS syntax
         run: |
           echo "Checking JavaScript syntax..."
-          for f in js/*.js; do
+          find js -type f -name "*.js" | sort | while IFS= read -r f; do
             echo "  Checking $f"
             node --check "$f"
           done

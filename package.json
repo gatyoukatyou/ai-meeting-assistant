@@ -7,6 +7,7 @@
     "test:generate": "node scripts/generate-test-files.mjs",
     "test:i18n": "node scripts/check-i18n-keys.mjs",
     "test:ui-smoke": "node scripts/ui_smoke_check.mjs",
+    "test:config-smoke": "node scripts/config-smoke-check.mjs",
     "test:model-registry": "node scripts/model-registry-smoke.mjs",
     "test:upload-basic": "node scripts/test-upload-basic.mjs",
     "test:upload-formats": "node scripts/test-upload-formats.mjs",
