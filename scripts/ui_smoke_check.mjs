@@ -3,6 +3,7 @@ import path from "path";
 
 const repoRoot = process.cwd();
 const indexPath = path.join(repoRoot, "index.html");
+const indexCssPath = path.join(repoRoot, "css", "index.css");
 const themePath = path.join(repoRoot, "js", "theme.js");
 
 const errors = [];
@@ -17,6 +18,7 @@ function readFileOrError(filePath, label) {
 }
 
 const indexHtml = readFileOrError(indexPath, "index.html");
+const indexCss = readFileOrError(indexCssPath, "css/index.css");
 const themeJs = readFileOrError(themePath, "js/theme.js");
 
 if (indexHtml) {
@@ -41,6 +43,13 @@ if (indexHtml) {
     errors.push("Missing data-style attribute on <html>");
   }
 
+  const hasIndexCssLink = /<link[^>]*\shref=["']css\/index\.css["'][^>]*>/i.test(indexHtml);
+  if (hasIndexCssLink) {
+    oks.push("Found css/index.css link in index.html");
+  } else {
+    errors.push("Missing <link href=\"css/index.css\"> in index.html");
+  }
+
   const compatSelectors = [
     ".modal-overlay",
     ".tab-content",
@@ -49,11 +58,12 @@ if (indexHtml) {
     ".floating-stop-btn",
   ];
 
-  const missingSelectors = compatSelectors.filter((selector) => !indexHtml.includes(selector));
+  const cssSource = `${indexHtml}\n${indexCss}`;
+  const missingSelectors = compatSelectors.filter((selector) => !cssSource.includes(selector));
   if (missingSelectors.length === 0) {
-    oks.push("Found compat selectors in index.html CSS");
+    oks.push("Found compat selectors in CSS assets");
   } else {
-    errors.push(`Missing compat selectors in index.html: ${missingSelectors.join(", ")}`);
+    errors.push(`Missing compat selectors in CSS assets: ${missingSelectors.join(", ")}`);
   }
 }
 
