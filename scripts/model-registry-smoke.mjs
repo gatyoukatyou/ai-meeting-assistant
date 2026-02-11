@@ -6,25 +6,32 @@
  * - isShutdownDatePassed() - shutdown date logic stable
  *
  * Run: node scripts/model-registry-smoke.mjs
- * Requires: Playwright, local server running on PORT (default 8080)
+ * Requires: Playwright
  */
 
 import { chromium } from 'playwright';
+import { ensureLocalStaticServer } from './local-static-server.mjs';
 
-const PORT = process.env.PORT || 8080;
-const BASE_URL = `http://localhost:${PORT}`;
+const PORT = Number(process.env.PORT || 8080);
 
 async function runTests() {
   console.log('Starting Model Registry smoke tests...\n');
+  const serverSession = await ensureLocalStaticServer({ port: PORT });
+  const BASE_URL = serverSession.baseUrl;
 
-  const browser = await chromium.launch();
-  const page = await browser.newPage();
+  if (serverSession.reused) {
+    console.log(`Reusing existing server: ${BASE_URL}`);
+  } else {
+    console.log(`Started static server: ${BASE_URL}`);
+  }
 
-  // Collect console messages for debugging
+  let browser;
   const consoleLogs = [];
-  page.on('console', msg => consoleLogs.push(`[${msg.type()}] ${msg.text()}`));
 
   try {
+    browser = await chromium.launch();
+    const page = await browser.newPage();
+    page.on('console', msg => consoleLogs.push(`[${msg.type()}] ${msg.text()}`));
     // Navigate to index.html
     console.log(`Navigating to ${BASE_URL}/index.html`);
     const response = await page.goto(`${BASE_URL}/index.html`, {
@@ -91,15 +98,7 @@ async function runTests() {
       // Test 4: isShutdownDatePassed - past date returns true
       // Using a date that is definitely in the past
       {
-        // Access isShutdownDatePassed through internal testing
-        // Since it's not exported, we test via filterAndSortModels behavior
-        const testModels = [
-          { id: 'test-past', shutdownDate: '2020-01-01', deprecated: false },
-          { id: 'test-future', shutdownDate: '2099-01-01', deprecated: false }
-        ];
-
-        // We need to check if the model with past shutdown date gets filtered
-        // This is done implicitly in getModels, but we can verify constants exist
+        // We verify exported constants that are required for stable cache logic.
         const hasTTL = typeof ModelRegistry.MODEL_LIST_TTL === 'number';
         const hasHealthTTL = typeof ModelRegistry.HEALTH_TTL === 'number';
 
@@ -202,17 +201,29 @@ async function runTests() {
     if (failed > 0) {
       console.log('\nConsole logs from browser:');
       consoleLogs.forEach(log => console.log('  ' + log));
-      process.exit(1);
+      return false;
     }
+    return true;
 
   } catch (error) {
     console.error('Test error:', error.message);
     console.log('\nConsole logs from browser:');
     consoleLogs.forEach(log => console.log('  ' + log));
-    process.exit(1);
+    return false;
   } finally {
-    await browser.close();
+    if (browser) {
+      await browser.close();
+    }
+    if (!serverSession.reused) {
+      await serverSession.stop();
+      console.log('Stopped static server');
+    }
   }
 }
 
-runTests();
+runTests().then(success => {
+  if (!success) process.exit(1);
+}).catch(error => {
+  console.error('Test runner failed:', error.message);
+  process.exit(1);
+});

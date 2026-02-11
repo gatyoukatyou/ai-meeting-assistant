@@ -4,14 +4,16 @@
  * Issue #39 §6-§8: 文字数/ページ制限、リロード復元、異常系
  *
  * Run: node scripts/test-upload-edge.mjs
- * Requires: Playwright, local server on PORT (default 8080)
+ * Requires: Playwright
  */
 
 import { chromium } from 'playwright';
 import path from 'node:path';
 import { TEST_FILES, createResultTracker, setupPage, openContextModal, uploadAndWait, writeSummary } from './test-helpers.mjs';
+import { ensureLocalStaticServer } from './local-static-server.mjs';
 
 const { results, record } = createResultTracker();
+const PORT = Number(process.env.PORT || 8080);
 
 // ==========================
 // §6 Limit Control Tests
@@ -290,7 +292,13 @@ async function testEdgeCases(browser) {
 // ==========================
 async function main() {
   console.log('=== Upload Edge Case Tests (§6-§8) ===');
-  console.log(`Server: http://localhost:${process.env.PORT || 8080}\n`);
+  const serverSession = await ensureLocalStaticServer({ port: PORT });
+  if (serverSession.reused) {
+    console.log(`Reusing existing server: ${serverSession.baseUrl}`);
+  } else {
+    console.log(`Started static server: ${serverSession.baseUrl}`);
+  }
+  console.log(`Server: ${serverSession.baseUrl}\n`);
 
   const browser = await chromium.launch();
 
@@ -306,6 +314,10 @@ async function main() {
     });
   } finally {
     await browser.close();
+    if (!serverSession.reused) {
+      await serverSession.stop();
+      console.log('Stopped static server');
+    }
   }
 
   const failed = await writeSummary('Edge Tests', results, 'results-edge.json');

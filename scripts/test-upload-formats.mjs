@@ -4,14 +4,16 @@
  * Issue #39 §3-§5: PDF / DOCX / CSV 各形式の抽出確認
  *
  * Run: node scripts/test-upload-formats.mjs
- * Requires: Playwright, local server on PORT (default 8080)
+ * Requires: Playwright
  */
 
 import { chromium } from 'playwright';
 import path from 'node:path';
 import { TEST_FILES, createResultTracker, setupPage, openContextModal, uploadAndWait, writeSummary } from './test-helpers.mjs';
+import { ensureLocalStaticServer } from './local-static-server.mjs';
 
 const { results, record } = createResultTracker();
+const PORT = Number(process.env.PORT || 8080);
 
 // ==========================
 // §3 PDF Tests
@@ -169,7 +171,13 @@ async function testCsv(browser) {
 // ==========================
 async function main() {
   console.log('=== Upload Format Tests (§3-§5) ===');
-  console.log(`Server: http://localhost:${process.env.PORT || 8080}\n`);
+  const serverSession = await ensureLocalStaticServer({ port: PORT });
+  if (serverSession.reused) {
+    console.log(`Reusing existing server: ${serverSession.baseUrl}`);
+  } else {
+    console.log(`Started static server: ${serverSession.baseUrl}`);
+  }
+  console.log(`Server: ${serverSession.baseUrl}\n`);
 
   const browser = await chromium.launch();
 
@@ -185,6 +193,10 @@ async function main() {
     });
   } finally {
     await browser.close();
+    if (!serverSession.reused) {
+      await serverSession.stop();
+      console.log('Stopped static server');
+    }
   }
 
   const failed = await writeSummary('Format Tests', results, 'results-formats.json');

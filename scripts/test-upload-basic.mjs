@@ -4,14 +4,16 @@
  * Issue #39 §1-§2: コンテキストモーダルUI確認 + TXT基本動作
  *
  * Run: node scripts/test-upload-basic.mjs
- * Requires: Playwright, local server on PORT (default 8080)
+ * Requires: Playwright
  */
 
 import { chromium } from 'playwright';
 import path from 'node:path';
 import { TEST_FILES, createResultTracker, setupPage, openContextModal, uploadAndWait, writeSummary } from './test-helpers.mjs';
+import { ensureLocalStaticServer } from './local-static-server.mjs';
 
 const { results, record } = createResultTracker();
+const PORT = Number(process.env.PORT || 8080);
 
 // ==========================
 // §1 UI Tests
@@ -131,7 +133,13 @@ async function testTxtBasic(browser) {
 // ==========================
 async function main() {
   console.log('=== Upload Basic Tests (§1-§2) ===');
-  console.log(`Server: http://localhost:${process.env.PORT || 8080}\n`);
+  const serverSession = await ensureLocalStaticServer({ port: PORT });
+  if (serverSession.reused) {
+    console.log(`Reusing existing server: ${serverSession.baseUrl}`);
+  } else {
+    console.log(`Started static server: ${serverSession.baseUrl}`);
+  }
+  console.log(`Server: ${serverSession.baseUrl}\n`);
 
   const browser = await chromium.launch();
 
@@ -146,6 +154,10 @@ async function main() {
     });
   } finally {
     await browser.close();
+    if (!serverSession.reused) {
+      await serverSession.stop();
+      console.log('Stopped static server');
+    }
   }
 
   const failed = await writeSummary('Basic Tests', results, 'results-basic.json');
