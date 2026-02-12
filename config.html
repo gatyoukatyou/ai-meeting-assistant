@@ -388,35 +388,5 @@
   <script src="js/lib/sanitize-utils.js" defer></script>
   <script src="js/secure-storage.js" defer></script>
   <script src="js/config.js" defer></script>
-  <script>
-    // PR-3 Task F-5: 戻るボタンで確実に閉じる（増殖防止強化版）
-    function handleBackToMain() {
-      // window.name または opener で判定（両方使うのが最も堅牢）
-      const hasOpener = (window.opener && !window.opener.closed);
-      const openedAsSettingsTab = (window.name === 'settings') || hasOpener;
-
-      // 別タブ（settings）として開かれた場合は「増殖防止」を最優先
-      if (openedAsSettingsTab) {
-        if (hasOpener) {
-          try { window.opener.focus(); } catch (_) {}
-        }
-
-        // 閉じる（ブラウザが許せば閉じる）
-        try { window.close(); } catch (_) {}
-
-        // closeできなかった場合：遷移しない（増殖防止）
-        // 代わりにヒントを表示
-        setTimeout(() => {
-          const hint = document.getElementById('closeTabHint');
-          if (hint) hint.style.display = 'block';
-        }, 150);
-
-        return;
-      }
-
-      // 同一タブで開かれた場合は通常遷移（増殖しない）
-      window.location.href = 'index.html';
-    }
-  </script>
 </body>
 </html>

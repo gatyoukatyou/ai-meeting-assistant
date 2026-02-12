@@ -4567,7 +4567,7 @@ function saveLLMSettings() {
 
 function openFullSettings() {
   window.open(
-    'config.html',
+    'config.html?mode=popup',
     'settings',
     'width=650,height=850,scrollbars=yes,resizable=yes'
   );

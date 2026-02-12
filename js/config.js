@@ -18,6 +18,43 @@ function navigateTo(target) {
   }
 }
 
+function isOpenedAsSettingsPopup() {
+  const hasOpener = (window.opener && !window.opener.closed);
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode');
+  return hasOpener || window.name === 'settings' || mode === 'popup';
+}
+
+function handleBackToMain() {
+  const hasOpener = (window.opener && !window.opener.closed);
+  const openedAsSettingsPopup = isOpenedAsSettingsPopup();
+
+  // 別ウィンドウ/別タブで開かれた設定は遷移させず、まず閉じる
+  if (openedAsSettingsPopup) {
+    if (hasOpener) {
+      try { window.opener.focus(); } catch (_) { /* noop */ }
+    }
+
+    try { window.close(); } catch (_) { /* noop */ }
+
+    // closeできない場合のみ、手動クローズ案内を表示
+    setTimeout(() => {
+      if (window.closed) return;
+      const hint = document.getElementById('closeTabHint');
+      if (hint) hint.style.display = 'block';
+    }, 150);
+
+    return;
+  }
+
+  // 同一タブで開かれた設定はメインへ戻る
+  navigateTo('index.html');
+}
+
+if (typeof window !== 'undefined') {
+  window.handleBackToMain = handleBackToMain;
+}
+
 function triggerBackToMain() {
   if (typeof handleBackToMain === 'function') {
     handleBackToMain();
@@ -410,23 +447,7 @@ async function saveSettings() {
 
   // 3秒後にメイン画面に戻る（増殖防止対応）
   setTimeout(() => {
-    // handleBackToMain はconfig.html側で定義（window.name判定で増殖防止）
-    if (typeof handleBackToMain === 'function') {
-      handleBackToMain();
-    } else {
-      // フォールバック：関数が見つからない場合も増殖防止を維持
-      const hasOpener = (window.opener && !window.opener.closed);
-      const openedAsSettingsTab = (window.name === 'settings') || hasOpener;
-
-      if (openedAsSettingsTab) {
-        // 別タブの場合：遷移しない（増殖防止）
-        const hint = document.getElementById('closeTabHint');
-        if (hint) hint.style.display = 'block';
-      } else {
-        // 同一タブの場合：通常遷移
-        navigateTo('index.html');
-      }
-    }
+    triggerBackToMain();
   }, 3000);
 }
 

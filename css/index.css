@@ -1694,6 +1694,7 @@ html[data-style="cli"][data-display-theme="light"] {
   position: absolute;
   top: 0.5rem;
   right: 0.5rem;
+  z-index: 2;
   padding: 0.4rem 0.6rem;
   font-size: 0.75rem;
   background: var(--surface-muted);
