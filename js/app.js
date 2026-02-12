@@ -39,7 +39,7 @@ const MEETING_CONTEXT_STORE = (typeof MeetingContextStore !== 'undefined') ? Mee
 // ファイルアップロード関連の定数
 const CONTEXT_SCHEMA_VERSION = 3;  // v3: participants, handoff, toggles追加
 const CONTEXT_MAX_CHARS = 8000;           // 総文字数制限
-const CONTEXT_MAX_FILE_SIZE_MB = 2;       // ファイルサイズ上限（MB）
+const CONTEXT_MAX_FILE_SIZE_MB = 20;      // ファイルサイズ上限（MB）
 const CONTEXT_MAX_FILES = 5;              // 最大ファイル数
 const CONTEXT_MAX_CHARS_PER_FILE = 2000;  // ファイルごとの文字数上限
 const CONTEXT_SUPPORTED_TYPES = ['text/plain', 'text/markdown'];
@@ -2999,8 +2999,23 @@ async function callGeminiApi(model, apiKey, body, signal = null) {
 // =====================================
 // ヘルパー関数
 // =====================================
+function shouldForceGeminiForNativeDocs() {
+  return Boolean(
+    AppState.meetingContext &&
+    AppState.meetingContext.nativeDocsEnabled === true &&
+    canUseNativeDocsNow()
+  );
+}
+
 // 使用可能なLLMを取得
 function getAvailableLlm() {
+  if (shouldForceGeminiForNativeDocs()) {
+    return {
+      provider: 'gemini',
+      model: SecureStorage.getEffectiveModel('gemini', getDefaultModel('gemini'))
+    };
+  }
+
   const priority = SecureStorage.getOption('llmPriority', 'auto');
   if (llmClientService && typeof llmClientService.resolveAvailableLlm === 'function') {
     return llmClientService.resolveAvailableLlm({
@@ -5989,6 +6004,10 @@ function formatHistoryDuration(seconds) {
  * @returns {string|null}
  */
 function getEffectiveLlmProvider() {
+  if (shouldForceGeminiForNativeDocs()) {
+    return 'gemini';
+  }
+
   const priority = SecureStorage.getOption('llmPriority', 'auto');
   return resolveEffectiveLlmProvider(priority, function(provider) {
     return Boolean(SecureStorage.getApiKey(provider));
@@ -6077,7 +6096,7 @@ function initEnhancementToggles() {
 
   const caps = getCurrentCapabilities();
   // P0-2: Native Docsは「PDFかつbase64あり」の場合のみ有効
-  const hasNativeDocsPayloadNow = hasNativeDocsPayload();
+  const nativeDocsAvailableNow = canUseNativeDocsNow();
 
   // Reasoning Boost トグル
   if (reasoningToggle) {
@@ -6102,7 +6121,7 @@ function initEnhancementToggles() {
   // Native Docs トグル
   if (nativeDocsToggle) {
     // P0-2: Gemini かつ PDF base64ありの場合のみ有効
-    if (caps.supportsNativeDocs && hasNativeDocsPayloadNow) {
+    if (nativeDocsAvailableNow) {
       nativeDocsToggle.disabled = false;
       nativeDocsToggle.checked = AppState.meetingContext.nativeDocsEnabled || false;
       if (nativeDocsDisabledReason) {
@@ -6125,6 +6144,11 @@ function initEnhancementToggles() {
  * Native Docs用のPDF base64ペイロードがあるか判定
  * @returns {boolean}
  */
+function canUseNativeDocsNow() {
+  const hasGeminiKey = Boolean(SecureStorage.getApiKey('gemini'));
+  return hasGeminiKey && hasNativeDocsPayload();
+}
+
 function hasNativeDocsPayload() {
   return (AppState.meetingContext.files || []).some(
     f => f.type === 'application/pdf' && f.base64Data
@@ -6132,14 +6156,10 @@ function hasNativeDocsPayload() {
 }
 
 function getNativeDocsDisabledReasonText() {
-  const effectiveProvider = getEffectiveLlmProvider();
   const hasGeminiKey = Boolean(SecureStorage.getApiKey('gemini'));
 
   if (!hasGeminiKey) {
     return t('context.nativeDocsNeedsGeminiKey') || 'Gemini APIキー（LLM設定）が必要です';
-  }
-  if (effectiveProvider !== 'gemini') {
-    return t('context.nativeDocsNeedsGeminiPriority') || 'LLM優先順位をGeminiに設定してください';
   }
   if (!hasNativeDocsPayload()) {
     return t('context.nativeDocsNeedsPdf') || 'PDFファイルを添付すると有効になります';
@@ -6168,10 +6188,9 @@ function updateEnhancementBadges() {
   }
 
   if (nativeDocsBadge) {
-    // P1-4: ONかつGeminiかつPDF base64がある場合のみ表示
+    // P1-4: ONかつGeminiキー + PDF base64がある場合のみ表示
     const nativeDocsEffective = AppState.meetingContext.nativeDocsEnabled &&
-                                caps.supportsNativeDocs &&
-                                hasNativeDocsPayload();
+                                canUseNativeDocsNow();
     if (nativeDocsEffective) {
       nativeDocsBadge.classList.add('active');
       nativeDocsBadge.textContent = t('context.badgeNativeDocs') || 'Native Docs ON';

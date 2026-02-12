@@ -15,7 +15,7 @@
  *   - test-small.csv       (30行)
  *   - test-large.csv       (250行 — CSV_MAX_ROWS超過テスト)
  *   - test-image.png       (非対応形式テスト用)
- *   - test-3mb.txt         (3MBファイル — CONTEXT_MAX_FILE_SIZE_MB超過テスト)
+ *   - test-3mb.txt         (3MBファイル — サンプル大型テキスト)
  *
  * Run: node scripts/generate-test-files.mjs
  */
@@ -270,7 +270,7 @@ function genImagePng() {
 }
 
 // ===========================
-// 12. test-3mb.txt (3MB)
+// 12. test-3mb.txt (3MB sample)
 // ===========================
 function gen3mbTxt() {
   const targetBytes = 3 * 1024 * 1024;

@@ -14,6 +14,7 @@ import { ensureLocalStaticServer } from './local-static-server.mjs';
 
 const { results, record } = createResultTracker();
 const PORT = Number(process.env.PORT || 8080);
+const OVERSIZE_FILE_MB = 12;
 
 // ==========================
 // §6 Limit Control Tests
@@ -197,7 +198,7 @@ async function testEdgeCases(browser) {
     }
   }
 
-  // 8b. File size rejection (3MB > 2MB limit)
+  // 8b. File size rejection (oversize file)
   {
     const { page, context } = await setupPage(browser);
     try {
@@ -213,13 +214,17 @@ async function testEdgeCases(browser) {
         };
       });
 
-      await page.setInputFiles('#contextFileInput', path.join(TEST_FILES, 'test-3mb.txt'));
+      await page.setInputFiles('#contextFileInput', {
+        name: `test-${OVERSIZE_FILE_MB}mb.txt`,
+        mimeType: 'text/plain',
+        buffer: Buffer.alloc(OVERSIZE_FILE_MB * 1024 * 1024, 'A')
+      });
 
       await page.waitForTimeout(2000);
 
-      const sizeResult = await page.evaluate(() => {
+      const sizeResult = await page.evaluate((fileName) => {
         const files = meetingContext?.files || [];
-        const bigFile = files.find(f => f.name === 'test-3mb.txt');
+        const bigFile = files.find(f => f.name === fileName);
         const toasts = window._testToasts || [];
         const sizeToast = toasts.find(t => t.type === 'error' || (t.msg && t.msg.includes('MB')));
         if (!bigFile && sizeToast) return { status: 'rejected', charCount: 0, warning: sizeToast.msg };
@@ -229,10 +234,10 @@ async function testEdgeCases(browser) {
           charCount: bigFile.charCount || 0,
           warning: bigFile.errorMessage || ''
         };
-      });
+      }, `test-${OVERSIZE_FILE_MB}mb.txt`);
 
       // Should be rejected (not added to files list)
-      record('§8', 'test-3mb.txt (size reject)', 'success', {
+      record('§8', `test-${OVERSIZE_FILE_MB}mb.txt (size reject)`, 'success', {
         status: sizeResult.status === 'rejected' ? 'success' : 'fail',
         charCount: sizeResult.charCount,
         warning: sizeResult.warning
