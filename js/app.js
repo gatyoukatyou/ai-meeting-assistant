@@ -2986,70 +2986,64 @@ async function fetchWithRetry(url, options, maxRetries = 3) {
 }
 
 // =====================================
-// Gemini API呼び出しヘルパー（v1 → v1beta, header → query フォールバック）
+// Gemini API呼び出しヘルパー（v1 → v1beta, header auth only）
 // =====================================
 async function callGeminiApi(model, apiKey, body, signal = null) {
   // Normalize model ID to prevent /models/models/... bug
   const normalizedModel = normalizeGeminiModelId(model);
 
   const apiVersions = ['v1', 'v1beta'];
-  const authMethods = ['header', 'query'];
   let lastError = null;
   let lastResponse = null;
 
   for (const version of apiVersions) {
-    for (const authMethod of authMethods) {
-      try {
-        let url = `https://generativelanguage.googleapis.com/${version}/models/${normalizedModel}:generateContent`;
-        const options = {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(body),
-          signal: signal
-        };
+    try {
+      const url = `https://generativelanguage.googleapis.com/${version}/models/${normalizedModel}:generateContent`;
+      const options = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey
+        },
+        body: JSON.stringify(body),
+        signal: signal
+      };
 
-        if (authMethod === 'header') {
-          options.headers['x-goog-api-key'] = apiKey;
-        } else {
-          url = `${url}?key=${encodeURIComponent(apiKey)}`;
-        }
+      console.log(`[Gemini] Trying ${version} with header auth`);
+      // Use fetchWithRetry for network resilience (429, CORS, transient errors)
+      const response = await fetchWithRetry(url, options, 2); // 2 retries per attempt
 
-        console.log(`[Gemini] Trying ${version} with ${authMethod} auth`);
-        // Use fetchWithRetry for network resilience (429, CORS, transient errors)
-        const response = await fetchWithRetry(url, options, 2); // 2 retries per attempt
-
-        if (response.ok) {
-          console.log(`[Gemini] Success with ${version} ${authMethod}`);
-          return response;
-        }
-
-        // 認証エラー（401/403）の場合はauth methodを変えて再試行
-        if (response.status === 401 || response.status === 403) {
-          console.warn(`[Gemini] Auth failed with ${version} ${authMethod}:`, response.status);
-          lastResponse = response;
-          continue;
-        }
-
-        // モデル関連エラー（404等）の場合はバージョンを変えて再試行
-        if (response.status === 404) {
-          console.warn(`[Gemini] Model not found in ${version}, trying next version`);
-          lastResponse = response;
-          break; // 次のバージョンへ
-        }
-
-        // その他のエラーはそのまま返す（rate limit等）
+      if (response.ok) {
+        console.log(`[Gemini] Success with ${version} header auth`);
         return response;
-      } catch (e) {
-        console.warn(`[Gemini] ${version} ${authMethod} failed:`, e.message);
-        lastError = e;
       }
+
+      // 認証エラー（401/403）の場合はレスポンスを保持して次バージョンへ進む
+      if (response.status === 401 || response.status === 403) {
+        console.warn(`[Gemini] Auth failed with ${version} header auth:`, response.status);
+        lastResponse = response;
+        continue;
+      }
+
+      // モデル関連エラー（404等）の場合はバージョンを変えて再試行
+      if (response.status === 404) {
+        console.warn(`[Gemini] Model not found in ${version}, trying next version`);
+        lastResponse = response;
+        continue; // 次のバージョンへ
+      }
+
+      // その他のエラーはそのまま返す（rate limit等）
+      return response;
+    } catch (e) {
+      console.warn(`[Gemini] ${version} header auth failed:`, e.message);
+      lastError = e;
     }
   }
 
   // 全て失敗した場合
   if (lastResponse) return lastResponse;
   if (lastError) throw lastError;
-  throw new Error('Gemini API call failed with all fallback methods');
+  throw new Error('Gemini API call failed with all API versions');
 }
 
 // =====================================

@@ -270,8 +270,7 @@ const ModelRegistry = (function() {
 
   /**
    * Fetch models from provider API
-   * For Gemini: Try header auth first, fallback to ?key= query param
-   * For Gemini: Try v1 first, fallback to v1beta
+   * For Gemini: Try v1 first, fallback to v1beta with header auth only
    */
   async function fetchModels(provider, apiKey) {
     var config = PROVIDER_CONFIG[provider];
@@ -290,7 +289,7 @@ const ModelRegistry = (function() {
       return null;
     }
 
-    // Gemini: Try v1 first, then v1beta, with header → ?key= fallback
+    // Gemini: Try v1 first, then v1beta, with header auth only
     if (provider === 'gemini') {
       return await fetchGeminiModels(apiKey, config);
     }
@@ -335,46 +334,36 @@ const ModelRegistry = (function() {
   }
 
   /**
-   * Fetch Gemini models with v1 → v1beta and header → ?key= fallback
+   * Fetch Gemini models with v1 → v1beta and header auth only
    */
   async function fetchGeminiModels(apiKey, config) {
     // API versions to try: v1 first (stable), then v1beta
     var apiVersions = ['v1', 'v1beta'];
-    // Auth methods: header first (more secure), then query param (fallback)
-    var authMethods = ['header', 'query'];
 
     for (var vi = 0; vi < apiVersions.length; vi++) {
       var version = apiVersions[vi];
       var endpoint = 'https://generativelanguage.googleapis.com/' + version + '/models';
 
-      for (var ai = 0; ai < authMethods.length; ai++) {
-        var authMethod = authMethods[ai];
+      try {
+        var fetchOptions = {
+          method: 'GET',
+          headers: { 'x-goog-api-key': apiKey }
+        };
+        var url = endpoint;
 
-        try {
-          var fetchOptions = { method: 'GET' };
-          var url = endpoint;
+        console.log('[ModelRegistry] Trying Gemini', version, 'with header auth');
+        var response = await fetch(url, fetchOptions);
 
-          if (authMethod === 'header') {
-            fetchOptions.headers = { 'x-goog-api-key': apiKey };
-          } else {
-            // Query param fallback (less secure but works in some CORS-restricted environments)
-            url = endpoint + '?key=' + encodeURIComponent(apiKey);
-          }
-
-          console.log('[ModelRegistry] Trying Gemini', version, 'with', authMethod, 'auth');
-          var response = await fetch(url, fetchOptions);
-
-          if (response.ok) {
-            var data = await response.json();
-            var models = config.parseModels(data);
-            console.log('[ModelRegistry] Fetched', models.length, 'Gemini models via', version, authMethod);
-            return models;
-          }
-
-          console.warn('[ModelRegistry] Gemini', version, authMethod, 'returned', response.status);
-        } catch (e) {
-          console.warn('[ModelRegistry] Gemini', version, authMethod, 'failed:', e.message);
+        if (response.ok) {
+          var data = await response.json();
+          var models = config.parseModels(data);
+          console.log('[ModelRegistry] Fetched', models.length, 'Gemini models via', version, 'header auth');
+          return models;
         }
+
+        console.warn('[ModelRegistry] Gemini', version, 'header auth returned', response.status);
+      } catch (e) {
+        console.warn('[ModelRegistry] Gemini', version, 'header auth failed:', e.message);
       }
     }
 
@@ -533,14 +522,13 @@ const ModelRegistry = (function() {
   }
 
   /**
-   * Probe Gemini model with v1 → v1beta, header → query fallback
+   * Probe Gemini model with v1 → v1beta and header auth only
    */
   async function probeGeminiModel(model, apiKey) {
     // Normalize model ID to prevent /models/models/... bug
     var normalizedModel = normalizeGeminiModelId(model);
 
     var apiVersions = ['v1', 'v1beta'];
-    var authMethods = ['header', 'query'];
     var body = JSON.stringify({
       contents: [{ parts: [{ text: 'Hi' }] }],
       generationConfig: { maxOutputTokens: 1 }
@@ -552,59 +540,52 @@ const ModelRegistry = (function() {
     for (var vi = 0; vi < apiVersions.length; vi++) {
       var version = apiVersions[vi];
 
-      for (var ai = 0; ai < authMethods.length; ai++) {
-        var authMethod = authMethods[ai];
+      try {
+        var url = 'https://generativelanguage.googleapis.com/' + version + '/models/' + normalizedModel + ':generateContent';
+        var fetchOptions = {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': apiKey
+          },
+          body: body
+        };
 
-        try {
-          var url = 'https://generativelanguage.googleapis.com/' + version + '/models/' + normalizedModel + ':generateContent';
-          var fetchOptions = {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: body
-          };
+        var response = await fetch(url, fetchOptions);
 
-          if (authMethod === 'header') {
-            fetchOptions.headers['x-goog-api-key'] = apiKey;
-          } else {
-            url = url + '?key=' + encodeURIComponent(apiKey);
-          }
-
-          var response = await fetch(url, fetchOptions);
-
-          if (response.ok) {
-            setModelHealth('gemini', normalizedModel, 'working');
-            return 'working';
-          }
-
-          // Auth errors - try next auth method (don't mark as dead!)
-          if (response.status === 401 || response.status === 403) {
-            gotAuthError = true;
-            continue;
-          }
-
-          // Model not found - try next API version
-          if (response.status === 404) {
-            gotModelNotFound = true;
-            break;
-          }
-
-          // Rate limit or server error
-          if (response.status === 429 || response.status >= 500) {
-            setModelHealth('gemini', normalizedModel, 'flaky', 'Rate limit or server error (' + response.status + ')');
-            return 'flaky';
-          }
-
-          // Check error message
-          var errorData = await response.json().catch(function() { return {}; });
-          var errorMsg = errorData.error?.message || 'Unknown error';
-
-          if (isModelNotFoundError({ message: errorMsg })) {
-            gotModelNotFound = true;
-            break; // Try next API version
-          }
-        } catch (e) {
-          console.warn('[ModelRegistry] Gemini probe', version, authMethod, 'failed:', e.message);
+        if (response.ok) {
+          setModelHealth('gemini', normalizedModel, 'working');
+          return 'working';
         }
+
+        // Auth errors are not model problems; try the next API version.
+        if (response.status === 401 || response.status === 403) {
+          gotAuthError = true;
+          continue;
+        }
+
+        // Model not found - try next API version
+        if (response.status === 404) {
+          gotModelNotFound = true;
+          continue;
+        }
+
+        // Rate limit or server error
+        if (response.status === 429 || response.status >= 500) {
+          setModelHealth('gemini', normalizedModel, 'flaky', 'Rate limit or server error (' + response.status + ')');
+          return 'flaky';
+        }
+
+        // Check error message
+        var errorData = await response.json().catch(function() { return {}; });
+        var errorMsg = errorData.error?.message || 'Unknown error';
+
+        if (isModelNotFoundError({ message: errorMsg })) {
+          gotModelNotFound = true;
+          continue; // Try next API version
+        }
+      } catch (e) {
+        console.warn('[ModelRegistry] Gemini probe', version, 'header auth failed:', e.message);
       }
     }
 
@@ -633,7 +614,7 @@ const ModelRegistry = (function() {
     var config = PROVIDER_CONFIG[provider];
     if (!config) return 'unknown';
 
-    // Gemini uses special fallback logic (v1 → v1beta, header → query)
+    // Gemini uses special fallback logic (v1 → v1beta, header auth only)
     if (provider === 'gemini') {
       return await probeGeminiModel(model, apiKey);
     }

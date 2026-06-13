@@ -525,8 +525,7 @@ async function validateApiKey(provider, key) {
 
     switch (provider) {
       case 'gemini':
-        // Try header auth first (more secure), fallback to ?key= if needed
-        // Try v1 first (stable), fallback to v1beta
+        // Try v1 first (stable), fallback to v1beta with header auth only.
         response = await tryGeminiAuth(key);
         break;
 
@@ -812,36 +811,30 @@ function getProviderName(provider) {
 }
 
 // =====================================
-// Gemini認証フォールバック
-// v1 → v1beta, header → ?key= の順で試行
+// Gemini認証
+// v1 → v1beta の順で試行し、APIキーは必ずヘッダーで送る
 // =====================================
 async function tryGeminiAuth(key) {
   const apiVersions = ['v1', 'v1beta'];
-  const authMethods = ['header', 'query'];
   let lastResponse = null;
 
   for (const version of apiVersions) {
-    for (const authMethod of authMethods) {
-      try {
-        let url = `https://generativelanguage.googleapis.com/${version}/models`;
-        const fetchOptions = { method: 'GET' };
+    try {
+      const url = `https://generativelanguage.googleapis.com/${version}/models`;
+      const fetchOptions = {
+        method: 'GET',
+        headers: { 'x-goog-api-key': key }
+      };
 
-        if (authMethod === 'header') {
-          fetchOptions.headers = { 'x-goog-api-key': key };
-        } else {
-          url = `${url}?key=${encodeURIComponent(key)}`;
-        }
-
-        const response = await fetch(url, fetchOptions);
-        lastResponse = response;
-        if (response.ok || response.status === 401 || response.status === 403) {
-          // Return on success or definite auth failure
-          return response;
-        }
-        // Continue trying on other errors
-      } catch (e) {
-        console.warn(`Gemini ${version} ${authMethod} auth failed:`, e.message);
+      const response = await fetch(url, fetchOptions);
+      lastResponse = response;
+      if (response.ok || response.status === 401 || response.status === 403) {
+        // Return on success or definite auth failure
+        return response;
       }
+      // Continue trying on other errors
+    } catch (e) {
+      console.warn(`Gemini ${version} header auth failed:`, e.message);
     }
   }
 
