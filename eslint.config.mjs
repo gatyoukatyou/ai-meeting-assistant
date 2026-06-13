@@ -38,6 +38,7 @@ export default [
         ModelRegistryCacheStore: 'readonly',
         LLMClientService: 'readonly',
         MeetingContextService: 'readonly',
+        TranscriptionQueueOverflowService: 'readonly',
         ExportService: 'readonly',
         DiagnosticsService: 'readonly',
         STTProviders: 'writable',

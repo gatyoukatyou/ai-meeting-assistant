@@ -153,6 +153,10 @@ let qaEventLog = [];
 // Issue #40: Global error handling
 let errorHandlerActive = false;
 
+const TRANSCRIPTION_QUEUE_MAX_LENGTH = 3;
+const TRANSCRIPTION_QUEUE_OVERFLOW_TOAST_COOLDOWN_MS = 15000;
+let transcriptionQueueOverflow = TranscriptionQueueOverflowService.createInitialState();
+
 // App-wide state aggregate (Issue #131)
 const AppState = {
   get isRecording() { return isRecording; },
@@ -263,6 +267,8 @@ const AppState = {
   set lastTranscriptTail(value) { lastTranscriptTail = value; },
   get queueDrainResolvers() { return queueDrainResolvers; },
   set queueDrainResolvers(value) { queueDrainResolvers = value; },
+  get transcriptionQueueOverflow() { return transcriptionQueueOverflow; },
+  set transcriptionQueueOverflow(value) { transcriptionQueueOverflow = value; },
   get whisperUserDictionary() { return whisperUserDictionary; },
   set whisperUserDictionary(value) { whisperUserDictionary = value; },
   get currentLLMProvider() { return currentLLMProvider; },
@@ -758,6 +764,7 @@ function initDebugHUD() {
     info.push('Recording: ' + (AppState.isRecording ? 'YES' : 'NO'));
     info.push('STT: ' + (AppState.currentSTTProvider ? 'active' : 'none'));
     info.push('Queue: ' + transcriptionQueue.length);
+    info.push('Dropped: ' + (AppState.transcriptionQueueOverflow.discardedChunks || 0));
     info.push('Chunks: ' + AppState.transcriptChunks.length);
     info.push('Stream: ' + (AppState.currentAudioStream ? 'active' : 'null'));
     info.push('---');
@@ -1762,6 +1769,7 @@ async function startRecording() {
   clearRecorderRestartTimeout();
   AppState.activeProviderId = provider;
   AppState.activeProviderStartArgs = null;
+  AppState.transcriptionQueueOverflow = TranscriptionQueueOverflowService.createInitialState();
 
   // 一時取得したストリームをcurrentAudioStreamに引き継ぐ
   AppState.currentAudioStream = tempAudioStream;
@@ -2606,14 +2614,52 @@ async function processCompleteBlob(audioBlob) {
   transcriptionQueue.push(audioBlob);
   console.log(`[Blob Enqueue] id=${blobId}, queue length:`, transcriptionQueue.length);
 
-  // キューが溜まりすぎたら古いのを捨てる（リアルタイム優先）
-  while (transcriptionQueue.length > 3) {
-    const dropped = transcriptionQueue.shift();
-    console.log('Dropped old blob from queue, size:', dropped.size);
+  const overflow = TranscriptionQueueOverflowService.discardOverflow(
+    transcriptionQueue,
+    TRANSCRIPTION_QUEUE_MAX_LENGTH
+  );
+  if (overflow.discardedCount > 0) {
+    handleTranscriptionQueueOverflow(overflow);
   }
 
   // キュー処理を開始
   processQueue();
+}
+
+function handleTranscriptionQueueOverflow(overflow) {
+  const now = Date.now();
+  AppState.transcriptionQueueOverflow = TranscriptionQueueOverflowService.recordDiscardedChunks(
+    AppState.transcriptionQueueOverflow,
+    overflow.discarded,
+    now
+  );
+
+  console.warn('[Transcription Queue] Overflow: discarded audio chunks', {
+    discardedCount: overflow.discardedCount,
+    totalDiscarded: AppState.transcriptionQueueOverflow.discardedChunks,
+    queueLength: overflow.queueLength,
+    maxQueueLength: overflow.maxQueueLength,
+    lastDiscardedBlobId: AppState.transcriptionQueueOverflow.lastDiscardedBlobId,
+    lastDiscardedSize: AppState.transcriptionQueueOverflow.lastDiscardedSize
+  });
+
+  const message = TranscriptionQueueOverflowService.buildDiscardMessage(
+    AppState.transcriptionQueueOverflow,
+    I18n.getLanguage()
+  );
+  updateStatusBadge(message, 'error');
+
+  if (TranscriptionQueueOverflowService.shouldNotify(
+    AppState.transcriptionQueueOverflow,
+    now,
+    TRANSCRIPTION_QUEUE_OVERFLOW_TOAST_COOLDOWN_MS
+  )) {
+    showToast(message, 'warning');
+    AppState.transcriptionQueueOverflow = TranscriptionQueueOverflowService.markNotified(
+      AppState.transcriptionQueueOverflow,
+      now
+    );
+  }
 }
 
 // キュー完了待機用のPromise解決関数
