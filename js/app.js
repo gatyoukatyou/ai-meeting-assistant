@@ -726,9 +726,21 @@ function navigateTo(target) {
 // =====================================
 // デバッグHUD（?debug パラメータ時のみ表示）
 // =====================================
+function isDebugModeEnabled() {
+  if (typeof DebugLogger !== 'undefined' && typeof DebugLogger.isEnabled === 'boolean') {
+    return DebugLogger.isEnabled;
+  }
+
+  try {
+    var urlParams = new URLSearchParams(window.location.search);
+    return urlParams.has('debug');
+  } catch (_) {
+    return false;
+  }
+}
+
 function initDebugHUD() {
-  var urlParams = new URLSearchParams(window.location.search);
-  if (!urlParams.has('debug')) return;
+  if (!isDebugModeEnabled()) return;
 
   var hud = document.createElement('div');
   hud.id = 'debugHUD';
@@ -2593,21 +2605,25 @@ async function processCompleteBlob(audioBlob) {
   audioBlob._debugId = blobId;
   audioBlob._enqueueTime = Date.now();
 
-  // Duration算出（デバッグ用）
-  let audioContext;
-  try {
-    audioContext = new AudioContext();
-    const arrayBuffer = await audioBlob.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
-    audioBlob._duration = audioBuffer.duration;
-    console.log(`[Blob Created] id=${blobId}, size=${audioBlob.size}, duration=${audioBuffer.duration.toFixed(2)}s`);
-  } catch (e) {
-    console.log(`[Blob Created] id=${blobId}, size=${audioBlob.size}, duration=unknown (${e.message})`);
-  } finally {
-    // AudioContextを確実にcloseする（リーク防止）
-    if (audioContext) {
-      await audioContext.close().catch(() => {});
+  if (isDebugModeEnabled()) {
+    // Duration算出（デバッグ用）
+    let audioContext;
+    try {
+      audioContext = new AudioContext();
+      const arrayBuffer = await audioBlob.arrayBuffer();
+      const audioBuffer = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+      audioBlob._duration = audioBuffer.duration;
+      console.log(`[Blob Created] id=${blobId}, size=${audioBlob.size}, duration=${audioBuffer.duration.toFixed(2)}s`);
+    } catch (e) {
+      console.log(`[Blob Created] id=${blobId}, size=${audioBlob.size}, duration=unknown (${e.message})`);
+    } finally {
+      // AudioContextを確実にcloseする（リーク防止）
+      if (audioContext) {
+        await audioContext.close().catch(() => {});
+      }
     }
+  } else {
+    console.log(`[Blob Created] id=${blobId}, size=${audioBlob.size}, duration=skipped (debug disabled)`);
   }
 
   // キューに追加
