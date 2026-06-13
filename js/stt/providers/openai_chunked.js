@@ -13,7 +13,7 @@ class OpenAIChunkedProvider {
     this.config = config;
     this.apiKey = config.apiKey || SecureStorage.getApiKey('openai');
     this.model = config.model || SecureStorage.getModel('openai') || 'whisper-1';
-    this.language = config.language || 'ja';
+    this.language = config.language || SecureStorage.getOption('sttLanguage', 'ja') || 'ja';
     // ユーザー辞書（固有名詞のヒント）- 設定画面から登録可能
     // デフォルト辞書 + ユーザー辞書を結合
     this.userDictionary = this._loadUserDictionary(config.userDictionary);
@@ -81,7 +81,14 @@ class OpenAIChunkedProvider {
 
     // promptを構築（前チャンクの末尾 + ユーザー辞書）
     const promptParts = [];
-    const tailToUse = previousTail || this.lastTranscriptTail;
+    let tailToUse = previousTail || this.lastTranscriptTail;
+    if (this.language !== 'ja' && tailToUse) {
+      const hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(tailToUse);
+      if (hasJapanese) {
+        tailToUse = '';
+        DebugLogger.log('[OpenAI STT]', 'Skipping last transcript tail for non-Japanese mode');
+      }
+    }
     if (tailToUse) {
       promptParts.push(tailToUse);
     }
@@ -104,7 +111,9 @@ class OpenAIChunkedProvider {
       const formData = new FormData();
       formData.append('file', audioBlob, 'audio.webm');
       formData.append('model', this.model);
-      formData.append('language', this.language);
+      if (this.language && this.language !== 'auto') {
+        formData.append('language', this.language);
+      }
 
       // promptパラメータを追加（空でない場合のみ）
       if (prompt) {

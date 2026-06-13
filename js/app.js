@@ -1853,7 +1853,8 @@ async function startChunkedRecording(provider) {
   // OpenAI Whisperプロバイダーを作成
   AppState.currentSTTProvider = new OpenAIChunkedProvider({
     apiKey: SecureStorage.getApiKey('openai'),
-    model: SecureStorage.getModel('openai') || 'whisper-1'
+    model: SecureStorage.getModel('openai') || 'whisper-1',
+    language: SecureStorage.getOption('sttLanguage', 'ja')
   });
 
   AppState.currentSTTProvider.setOnTranscript((text, isFinal) => {
