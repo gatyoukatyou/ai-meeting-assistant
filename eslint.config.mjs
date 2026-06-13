@@ -39,6 +39,7 @@ export default [
         LLMClientService: 'readonly',
         MeetingContextService: 'readonly',
         TranscriptionQueueOverflowService: 'readonly',
+        FetchRetryService: 'readonly',
         ExportService: 'readonly',
         DiagnosticsService: 'readonly',
         STTProviders: 'writable',
