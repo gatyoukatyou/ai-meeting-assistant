@@ -27,6 +27,11 @@ let recorderStopReason = null;
 let recorderRestartTimeoutId = null;
 let activeProviderId = null;
 let activeProviderStartArgs = null;
+let activeMeetingDraftId = null;
+let activeMeetingDraftStartedAt = null;
+let activeMeetingDraftSaveTimer = null;
+let activeMeetingDraftSaveInFlight = null;
+let storedActiveMeetingDraftAvailable = false;
 
 // Phase 5: 会議中モード用
 let isMeetingMode = false;
@@ -188,6 +193,16 @@ const AppState = {
   set activeProviderId(value) { activeProviderId = value; },
   get activeProviderStartArgs() { return activeProviderStartArgs; },
   set activeProviderStartArgs(value) { activeProviderStartArgs = value; },
+  get activeMeetingDraftId() { return activeMeetingDraftId; },
+  set activeMeetingDraftId(value) { activeMeetingDraftId = value; },
+  get activeMeetingDraftStartedAt() { return activeMeetingDraftStartedAt; },
+  set activeMeetingDraftStartedAt(value) { activeMeetingDraftStartedAt = value; },
+  get activeMeetingDraftSaveTimer() { return activeMeetingDraftSaveTimer; },
+  set activeMeetingDraftSaveTimer(value) { activeMeetingDraftSaveTimer = value; },
+  get activeMeetingDraftSaveInFlight() { return activeMeetingDraftSaveInFlight; },
+  set activeMeetingDraftSaveInFlight(value) { activeMeetingDraftSaveInFlight = value; },
+  get storedActiveMeetingDraftAvailable() { return storedActiveMeetingDraftAvailable; },
+  set storedActiveMeetingDraftAvailable(value) { storedActiveMeetingDraftAvailable = value; },
   get isMeetingMode() { return isMeetingMode; },
   set isMeetingMode(value) { isMeetingMode = value; },
   get recordingStartTime() { return recordingStartTime; },
@@ -289,6 +304,7 @@ var extractAiInstructionFromMemoLine = TextUtils.extractAiInstructionFromMemoLin
 // --- Service layer (DOM-independent business logic) ---
 var llmClientService = (typeof LLMClientService !== 'undefined') ? LLMClientService : null;
 var meetingContextService = (typeof MeetingContextService !== 'undefined') ? MeetingContextService : null;
+var activeMeetingDraftService = (typeof window !== 'undefined' && window.ActiveMeetingDraftService) ? window.ActiveMeetingDraftService : null;
 var exportService = (typeof ExportService !== 'undefined') ? ExportService : null;
 var diagnosticsService = (typeof DiagnosticsService !== 'undefined') ? DiagnosticsService : null;
 
@@ -1061,9 +1077,13 @@ document.addEventListener('DOMContentLoaded', async function() {
   }
 
   // ブラウザを閉じる前のクリーンアップ
-  window.addEventListener('beforeunload', function() {
+  window.addEventListener('beforeunload', function(event) {
     if (SecureStorage.getOption('clearOnClose', false)) {
       SecureStorage.clearApiKeys();
+    }
+    if (AppState.isRecording || hasActiveMeetingDraftState()) {
+      event.preventDefault();
+      event.returnValue = '';
     }
   });
 
@@ -1343,6 +1363,7 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (MEETING_TITLE_STORE) {
         MEETING_TITLE_STORE.set(event.target.value || '');
       }
+      scheduleActiveMeetingDraftSave();
     });
   }
 
@@ -1662,6 +1683,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   initQuickActionBar();
   initQAInputInTab();
   initRegenerateButtons();
+  await promptForActiveMeetingDraftIfNeeded();
 
   // 言語変更時の再レンダリング
   window.addEventListener('languagechange', function() {
@@ -1755,6 +1777,7 @@ async function startRecording() {
     AppState.isRecording = true;
     updateUI();
     syncMinutesButtonState(); // PR-3: 議事録ボタン無効化
+    beginActiveMeetingDraft();
 
     // Wake Lockを取得（Issue #18: スリープ抑止）
     await startWakeLock();
@@ -1952,6 +1975,7 @@ function handleTranscriptResult(text, isFinal) {
 
     // UIを更新（削除ボタン付き）
     renderTranscriptChunks();
+    scheduleActiveMeetingDraftSave();
   } else {
     // 途中結果を表示（オプション）
     const partialEl = document.getElementById('partialTranscript');
@@ -1998,6 +2022,7 @@ function toggleChunkExcluded(chunkId) {
   if (chunk) {
     chunk.excluded = !chunk.excluded;
     renderTranscriptChunks();
+    scheduleActiveMeetingDraftSave();
   }
 }
 
@@ -2089,6 +2114,7 @@ function setMeetingStartMarker(chunkId) {
     AppState.meetingStartMarkerId = null;
   }
   renderTranscriptChunks();
+  scheduleActiveMeetingDraftSave();
 }
 
 // チャンクをレンダリング
@@ -2353,7 +2379,16 @@ async function stopRecording() {
 
   // クリーンアップ処理を呼び出し
   await cleanupRecording();
-  await saveHistorySnapshot();
+  await flushActiveMeetingDraftSave();
+  const historySaved = await saveHistorySnapshot();
+  if (historySaved) {
+    await clearActiveMeetingDraft();
+  } else if (
+    activeMeetingDraftService &&
+    !activeMeetingDraftService.hasRecoverableContent(buildActiveMeetingDraftPayload())
+  ) {
+    await clearActiveMeetingDraft();
+  }
 
   AppState.activeProviderId = null;
   AppState.pausedTotalMs = 0;
@@ -2399,6 +2434,7 @@ async function pauseRecording() {
 
   updateUI();
   showToast(t('toast.recording.paused'), 'info');
+  scheduleActiveMeetingDraftSave();
 }
 
 async function resumeRecording() {
@@ -2439,6 +2475,7 @@ async function resumeRecording() {
 
   updateUI();
   showToast(t('toast.recording.resumed'), 'success');
+  scheduleActiveMeetingDraftSave();
 }
 
 // =====================================
@@ -3195,11 +3232,13 @@ async function askAI(type) {
     if (type === 'custom') {
       answerEl.textContent = response;
       AppState.aiResponses.custom.push({ q: customQ, a: response, requestId });
+      scheduleActiveMeetingDraftSave();
     } else if (type === 'minutes') {
       // 議事録は上書き（単一）
       document.getElementById(`response-${type}`).textContent = response;
       AppState.aiResponses.minutes = response;
       hideEmptyState('minutes'); // PR-3: エンプティステート非表示
+      scheduleActiveMeetingDraftSave();
     } else {
       // 要約・意見・アイデアは配列で蓄積
       const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
@@ -3211,6 +3250,7 @@ async function askAI(type) {
       }).join('\n\n');
       document.getElementById(`response-${type}`).textContent = displayText;
       hideEmptyState(type); // PR-3: エンプティステート非表示
+      scheduleActiveMeetingDraftSave();
     }
   } catch (err) {
     clearTimeout(timeoutId);
@@ -3927,6 +3967,7 @@ function clearTranscript() {
 
     // AI応答をリセット
     AppState.aiResponses = { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [] };
+    scheduleActiveMeetingDraftSave();
 
     // AI応答UIをクリアし、empty-stateを再表示
     ['summary', 'consult', 'minutes'].forEach(type => {
@@ -4004,6 +4045,7 @@ function createMemo(content) {
 
   AppState.meetingMemos.items.push(memo);
   renderTimeline();
+  scheduleActiveMeetingDraftSave();
   return memo;
 }
 
@@ -4995,6 +5037,265 @@ function getDefaultMeetingTitle(date = new Date()) {
   });
 }
 
+function generateActiveMeetingDraftId() {
+  return `draft_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getActiveMeetingDraftSettings() {
+  const transcriptProviderEl = document.getElementById('transcriptProvider');
+  const transcriptIntervalEl = document.getElementById('transcriptInterval');
+  return {
+    sttProvider: AppState.activeProviderId || (transcriptProviderEl ? transcriptProviderEl.value : SecureStorage.getOption('sttProvider', 'openai_stt')),
+    sttModel: SecureStorage.getModel('openai') || 'whisper-1',
+    deepgramModel: SecureStorage.getModel('deepgram') || 'nova-3-general',
+    sttLanguage: SecureStorage.getOption('sttLanguage', 'ja'),
+    transcriptInterval: transcriptIntervalEl ? transcriptIntervalEl.value : '',
+    llmPriority: SecureStorage.getOption('llmPriority', 'auto'),
+    geminiModel: SecureStorage.getModel('gemini') || '',
+    claudeModel: SecureStorage.getModel('claude') || '',
+    openaiLlmModel: SecureStorage.getModel('openai_llm') || '',
+    groqModel: SecureStorage.getModel('groq') || ''
+  };
+}
+
+function buildActiveMeetingDraftPayload(nowIso = new Date().toISOString()) {
+  if (!activeMeetingDraftService || !AppState.activeMeetingDraftId) return null;
+  return activeMeetingDraftService.buildDraft({
+    sessionId: AppState.activeMeetingDraftId,
+    startedAt: AppState.activeMeetingDraftStartedAt || nowIso,
+    now: nowIso,
+    title: getMeetingTitleValue(),
+    fullTranscript: AppState.fullTranscript || getFullTranscriptText(),
+    transcriptChunks: AppState.transcriptChunks,
+    meetingStartMarkerId: AppState.meetingStartMarkerId,
+    chunkIdCounter: AppState.chunkIdCounter,
+    aiResponses: AppState.aiResponses,
+    costs: AppState.costs,
+    meetingMemos: AppState.meetingMemos,
+    memoIdCounter: AppState.memoIdCounter,
+    settings: getActiveMeetingDraftSettings()
+  });
+}
+
+function hasActiveMeetingDraftState() {
+  return Boolean(AppState.activeMeetingDraftId || AppState.storedActiveMeetingDraftAvailable);
+}
+
+function beginActiveMeetingDraft() {
+  if (!activeMeetingDraftService || typeof HistoryStore === 'undefined') return;
+  AppState.activeMeetingDraftId = generateActiveMeetingDraftId();
+  AppState.activeMeetingDraftStartedAt = new Date().toISOString();
+  AppState.storedActiveMeetingDraftAvailable = true;
+  scheduleActiveMeetingDraftSave(0);
+}
+
+function scheduleActiveMeetingDraftSave(delayMs = 1000) {
+  if (!activeMeetingDraftService || typeof HistoryStore === 'undefined') return;
+  if (!AppState.activeMeetingDraftId) return;
+
+  if (AppState.activeMeetingDraftSaveTimer) {
+    clearTimeout(AppState.activeMeetingDraftSaveTimer);
+  }
+  AppState.activeMeetingDraftSaveTimer = setTimeout(() => {
+    AppState.activeMeetingDraftSaveTimer = null;
+    saveActiveMeetingDraftNow().catch(err => {
+      console.error('[ActiveDraft] Failed to save draft', err);
+    });
+  }, Math.max(0, delayMs));
+}
+
+async function saveActiveMeetingDraftNow() {
+  if (!activeMeetingDraftService || typeof HistoryStore === 'undefined') return false;
+  if (!AppState.activeMeetingDraftId || typeof HistoryStore.saveDraft !== 'function') return false;
+
+  const payload = buildActiveMeetingDraftPayload();
+  if (!payload) return false;
+
+  const savePromise = HistoryStore.saveDraft(payload);
+  AppState.activeMeetingDraftSaveInFlight = savePromise;
+  try {
+    await savePromise;
+    return true;
+  } finally {
+    if (AppState.activeMeetingDraftSaveInFlight === savePromise) {
+      AppState.activeMeetingDraftSaveInFlight = null;
+    }
+  }
+}
+
+async function flushActiveMeetingDraftSave() {
+  if (AppState.activeMeetingDraftSaveTimer) {
+    clearTimeout(AppState.activeMeetingDraftSaveTimer);
+    AppState.activeMeetingDraftSaveTimer = null;
+    await saveActiveMeetingDraftNow();
+  }
+  if (AppState.activeMeetingDraftSaveInFlight) {
+    await AppState.activeMeetingDraftSaveInFlight;
+  }
+}
+
+async function clearActiveMeetingDraft(sessionId = AppState.activeMeetingDraftId) {
+  if (AppState.activeMeetingDraftSaveTimer) {
+    clearTimeout(AppState.activeMeetingDraftSaveTimer);
+    AppState.activeMeetingDraftSaveTimer = null;
+  }
+  if (typeof HistoryStore !== 'undefined' && typeof HistoryStore.deleteDraft === 'function' && sessionId) {
+    await HistoryStore.deleteDraft(sessionId);
+  }
+  if (!sessionId || sessionId === AppState.activeMeetingDraftId) {
+    AppState.activeMeetingDraftId = null;
+    AppState.activeMeetingDraftStartedAt = null;
+  }
+  AppState.storedActiveMeetingDraftAvailable = false;
+}
+
+function formatActiveDraftTimestamp(value) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const locale = I18n.getLanguage() === 'ja' ? 'ja-JP' : 'en-US';
+  return date.toLocaleString(locale, { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
+}
+
+function applyActiveMeetingDraftToState(rawDraft) {
+  if (!activeMeetingDraftService) return false;
+  const draft = activeMeetingDraftService.normalizeDraftForRestore(rawDraft);
+  if (!draft || !activeMeetingDraftService.hasRecoverableContent(draft)) return false;
+
+  AppState.transcriptChunks = Array.isArray(draft.transcriptChunks) ? draft.transcriptChunks : [];
+  AppState.chunkIdCounter = draft.chunkIdCounter || AppState.transcriptChunks.length;
+  AppState.meetingStartMarkerId = draft.meetingStartMarkerId || null;
+  AppState.fullTranscript = draft.fullTranscript || getFullTranscriptText();
+  AppState.aiResponses = {
+    summary: draft.aiResponses.summary || [],
+    opinion: draft.aiResponses.opinion || [],
+    idea: draft.aiResponses.idea || [],
+    consult: draft.aiResponses.consult || [],
+    minutes: draft.aiResponses.minutes || '',
+    custom: draft.aiResponses.custom || []
+  };
+  AppState.meetingMemos = {
+    items: (draft.meetingMemos && Array.isArray(draft.meetingMemos.items)) ? draft.meetingMemos.items : []
+  };
+  AppState.memoIdCounter = draft.memoIdCounter || AppState.meetingMemos.items.length;
+
+  if (draft.costs) {
+    AppState.costs.transcript = draft.costs.transcript || AppState.costs.transcript;
+    AppState.costs.llm = draft.costs.llm || AppState.costs.llm;
+  }
+
+  const titleInput = document.getElementById('meetingTitleInput');
+  if (titleInput && draft.title) {
+    titleInput.value = draft.title;
+    if (MEETING_TITLE_STORE) {
+      MEETING_TITLE_STORE.set(draft.title);
+    }
+  }
+
+  AppState.activeMeetingDraftId = draft.sessionId;
+  AppState.activeMeetingDraftStartedAt = draft.startedAt || draft.updatedAt || new Date().toISOString();
+  AppState.storedActiveMeetingDraftAvailable = true;
+  AppState.restoredHistoryId = null;
+
+  renderTranscriptChunks();
+  renderAIResponsesFromState();
+  renderMemoListInTab();
+  updateCostDisplayFromState();
+  syncMinutesButtonState();
+  return true;
+}
+
+function closeActiveMeetingDraftPrompt() {
+  document.getElementById('activeDraftRestoreModal')?.remove();
+}
+
+function showActiveMeetingDraftPrompt(draft) {
+  closeActiveMeetingDraftPrompt();
+  AppState.storedActiveMeetingDraftAvailable = true;
+
+  const overlay = document.createElement('div');
+  overlay.className = 'modal-overlay active';
+  overlay.id = 'activeDraftRestoreModal';
+
+  const modal = document.createElement('div');
+  modal.className = 'modal';
+
+  const header = document.createElement('div');
+  header.className = 'modal-header';
+  const title = document.createElement('h2');
+  title.textContent = I18n.getLanguage() === 'ja' ? '未完了の会議を復元しますか？' : 'Restore unfinished meeting?';
+  header.appendChild(title);
+
+  const body = document.createElement('div');
+  body.className = 'modal-body';
+  const description = document.createElement('p');
+  const updatedAt = formatActiveDraftTimestamp(draft.updatedAt || draft.startedAt);
+  description.textContent = I18n.getLanguage() === 'ja'
+    ? `録音中に保存された一時データがあります${updatedAt ? `（最終更新: ${updatedAt}）` : ''}。文字起こし・メモ・AI応答を復元できます。`
+    : `A temporary meeting draft is available${updatedAt ? ` (updated: ${updatedAt})` : ''}. You can restore transcript, memos, and AI responses.`;
+  body.appendChild(description);
+
+  const footer = document.createElement('div');
+  footer.className = 'modal-footer';
+
+  const discardBtn = document.createElement('button');
+  discardBtn.className = 'btn btn-ghost';
+  discardBtn.type = 'button';
+  discardBtn.textContent = I18n.getLanguage() === 'ja' ? '破棄する' : 'Discard';
+  discardBtn.addEventListener('click', async () => {
+    await clearActiveMeetingDraft(draft.sessionId);
+    closeActiveMeetingDraftPrompt();
+    showToast(I18n.getLanguage() === 'ja' ? '未完了の会議データを破棄しました' : 'Unfinished meeting draft discarded', 'info');
+  });
+
+  const laterBtn = document.createElement('button');
+  laterBtn.className = 'btn btn-secondary';
+  laterBtn.type = 'button';
+  laterBtn.textContent = I18n.getLanguage() === 'ja' ? '後で確認' : 'Later';
+  laterBtn.addEventListener('click', closeActiveMeetingDraftPrompt);
+
+  const restoreBtn = document.createElement('button');
+  restoreBtn.className = 'btn btn-primary';
+  restoreBtn.type = 'button';
+  restoreBtn.textContent = I18n.getLanguage() === 'ja' ? '復元する' : 'Restore';
+  restoreBtn.addEventListener('click', () => {
+    if (AppState.transcriptChunks.length > 0 || hasAnyAiResponse()) {
+      const ok = confirm(t('history.restoreConfirmOverwrite'));
+      if (!ok) return;
+    }
+    const restored = applyActiveMeetingDraftToState(draft);
+    closeActiveMeetingDraftPrompt();
+    if (restored) {
+      showToast(I18n.getLanguage() === 'ja' ? '未完了の会議データを復元しました' : 'Unfinished meeting draft restored', 'success');
+    }
+  });
+
+  footer.appendChild(discardBtn);
+  footer.appendChild(laterBtn);
+  footer.appendChild(restoreBtn);
+  modal.appendChild(header);
+  modal.appendChild(body);
+  modal.appendChild(footer);
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+}
+
+async function promptForActiveMeetingDraftIfNeeded() {
+  if (!activeMeetingDraftService || typeof HistoryStore === 'undefined' || typeof HistoryStore.listDrafts !== 'function') return;
+  try {
+    const drafts = await HistoryStore.listDrafts();
+    const draft = (drafts || [])
+      .map(d => activeMeetingDraftService.normalizeDraftForRestore(d))
+      .find(d => activeMeetingDraftService.hasRecoverableContent(d));
+    if (draft) {
+      AppState.storedActiveMeetingDraftAvailable = true;
+      showActiveMeetingDraftPrompt(draft);
+    }
+  } catch (err) {
+    console.warn('[ActiveDraft] Failed to inspect drafts', err);
+  }
+}
+
 function buildHistoryRecord() {
   if (typeof HistoryStore === 'undefined') return null;
   const transcriptText = getFilteredTranscriptText();
@@ -5042,11 +5343,11 @@ function buildHistoryRecord() {
 
 async function saveHistorySnapshot() {
   if (typeof HistoryStore === 'undefined') {
-    return;
+    return false;
   }
   let record = buildHistoryRecord();
   if (!record) {
-    return;
+    return false;
   }
 
   // 復元セッションの場合は上書き保存
@@ -5068,9 +5369,11 @@ async function saveHistorySnapshot() {
     showToast(t('toast.history.saved'), 'success');
     AppState.restoredHistoryId = null; // リセット
     await refreshHistoryListIfOpen();
+    return true;
   } catch (err) {
     console.error('[History] Failed to save record', err);
     showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
+    return false;
   }
 }
 
