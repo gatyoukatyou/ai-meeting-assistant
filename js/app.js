@@ -2982,35 +2982,7 @@ function showToast(message, type = 'info') {
 // リトライ機能付きAPI呼び出し
 // =====================================
 async function fetchWithRetry(url, options, maxRetries = 3) {
-  let lastError;
-
-  for (let i = 0; i < maxRetries; i++) {
-    try {
-      // AbortSignalがabortedの場合は即座にエラーを投げる (#50)
-      if (options.signal && options.signal.aborted) {
-        const err = new Error('Request aborted');
-        err.name = 'AbortError';
-        throw err;
-      }
-      const response = await fetch(url, options);
-      return response;
-    } catch (error) {
-      // AbortErrorの場合はリトライせず即座に投げる (#50)
-      if (error.name === 'AbortError') {
-        throw error;
-      }
-      lastError = error;
-      console.warn(`API呼び出し失敗 (${i + 1}/${maxRetries}):`, error);
-
-      if (i < maxRetries - 1) {
-        // 指数バックオフ: 1秒, 2秒, 4秒
-        const delay = Math.pow(2, i) * 1000;
-        await new Promise(resolve => setTimeout(resolve, delay));
-      }
-    }
-  }
-
-  throw lastError;
+  return FetchRetryService.fetchWithRetry(url, options, { maxAttempts: maxRetries });
 }
 
 // =====================================
