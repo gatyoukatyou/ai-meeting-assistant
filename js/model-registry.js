@@ -513,15 +513,6 @@ const ModelRegistry = (function() {
   }
 
   /**
-   * Check if health entry is still valid
-   */
-  function isHealthValid(healthEntry) {
-    if (!healthEntry) return false;
-    var age = Date.now() - (healthEntry.testedAt || 0);
-    return age < HEALTH_TTL;
-  }
-
-  /**
    * Probe Gemini model with v1 → v1beta and header auth only
    */
   async function probeGeminiModel(model, apiKey) {

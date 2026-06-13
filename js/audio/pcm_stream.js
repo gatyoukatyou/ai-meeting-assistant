@@ -227,41 +227,5 @@ class PCMStreamProcessor {
   }
 }
 
-/**
- * リサンプラー（異なるサンプルレート間の変換）
- */
-class AudioResampler {
-  constructor(fromRate, toRate) {
-    this.fromRate = fromRate;
-    this.toRate = toRate;
-    this.ratio = toRate / fromRate;
-  }
-
-  /**
-   * リサンプル（線形補間）
-   */
-  resample(inputArray) {
-    if (this.fromRate === this.toRate) {
-      return inputArray;
-    }
-
-    const outputLength = Math.ceil(inputArray.length * this.ratio);
-    const output = new Float32Array(outputLength);
-
-    for (let i = 0; i < outputLength; i++) {
-      const srcIndex = i / this.ratio;
-      const srcIndexFloor = Math.floor(srcIndex);
-      const srcIndexCeil = Math.min(srcIndexFloor + 1, inputArray.length - 1);
-      const fraction = srcIndex - srcIndexFloor;
-
-      output[i] = inputArray[srcIndexFloor] * (1 - fraction) +
-                  inputArray[srcIndexCeil] * fraction;
-    }
-
-    return output;
-  }
-}
-
 // グローバルに公開
 window.PCMStreamProcessor = PCMStreamProcessor;
-window.AudioResampler = AudioResampler;

@@ -26,7 +26,6 @@ let finalStopResolve = null;
 let recorderStopReason = null;
 let recorderRestartTimeoutId = null;
 let activeProviderId = null;
-let activeProviderStartArgs = null;
 let activeMeetingDraftId = null;
 let activeMeetingDraftStartedAt = null;
 let activeMeetingDraftSaveTimer = null;
@@ -47,8 +46,6 @@ const CONTEXT_MAX_CHARS = 8000;           // 総文字数制限
 const CONTEXT_MAX_FILE_SIZE_MB = 20;      // ファイルサイズ上限（MB）
 const CONTEXT_MAX_FILES = 5;              // 最大ファイル数
 const CONTEXT_MAX_CHARS_PER_FILE = 2000;  // ファイルごとの文字数上限
-const CONTEXT_SUPPORTED_TYPES = ['text/plain', 'text/markdown'];
-const CONTEXT_SUPPORTED_EXTENSIONS = ['.txt', '.md'];
 
 const AI_WORK_ORDER_MODULES_PATH = 'modules/work-order-modules.json';
 const AI_WORK_ORDER_MODULES_FALLBACK = [
@@ -195,8 +192,6 @@ const AppState = {
   set recorderRestartTimeoutId(value) { recorderRestartTimeoutId = value; },
   get activeProviderId() { return activeProviderId; },
   set activeProviderId(value) { activeProviderId = value; },
-  get activeProviderStartArgs() { return activeProviderStartArgs; },
-  set activeProviderStartArgs(value) { activeProviderStartArgs = value; },
   get activeMeetingDraftId() { return activeMeetingDraftId; },
   set activeMeetingDraftId(value) { activeMeetingDraftId = value; },
   get activeMeetingDraftStartedAt() { return activeMeetingDraftStartedAt; },
@@ -285,7 +280,6 @@ var deepCopy = FormatUtils.deepCopy;
 var getCapabilities = CapabilityUtils.getCapabilities;
 var normalizeCapabilityProvider = CapabilityUtils.normalizeCapabilityProvider;
 var resolveEffectiveLlmProvider = CapabilityUtils.resolveEffectiveLlmProvider;
-var isReasoningCapableModel = CapabilityUtils.isReasoningCapableModel;
 
 // --- Sanitize utilities (delegated to js/lib/sanitize-utils.js) ---
 var sanitizeErrorLog = SanitizeUtils.sanitizeErrorLog;
@@ -411,9 +405,6 @@ const ALLOWED_STT_PROVIDERS = new Set(
     ? ProviderCatalog.getSttProviderIds()
     : ['openai_stt', 'deepgram_realtime']
 );
-
-// chunked系プロバイダー
-const CHUNKED_PROVIDERS = new Set(['openai_stt']);
 
 // streaming系プロバイダー
 const STREAMING_PROVIDERS = new Set([
@@ -1780,7 +1771,6 @@ async function startRecording() {
   AppState.recorderStopReason = null;
   clearRecorderRestartTimeout();
   AppState.activeProviderId = provider;
-  AppState.activeProviderStartArgs = null;
   AppState.transcriptionQueueOverflow = TranscriptionQueueOverflowService.createInitialState();
 
   // 一時取得したストリームをcurrentAudioStreamに引き継ぐ
@@ -2396,7 +2386,6 @@ async function stopRecording() {
   AppState.isPaused = false;
   AppState.recorderStopReason = 'stop';
   clearRecorderRestartTimeout();
-  AppState.activeProviderStartArgs = null;
 
   // クリーンアップ処理を呼び出し
   await cleanupRecording();
@@ -2475,7 +2464,7 @@ async function resumeRecording() {
       if (!AppState.currentSTTProvider || typeof AppState.currentSTTProvider.start !== 'function') {
         throw new Error('STT provider is not available');
       }
-      await AppState.currentSTTProvider.start(...(AppState.activeProviderStartArgs || []));
+      await AppState.currentSTTProvider.start();
     } else {
       if (!AppState.mediaRecorder || AppState.mediaRecorder.state === 'inactive') {
         startNewMediaRecorder();
@@ -3584,7 +3573,6 @@ function updateUI() {
   const pauseBtn = document.getElementById('pauseBtn');
   const badge = document.getElementById('statusBadge');
   const floatingBtn = document.getElementById('floatingStopBtn');
-  const meetingModeToggle = document.getElementById('meetingModeToggle');
   const meetingModeText = document.getElementById('meetingModeStatusText');
   const minutesBtn = document.getElementById('minutesBtn');
 
@@ -4527,9 +4515,6 @@ const LLM_PROVIDERS_FALLBACK = {
     hint: '<a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a>でAPIキーを取得'
   }
 };
-
-// Alias for backward compatibility
-const LLM_PROVIDERS = LLM_PROVIDERS_FALLBACK;
 
 let currentLLMProvider = 'gemini';
 
