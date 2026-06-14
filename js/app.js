@@ -5095,9 +5095,9 @@ async function downloadExport() {
 
   const md = generateExportMarkdown(options);
   const title = getMeetingTitleValue();
-  const safeTitle = sanitizeFileName(title || 'meeting');
-  const dateStr = new Date().toISOString().split('T')[0];
-  const fileName = `${safeTitle}-${dateStr}.md`;
+  const fileName = exportService && typeof exportService.buildMarkdownFileName === 'function'
+    ? exportService.buildMarkdownFileName(title, { sanitizeFileName })
+    : `${sanitizeFileName(title || 'meeting')}-${new Date().toISOString().split('T')[0]}.md`;
   const completed = await downloadMarkdownFile(md, fileName, 'toast.export');
   if (completed) {
     closeExportModal();

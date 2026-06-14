@@ -5,6 +5,24 @@ import { loadScript } from '../helpers/load-script.mjs';
 const { ExportService } = loadScript('js/services/export-service.js');
 
 describe('ExportService', () => {
+  it('builds the markdown export file name with the existing date format', () => {
+    const fileName = ExportService.buildMarkdownFileName('Weekly Sync', {
+      sanitizeFileName: (value) => value.replace(/\s+/g, '-'),
+      date: new Date('2026-06-14T23:59:59.000Z')
+    });
+
+    assert.equal(fileName, 'Weekly-Sync-2026-06-14.md');
+  });
+
+  it('uses the existing meeting fallback before sanitizing export file names', () => {
+    const fileName = ExportService.buildMarkdownFileName('', {
+      sanitizeFileName: (value) => `safe-${value}`,
+      date: new Date('2026-06-14T00:00:00.000Z')
+    });
+
+    assert.equal(fileName, 'safe-meeting-2026-06-14.md');
+  });
+
   it('extracts ai-work-order instructions from memo lines', () => {
     const result = ExportService.collectAiWorkOrderInstructions(
       [{ id: 'm1', timestamp: '10:00', content: 'AI: summarize blockers\nmemo line' }],

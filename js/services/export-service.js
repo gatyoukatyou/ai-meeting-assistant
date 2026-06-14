@@ -50,6 +50,17 @@ const ExportService = (function () {
     }).join('');
   }
 
+  function buildMarkdownFileName(title, options) {
+    const opts = options || {};
+    const sanitize = typeof opts.sanitizeFileName === 'function'
+      ? opts.sanitizeFileName
+      : function (value) { return value || 'meeting'; };
+    const date = opts.date || new Date();
+    const safeTitle = sanitize(title || 'meeting');
+    const dateStr = date.toISOString().split('T')[0];
+    return `${safeTitle}-${dateStr}.md`;
+  }
+
   function generateMarkdown(context) {
     const c = context || {};
     const t = typeof c.t === 'function' ? c.t : function (k) { return k; };
@@ -255,6 +266,7 @@ const ExportService = (function () {
   }
 
   return {
+    buildMarkdownFileName,
     collectAiWorkOrderInstructions,
     generateMarkdown
   };
