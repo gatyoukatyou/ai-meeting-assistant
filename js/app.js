@@ -3093,6 +3093,66 @@ function getAvailableLlm() {
 // =====================================
 // AI質問機能
 // =====================================
+const AI_SELECTION_ALLOWED_SELECTORS = [
+  '#transcriptText .transcript-chunk',
+  '#memoListInTab .timeline-item-content',
+  '#memoListInTab .timeline-item-quote',
+  '#timelineList .timeline-item-content',
+  '#timelineList .timeline-item-quote',
+  '.ai-response[data-selection-content="true"]',
+  '.qa-question',
+  '.qa-answer',
+  '#contextGoalInput',
+  '#contextParticipantsInput',
+  '#contextHandoffInput',
+  '#contextReferenceInput'
+];
+
+const TRANSCRIPT_SELECTION_ALLOWED_SELECTORS = [
+  '#transcriptText .transcript-chunk'
+];
+
+const CONTENT_SELECTION_BLOCKED_SELECTORS = [
+  'button',
+  '[role="button"]',
+  'input',
+  'select',
+  'option',
+  'label',
+  '.btn',
+  '.btn-icon',
+  '.tab',
+  '.main-tab',
+  '.timeline-filter',
+  '.chunk-actions',
+  '.timeline-item-actions',
+  '.panel-header',
+  '.modal-header',
+  '.modal-footer',
+  '.toast',
+  '.status-badge',
+  '.llm-indicator',
+  '.cost-chip',
+  '.cost-display',
+  '.empty-state'
+];
+
+function getAllowedAISelectionText() {
+  if (typeof SelectionUtils === 'undefined') return '';
+  return SelectionUtils.getAllowedSelectionText({
+    allowedSelectors: AI_SELECTION_ALLOWED_SELECTORS,
+    blockedSelectors: CONTENT_SELECTION_BLOCKED_SELECTORS
+  });
+}
+
+function getAllowedTranscriptSelectionText() {
+  if (typeof SelectionUtils === 'undefined') return '';
+  return SelectionUtils.getAllowedSelectionText({
+    allowedSelectors: TRANSCRIPT_SELECTION_ALLOWED_SELECTORS,
+    blockedSelectors: CONTENT_SELECTION_BLOCKED_SELECTORS
+  });
+}
+
 async function askAI(type) {
   const requestId = generateQARequestId();
   const questionForLog = type === 'custom'
@@ -3113,8 +3173,8 @@ async function askAI(type) {
     return;
   }
 
-  // 選択テキストがあれば、それを対象にする
-  const selection = window.getSelection().toString().trim();
+  // 本文領域の選択テキストがあれば、それを対象にする
+  const selection = getAllowedAISelectionText();
   const targetText = selection || transcript;
 
   // 入力サイズ制限（コスト暴発・フリーズ防止）
@@ -3219,6 +3279,7 @@ async function askAI(type) {
   } else {
     const responseEl = document.getElementById(`response-${type}`);
     responseEl.textContent = '';
+    responseEl.removeAttribute('data-selection-content');
     const loading = document.createElement('span');
     loading.className = 'loading';
     responseEl.appendChild(loading);
@@ -3253,7 +3314,9 @@ async function askAI(type) {
       scheduleActiveMeetingDraftSave();
     } else if (type === 'minutes') {
       // 議事録は上書き（単一）
-      document.getElementById(`response-${type}`).textContent = response;
+      const responseEl = document.getElementById(`response-${type}`);
+      responseEl.textContent = response;
+      responseEl.setAttribute('data-selection-content', 'true');
       AppState.aiResponses.minutes = response;
       hideEmptyState('minutes'); // PR-3: エンプティステート非表示
       scheduleActiveMeetingDraftSave();
@@ -3266,7 +3329,9 @@ async function askAI(type) {
       const displayText = AppState.aiResponses[type].map((entry, i) => {
         return `━━━ #${i + 1}（${entry.timestamp}）━━━\n\n${entry.content}`;
       }).join('\n\n');
-      document.getElementById(`response-${type}`).textContent = displayText;
+      const responseEl = document.getElementById(`response-${type}`);
+      responseEl.textContent = displayText;
+      responseEl.setAttribute('data-selection-content', 'true');
       hideEmptyState(type); // PR-3: エンプティステート非表示
       scheduleActiveMeetingDraftSave();
     }
@@ -3317,6 +3382,7 @@ async function askAI(type) {
       // XSS防止: innerHTMLではなくcreateElement/textContentを使用
       const responseEl = document.getElementById(`response-${type}`);
       responseEl.textContent = '';
+      responseEl.removeAttribute('data-selection-content');
       const errSpan = document.createElement('span');
       errSpan.className = 'error-text';
       errSpan.textContent = errorMsg;
@@ -4067,7 +4133,7 @@ function createMemo(content) {
 }
 
 function getSelectedTranscriptQuote() {
-  const selection = window.getSelection().toString().trim();
+  const selection = getAllowedTranscriptSelectionText();
   if (!selection || selection.length < 5) return null;
 
   // 選択テキストにマッチするchunkを探す
@@ -5465,6 +5531,7 @@ function renderAIResponsesFromState() {
     if (!el) return;
 
     if (!AppState.aiResponses[type] || AppState.aiResponses[type].length === 0) {
+      el.removeAttribute('data-selection-content');
       el.textContent = t('app.aiResponse.placeholder');
       return;
     }
@@ -5474,6 +5541,7 @@ function renderAIResponsesFromState() {
       return `━━━ #${i + 1}${ts ? `（${ts}）` : ''} ━━━\n\n${entry.content}`;
     }).join('\n\n');
     el.textContent = displayText; // XSS安全
+    el.setAttribute('data-selection-content', 'true');
   });
 
   // タイムラインも更新
@@ -5482,7 +5550,13 @@ function renderAIResponsesFromState() {
   // minutes: textContentのみ
   const minutesEl = document.getElementById('response-minutes');
   if (minutesEl) {
-    minutesEl.textContent = AppState.aiResponses.minutes || t('app.aiResponse.minutesPlaceholder');
+    if (AppState.aiResponses.minutes) {
+      minutesEl.textContent = AppState.aiResponses.minutes;
+      minutesEl.setAttribute('data-selection-content', 'true');
+    } else {
+      minutesEl.removeAttribute('data-selection-content');
+      minutesEl.textContent = t('app.aiResponse.minutesPlaceholder');
+    }
   }
 
   // custom Q&A: DOM生成でtextContent使用
