@@ -43,6 +43,7 @@ export default [
         FetchRetryService: 'readonly',
         ExportService: 'readonly',
         HistoryBackupService: 'readonly',
+        HistoryListService: 'readonly',
         DiagnosticsService: 'readonly',
         STTProviders: 'writable',
         PCMStreamProcessor: 'writable',
