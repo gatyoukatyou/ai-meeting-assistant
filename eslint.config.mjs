@@ -44,7 +44,6 @@ export default [
         DiagnosticsService: 'readonly',
         STTProviders: 'writable',
         PCMStreamProcessor: 'writable',
-        AudioResampler: 'writable',
         DeepgramWSProvider: 'writable',
         OpenAIChunkedProvider: 'writable',
         // Cross-file references used with typeof checks
