@@ -63,10 +63,15 @@ const HistoryBackupService = (function() {
     };
   }
 
+  function hasImportableRecords(records) {
+    return Array.isArray(records) && records.length > 0;
+  }
+
   return {
     normalizeRecord,
     parseRecords,
-    buildBackupPayload
+    buildBackupPayload,
+    hasImportableRecords
   };
 })();
 

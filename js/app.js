@@ -6054,7 +6054,7 @@ async function importHistoryBackupFromFile(file) {
   try {
     const raw = await file.text();
     const records = parseHistoryBackupRecords(raw);
-    if (!records.length) {
+    if (!historyBackupService.hasImportableRecords(records)) {
       showToast(t('history.backupImportNoRecords'), 'warning');
       return false;
     }
