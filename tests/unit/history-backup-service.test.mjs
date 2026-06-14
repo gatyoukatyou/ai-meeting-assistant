@@ -90,3 +90,11 @@ describe('HistoryBackupService.hasImportableRecords', () => {
     assert.equal(HistoryBackupService.hasImportableRecords({ records: [{ id: 'history_1' }] }), false);
   });
 });
+
+describe('HistoryBackupService.buildBackupFileName', () => {
+  it('preserves the existing history backup file name format', () => {
+    const fileName = HistoryBackupService.buildBackupFileName(new Date('2026-06-14T23:59:59.000Z'));
+
+    assert.equal(fileName, 'meeting-history-backup-2026-06-14.json');
+  });
+});

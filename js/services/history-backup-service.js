@@ -67,11 +67,16 @@ const HistoryBackupService = (function() {
     return Array.isArray(records) && records.length > 0;
   }
 
+  function buildBackupFileName(date = new Date()) {
+    return `meeting-history-backup-${date.toISOString().split('T')[0]}.json`;
+  }
+
   return {
     normalizeRecord,
     parseRecords,
     buildBackupPayload,
-    hasImportableRecords
+    hasImportableRecords,
+    buildBackupFileName
   };
 })();
 

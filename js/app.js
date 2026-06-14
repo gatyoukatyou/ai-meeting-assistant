@@ -6044,7 +6044,7 @@ async function downloadHistoryBackup() {
 
   const payload = historyBackupService.buildBackupPayload(records);
 
-  const fileName = `meeting-history-backup-${new Date().toISOString().split('T')[0]}.json`;
+  const fileName = historyBackupService.buildBackupFileName();
   return downloadJsonFile(JSON.stringify(payload, null, 2), fileName, 'history.backupDownloadSuccess');
 }
 
