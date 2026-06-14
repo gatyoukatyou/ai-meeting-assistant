@@ -32,6 +32,7 @@ export default [
         SanitizeUtils: 'readonly',
         ModelUtils: 'readonly',
         TextUtils: 'readonly',
+        SelectionUtils: 'readonly',
         ProviderCatalog: 'readonly',
         MeetingTitleStore: 'readonly',
         MeetingContextStore: 'readonly',
