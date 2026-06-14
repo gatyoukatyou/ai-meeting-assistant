@@ -307,6 +307,7 @@ var meetingContextService = (typeof MeetingContextService !== 'undefined') ? Mee
 var activeMeetingDraftService = (typeof window !== 'undefined' && window.ActiveMeetingDraftService) ? window.ActiveMeetingDraftService : null;
 var exportService = (typeof ExportService !== 'undefined') ? ExportService : null;
 var historyBackupService = (typeof HistoryBackupService !== 'undefined') ? HistoryBackupService : null;
+var historyListService = (typeof HistoryListService !== 'undefined') ? HistoryListService : null;
 var diagnosticsService = (typeof DiagnosticsService !== 'undefined') ? DiagnosticsService : null;
 
 // Handle fatal errors - show modal and safely stop recording
@@ -5907,6 +5908,12 @@ async function renderHistoryList() {
   }
 
   records.forEach(record => {
+    const display = historyListService.prepareDisplayRecord(record, {
+      getDefaultTitle: getDefaultMeetingTitle,
+      formatTimestamp: formatHistoryTimestamp,
+      truncatePreview: truncateText
+    });
+
     const item = document.createElement('div');
     item.className = 'history-item';
     item.style.border = '1px solid var(--border)';
@@ -5923,21 +5930,21 @@ async function renderHistoryList() {
     const title = document.createElement('div');
     title.style.fontWeight = '600';
     title.style.marginBottom = '0.25rem';
-    title.textContent = record.title || getDefaultMeetingTitle(record.createdAt ? new Date(record.createdAt) : undefined);
+    title.textContent = display.title;
     meta.appendChild(title);
 
     const details = document.createElement('div');
     details.style.fontSize = '0.85rem';
     details.style.color = 'var(--text-secondary)';
-    details.textContent = `${t('history.recordSavedAt')} ${formatHistoryTimestamp(record.createdAt)} ・ ${t('history.recordDuration')} ${formatHistoryDuration(record.durationSec)}`;
+    details.textContent = `${t('history.recordSavedAt')} ${display.savedAt} ・ ${t('history.recordDuration')} ${display.duration}`;
     meta.appendChild(details);
 
-    if (record.summaryPreview) {
+    if (display.hasSummaryPreview) {
       const preview = document.createElement('p');
       preview.style.fontSize = '0.9rem';
       preview.style.marginTop = '0.5rem';
       preview.style.whiteSpace = 'pre-line';
-      preview.textContent = truncateText(record.summaryPreview);
+      preview.textContent = display.summaryPreview;
       meta.appendChild(preview);
     }
 
@@ -6347,12 +6354,6 @@ function formatHistoryTimestamp(isoString) {
   const date = new Date(isoString);
   const locale = I18n.getLanguage() === 'ja' ? 'ja-JP' : 'en-US';
   return date.toLocaleString(locale, { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' });
-}
-
-function formatHistoryDuration(seconds) {
-  if (!seconds || Number.isNaN(seconds)) return '0m';
-  const mins = Math.max(1, Math.round(seconds / 60));
-  return `${mins}m`;
 }
 
 // =====================================
