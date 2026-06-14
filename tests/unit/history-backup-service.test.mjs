@@ -81,3 +81,12 @@ describe('HistoryBackupService.buildBackupPayload', () => {
     assert.equal(payload.records[0].nested.value, 'original');
   });
 });
+
+describe('HistoryBackupService.hasImportableRecords', () => {
+  it('returns true only for non-empty record arrays', () => {
+    assert.equal(HistoryBackupService.hasImportableRecords([{ id: 'history_1' }]), true);
+    assert.equal(HistoryBackupService.hasImportableRecords([]), false);
+    assert.equal(HistoryBackupService.hasImportableRecords(null), false);
+    assert.equal(HistoryBackupService.hasImportableRecords({ records: [{ id: 'history_1' }] }), false);
+  });
+});
