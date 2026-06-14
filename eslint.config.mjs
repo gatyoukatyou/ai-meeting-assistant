@@ -42,6 +42,7 @@ export default [
         TranscriptionQueueOverflowService: 'readonly',
         FetchRetryService: 'readonly',
         ExportService: 'readonly',
+        HistoryBackupService: 'readonly',
         DiagnosticsService: 'readonly',
         STTProviders: 'writable',
         PCMStreamProcessor: 'writable',

@@ -306,6 +306,7 @@ var llmClientService = (typeof LLMClientService !== 'undefined') ? LLMClientServ
 var meetingContextService = (typeof MeetingContextService !== 'undefined') ? MeetingContextService : null;
 var activeMeetingDraftService = (typeof window !== 'undefined' && window.ActiveMeetingDraftService) ? window.ActiveMeetingDraftService : null;
 var exportService = (typeof ExportService !== 'undefined') ? ExportService : null;
+var historyBackupService = (typeof HistoryBackupService !== 'undefined') ? HistoryBackupService : null;
 var diagnosticsService = (typeof DiagnosticsService !== 'undefined') ? DiagnosticsService : null;
 
 // Handle fatal errors - show modal and safely stop recording
@@ -6016,48 +6017,22 @@ async function clearHistoryRecords() {
   await renderHistoryList();
 }
 
-function normalizeHistoryBackupRecord(record, index) {
-  const nowIso = new Date().toISOString();
-  const normalized = deepCopy(record || {});
-  if (!normalized.id || typeof normalized.id !== 'string') {
-    normalized.id = `history_import_${Date.now()}_${index}_${Math.random().toString(36).slice(2, 8)}`;
-  }
-  if (!normalized.createdAt || Number.isNaN(new Date(normalized.createdAt).getTime())) {
-    normalized.createdAt = nowIso;
-  }
-  if (!normalized.updatedAt || Number.isNaN(new Date(normalized.updatedAt).getTime())) {
-    normalized.updatedAt = nowIso;
-  }
-  return normalized;
-}
-
 function parseHistoryBackupRecords(rawJson) {
-  let parsed;
-  try {
-    parsed = JSON.parse(rawJson);
-  } catch (err) {
+  if (!historyBackupService) {
     throw new Error(t('history.backupInvalidFormat'));
   }
-
-  const records = Array.isArray(parsed)
-    ? parsed
-    : (Array.isArray(parsed?.records) ? parsed.records : null);
-
-  if (!records) {
-    throw new Error(t('history.backupInvalidFormat'));
-  }
-
-  const normalizedRecords = records
-    .filter(record => record && typeof record === 'object')
-    .map((record, index) => normalizeHistoryBackupRecord(record, index))
-    .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
-
-  return normalizedRecords;
+  return historyBackupService.parseRecords(rawJson, {
+    invalidFormatMessage: t('history.backupInvalidFormat')
+  });
 }
 
 async function downloadHistoryBackup() {
   if (typeof HistoryStore === 'undefined') {
     showToast(t('history.notSupported'), 'error');
+    return false;
+  }
+  if (!historyBackupService) {
+    showToast(t('history.backupInvalidFormat'), 'error');
     return false;
   }
 
@@ -6067,13 +6042,7 @@ async function downloadHistoryBackup() {
     return false;
   }
 
-  const payload = {
-    schemaVersion: 1,
-    exportedAt: new Date().toISOString(),
-    app: 'ai-meeting-assistant',
-    recordCount: records.length,
-    records: records.map(record => deepCopy(record))
-  };
+  const payload = historyBackupService.buildBackupPayload(records);
 
   const fileName = `meeting-history-backup-${new Date().toISOString().split('T')[0]}.json`;
   return downloadJsonFile(JSON.stringify(payload, null, 2), fileName, 'history.backupDownloadSuccess');
