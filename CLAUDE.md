@@ -1,5 +1,24 @@
 # ai-meeting-assistant Claude Code Configuration
 
+<!-- aion-ops bootstrap v2026-07-02 | 正本: gatyoukatyou/aion-ops -->
+
+## 共通運用ルール（正本 = aion-ops）
+
+このリポジトリの3AI運用（KURO / Gino / JEM + HUMAN）の共通ルールは、`gatyoukatyou/aion-ops` を唯一の正本とする。
+
+作業開始時は、まず次を確認する。
+
+1. `aion-ops/docs/operations/minimal-operating-rules.md`
+2. `aion-ops/docs/operations/todoist-operation-rules.md`
+3. `aion-ops/docs/operations/github-workflow.md`
+4. `aion-ops/agents/kuro-claude.md`
+5. `aion-ops/templates/handoff-brief-template.md`
+
+ここにはルール本体を書き写さない。矛盾時は aion-ops を優先し、迷えば停止してHUMAN確認。
+mainへ直接pushしない。mergeはHUMANのみ。
+
+<!-- /aion-ops bootstrap -->
+
 ## Project Overview
 AI参加会議 - 会議中にAIがリアルタイム参加し、文字起こし・要約・意見・アイデア提案を行うPWA。
 
