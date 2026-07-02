@@ -5,3 +5,6 @@ node_modules/
 __pycache__/
 *.py[cod]
 scripts/test-files/
+
+# aion-ops bootstrap clone (母艦の一時取得先・コミットしない)
+.aion-ops/
