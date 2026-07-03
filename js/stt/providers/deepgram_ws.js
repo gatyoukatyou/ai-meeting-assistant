@@ -24,6 +24,8 @@ class DeepgramWSProvider {
     this.reconnectAttempts = 0;
     this.maxReconnectAttempts = 3;
     this._connectTimer = null;
+    this._reconnectTimer = null;
+    this._stopped = false;
 
     // Utteranceバッファリング（断片化防止）
     this._finalBuffer = '';        // is_final=trueの断片を蓄積
@@ -43,6 +45,9 @@ class DeepgramWSProvider {
     if (!this.apiKey) {
       throw new Error('Deepgram API key is required');
     }
+
+    // 停止フラグをリセット（新規開始）
+    this._stopped = false;
 
     // バッファをリセット
     this._finalBuffer = '';
@@ -86,6 +91,17 @@ class DeepgramWSProvider {
           clearTimeout(this._connectTimer);
           this._connectTimer = null;
         }
+        // stop() が接続中に呼ばれていたら、開いたソケットを即座に閉じる
+        if (this._stopped) {
+          DebugLogger.log('[Deepgram]', 'Opened after stop, closing immediately');
+          try {
+            ws.close(1000, 'Stopped during connect');
+          } catch (e) {
+            // Ignore close errors
+          }
+          resolve();
+          return;
+        }
         DebugLogger.log('[Deepgram]', 'WebSocket connected');
         this.isConnected = true;
         this.reconnectAttempts = 0;
@@ -114,11 +130,16 @@ class DeepgramWSProvider {
         // 残っているバッファがあればフラッシュ
         this._flushFinalBuffer();
 
-        if (event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
+        if (!this._stopped && event.code !== 1000 && this.reconnectAttempts < this.maxReconnectAttempts) {
           this.reconnectAttempts++;
           DebugLogger.log('[Deepgram]', 'Attempting reconnect (' + this.reconnectAttempts + '/' + this.maxReconnectAttempts + ')');
           this.updateStatus('reconnecting');
-          setTimeout(() => this.start().catch(console.error), 1000 * this.reconnectAttempts);
+          this._reconnectTimer = setTimeout(() => {
+            this._reconnectTimer = null;
+            // stop() がバックオフ中に呼ばれていたら再接続しない（ゾンビ接続防止）
+            if (this._stopped) return;
+            this.start().catch(console.error);
+          }, 1000 * this.reconnectAttempts);
         } else {
           this.updateStatus('disconnected');
         }
@@ -146,10 +167,19 @@ class DeepgramWSProvider {
    * WebSocket接続を停止
    */
   async stop() {
+    // 停止フラグを立てる（バックオフ中の再接続コールバックを無効化）
+    this._stopped = true;
+
     // Clear connection timer
     if (this._connectTimer) {
       clearTimeout(this._connectTimer);
       this._connectTimer = null;
+    }
+
+    // Clear pending reconnect timer (ゾンビ接続防止)
+    if (this._reconnectTimer) {
+      clearTimeout(this._reconnectTimer);
+      this._reconnectTimer = null;
     }
 
     // 残っているバッファをフラッシュ
