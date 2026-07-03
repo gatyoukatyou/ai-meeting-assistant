@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy"
+      content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; manifest-src 'self';">
   <title data-i18n="notFound.pageTitle">ページが見つかりません - AI参加会議</title>
   <style>
     body {
@@ -56,17 +58,6 @@
 
   <!-- i18n (absolute path for GitHub Pages 404) -->
   <script src="/ai-meeting-assistant/js/i18n.js"></script>
-  <script>
-    // Initialize i18n and update title
-    document.addEventListener('DOMContentLoaded', async function() {
-      await I18n.init();
-      // Update document.title from data-i18n on title element
-      var titleEl = document.querySelector('title[data-i18n]');
-      if (titleEl) {
-        var key = titleEl.getAttribute('data-i18n');
-        if (key) document.title = t(key);
-      }
-    });
-  </script>
+  <script src="/ai-meeting-assistant/js/notfound.js"></script>
 </body>
 </html>
