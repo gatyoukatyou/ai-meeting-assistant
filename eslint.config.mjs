@@ -57,7 +57,7 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
-      'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
+      'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
       // Each file re-declares the global it defines (e.g. const ModelRegistry = …)
       'no-redeclare': 'off',
       // Intentional control-char regex in file-extractor.js (mojibake detection)
@@ -65,6 +65,7 @@ export default [
       // Legacy pattern: obj.hasOwnProperty() used in existing code
       'no-prototype-builtins': 'off',
       // Existing code patterns — not worth fighting pre-modularisation
+      // (as of 2026-07: no-useless-assignment ×4, no-unsafe-finally ×1 in app.js/llm-client.js)
       'no-useless-assignment': 'off',
       'no-unsafe-finally': 'off',
       // Catch blocks that re-throw with a new message (without { cause })
@@ -86,7 +87,7 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
-      'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
+      'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
       'no-undef': 'off'
     }
   },
@@ -103,7 +104,7 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
-      'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }]
+      'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }]
     }
   },
 
@@ -117,7 +118,7 @@ export default [
     },
     rules: {
       ...js.configs.recommended.rules,
-      'no-unused-vars': ['warn', { args: 'none', caughtErrors: 'none' }],
+      'no-unused-vars': ['error', { args: 'none', caughtErrors: 'none' }],
     },
   },
 
