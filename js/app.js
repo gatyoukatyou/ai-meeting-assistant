@@ -1085,7 +1085,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   const hasVisited = localStorage.getItem('_visited');
   if (!hasVisited) {
     document.getElementById('welcomeModal').classList.add('active');
-    localStorage.setItem('_visited', 'true');
+    try {
+      localStorage.setItem('_visited', 'true');
+    } catch (e) {
+      console.warn('[Storage] Failed to persist _visited flag', e);
+    }
   }
 
   // ブラウザを閉じる前のクリーンアップ
@@ -3920,7 +3924,11 @@ function switchMainTab(tabName) {
   if (AppState.isPanelMeetingMode) {
     AppState.isPanelMeetingMode = false;
     document.querySelector('.main-container')?.classList.remove('meeting-mode');
-    localStorage.setItem('_panelMeetingMode', '0');
+    try {
+      localStorage.setItem('_panelMeetingMode', '0');
+    } catch (e) {
+      console.warn('[Storage] Failed to persist panelMeetingMode', e);
+    }
     updatePanelMeetingModeUI();
   }
 
@@ -4087,7 +4095,11 @@ function initPanelMeetingMode() {
 function togglePanelMeetingMode() {
   AppState.isPanelMeetingMode = !AppState.isPanelMeetingMode;
   document.querySelector('.main-container')?.classList.toggle('meeting-mode', AppState.isPanelMeetingMode);
-  localStorage.setItem('_panelMeetingMode', AppState.isPanelMeetingMode ? '1' : '0');
+  try {
+    localStorage.setItem('_panelMeetingMode', AppState.isPanelMeetingMode ? '1' : '0');
+  } catch (e) {
+    console.warn('[Storage] Failed to persist panelMeetingMode', e);
+  }
   updatePanelMeetingModeUI();
 }
 
@@ -6736,7 +6748,11 @@ function persistMeetingContext() {
     } else {
       const primary = persist ? localStorage : sessionStorage;
       const secondary = persist ? sessionStorage : localStorage;
-      primary.setItem('_meetingContext', serialized);
+      try {
+        primary.setItem('_meetingContext', serialized);
+      } catch (e) {
+        console.warn('[Context] Failed to persist meeting context', e);
+      }
       primary.removeItem('__meetingContext');
       secondary.removeItem('_meetingContext');
       secondary.removeItem('__meetingContext');

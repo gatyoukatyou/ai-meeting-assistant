@@ -1,5 +1,8 @@
 // =====================================
-// セキュリティ：保存管理モジュール
+// ストレージ管理モジュール
+// 注意：APIキーはWeb Storage（既定はsessionStorage、記憶ON時はlocalStorage）に
+// 平文で保存されます。本モジュールは保存先の切り替え等を管理するもので、
+// 暗号化は行いません。脅威モデルの詳細は docs/SECURITY.md を参照してください。
 // =====================================
 const SecureStorage = {
   // API key storage providers list
@@ -7,6 +10,20 @@ const SecureStorage = {
     (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getApiKeyProviderIds === 'function')
       ? ProviderCatalog.getApiKeyProviderIds()
       : ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'],
+
+  // Web Storageのwrite系呼び出しはQuotaExceededError等で例外を投げることがある
+  // （Safariプライベートモード、ストレージ容量超過など）。失敗してもアプリの
+  // 動作を継続させるため、ここで捕捉して呼び出し元へは伝播させない。
+  // 値（APIキー等）が漏れないよう、失敗ログにはキー名のみを出力する。
+  _safeSetItem: function(storage, key, value) {
+    try {
+      storage.setItem(key, value);
+      return true;
+    } catch (e) {
+      console.warn(`[SecureStorage] Failed to persist "${key}" (storage full or unavailable)`);
+      return false;
+    }
+  },
 
   isPersistentApiKeysSupported: function() {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
@@ -47,7 +64,7 @@ const SecureStorage = {
       storages.secondary.removeItem(storageKey);
       return;
     }
-    storages.primary.setItem(storageKey, key);
+    this._safeSetItem(storages.primary, storageKey, key);
     // Keep a single source of truth for API keys.
     storages.secondary.removeItem(storageKey);
   },
@@ -60,7 +77,7 @@ const SecureStorage = {
 
   // モデルを保存（暗号化不要）
   setModel: function(provider, model) {
-    localStorage.setItem(`_m_${provider}`, model);
+    this._safeSetItem(localStorage, `_m_${provider}`, model);
   },
 
   getModel: function(provider) {
@@ -73,7 +90,7 @@ const SecureStorage = {
       localStorage.removeItem(`_mc_${provider}`);
       return;
     }
-    localStorage.setItem(`_mc_${provider}`, model.trim());
+    this._safeSetItem(localStorage, `_mc_${provider}`, model.trim());
   },
 
   getCustomModel: function(provider) {
@@ -91,7 +108,7 @@ const SecureStorage = {
 
   // オプションを保存
   setOption: function(key, value) {
-    localStorage.setItem(`_opt_${key}`, JSON.stringify(value));
+    this._safeSetItem(localStorage, `_opt_${key}`, JSON.stringify(value));
   },
 
   getOption: function(key, defaultValue) {
