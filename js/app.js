@@ -5613,7 +5613,14 @@ async function restoreFromHistory(recordId) {
     return;
   }
 
-  const record = await HistoryStore.get(recordId);
+  let record;
+  try {
+    record = await HistoryStore.get(recordId);
+  } catch (err) {
+    console.error('[History] Failed to load record for restore', err);
+    showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
+    return;
+  }
   if (!record) {
     showToast(t('toast.history.failed', { message: t('history.missingRecord') }), 'error');
     return;
@@ -5898,7 +5905,14 @@ async function renderHistoryList() {
     return;
   }
 
-  const records = await HistoryStore.list();
+  let records;
+  try {
+    records = await HistoryStore.list();
+  } catch (err) {
+    console.error('[History] Failed to list records', err);
+    showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
+    return;
+  }
   if (!records.length) {
     const empty = document.createElement('p');
     empty.style.color = 'var(--text-secondary)';
@@ -5998,7 +6012,14 @@ function handleHistoryListAction(event) {
 
 async function downloadHistoryRecord(id) {
   if (!id || typeof HistoryStore === 'undefined') return;
-  const record = await HistoryStore.get(id);
+  let record;
+  try {
+    record = await HistoryStore.get(id);
+  } catch (err) {
+    console.error('[History] Failed to load record for download', err);
+    showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
+    return;
+  }
   if (!record || !record.exportMarkdown) {
     showToast(t('toast.history.failed', { message: t('history.missingRecord') }), 'error');
     return;
@@ -6009,7 +6030,13 @@ async function downloadHistoryRecord(id) {
 
 async function deleteHistoryRecord(id) {
   if (!id || typeof HistoryStore === 'undefined') return;
-  await HistoryStore.delete(id);
+  try {
+    await HistoryStore.delete(id);
+  } catch (err) {
+    console.error('[History] Failed to delete record', err);
+    showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
+    return;
+  }
   showToast(t('toast.history.deleted'), 'info');
   await renderHistoryList();
 }
@@ -6019,7 +6046,13 @@ async function clearHistoryRecords() {
   if (!confirm(t('history.clearConfirm'))) {
     return;
   }
-  await HistoryStore.clear();
+  try {
+    await HistoryStore.clear();
+  } catch (err) {
+    console.error('[History] Failed to clear records', err);
+    showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
+    return;
+  }
   showToast(t('toast.history.cleared'), 'info');
   await renderHistoryList();
 }
@@ -6043,7 +6076,14 @@ async function downloadHistoryBackup() {
     return false;
   }
 
-  const records = await HistoryStore.list();
+  let records;
+  try {
+    records = await HistoryStore.list();
+  } catch (err) {
+    console.error('[HistoryBackup] Failed to list records', err);
+    showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
+    return false;
+  }
   if (!records.length) {
     showToast(t('history.backupNoRecords'), 'warning');
     return false;
