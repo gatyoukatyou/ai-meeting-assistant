@@ -211,3 +211,6 @@ const SecureStorage = {
     });
   }
 };
+
+// 他モジュールと同じ公開イディオム（例: js/services/llm-client.js）
+window.SecureStorage = SecureStorage;
