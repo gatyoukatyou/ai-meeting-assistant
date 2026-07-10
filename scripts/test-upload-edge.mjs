@@ -14,7 +14,6 @@ import { ensureLocalStaticServer } from './local-static-server.mjs';
 
 const { results, record } = createResultTracker();
 const PORT = Number(process.env.PORT || 8080);
-const OVERSIZE_FILE_MB = 12;
 
 // ==========================
 // §6 Limit Control Tests
@@ -214,10 +213,16 @@ async function testEdgeCases(browser) {
         };
       });
 
+      // アプリ側の上限（CONTEXT_MAX_FILE_SIZE_MB）を実値で読み、+1MBで確実に超過させる
+      const limitMb = await page.evaluate(() =>
+        typeof CONTEXT_MAX_FILE_SIZE_MB === 'number' ? CONTEXT_MAX_FILE_SIZE_MB : 20
+      );
+      const oversizeMb = limitMb + 1;
+
       await page.setInputFiles('#contextFileInput', {
-        name: `test-${OVERSIZE_FILE_MB}mb.txt`,
+        name: `test-${oversizeMb}mb.txt`,
         mimeType: 'text/plain',
-        buffer: Buffer.alloc(OVERSIZE_FILE_MB * 1024 * 1024, 'A')
+        buffer: Buffer.alloc(oversizeMb * 1024 * 1024, 'A')
       });
 
       await page.waitForTimeout(2000);
@@ -234,10 +239,10 @@ async function testEdgeCases(browser) {
           charCount: bigFile.charCount || 0,
           warning: bigFile.errorMessage || ''
         };
-      }, `test-${OVERSIZE_FILE_MB}mb.txt`);
+      }, `test-${oversizeMb}mb.txt`);
 
       // Should be rejected (not added to files list)
-      record('§8', `test-${OVERSIZE_FILE_MB}mb.txt (size reject)`, 'success', {
+      record('§8', `test-${oversizeMb}mb.txt (size reject)`, 'success', {
         status: sizeResult.status === 'rejected' ? 'success' : 'fail',
         charCount: sizeResult.charCount,
         warning: sizeResult.warning
