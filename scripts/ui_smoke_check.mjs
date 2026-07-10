@@ -67,6 +67,31 @@ if (indexHtml) {
   }
 }
 
+const notFoundPath = path.join(repoRoot, "404.html");
+const notFoundHtml = readFileOrError(notFoundPath, "404.html");
+
+if (notFoundHtml) {
+  const hasCsp = /<meta[^>]*http-equiv=["']Content-Security-Policy["']/i.test(notFoundHtml);
+  if (hasCsp) {
+    oks.push("Found CSP meta in 404.html");
+  } else {
+    errors.push("Missing Content-Security-Policy meta in 404.html");
+  }
+
+  // CSP script-src 'self' の下では実行されないため、本文つきインライン<script>を禁止する
+  const scriptTags = notFoundHtml.match(/<script\b[^>]*>[\s\S]*?<\/script>/gi) || [];
+  const inlineScripts = scriptTags.filter((tag) => {
+    const hasSrc = /<script\b[^>]*\ssrc=/i.test(tag);
+    const body = tag.replace(/^<script\b[^>]*>/i, "").replace(/<\/script>$/i, "");
+    return !hasSrc && body.trim().length > 0;
+  });
+  if (inlineScripts.length === 0) {
+    oks.push("No inline <script> bodies in 404.html");
+  } else {
+    errors.push(`Found ${inlineScripts.length} inline <script> body(ies) in 404.html (blocked by CSP script-src 'self')`);
+  }
+}
+
 if (themeJs) {
   const hasAppStyle = /appStyle/.test(themeJs);
   const hasDisplayTheme = /display_theme/.test(themeJs);
