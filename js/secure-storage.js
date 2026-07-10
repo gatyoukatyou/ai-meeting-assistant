@@ -64,9 +64,10 @@ const SecureStorage = {
       storages.secondary.removeItem(storageKey);
       return;
     }
-    this._safeSetItem(storages.primary, storageKey, key);
-    // Keep a single source of truth for API keys.
-    storages.secondary.removeItem(storageKey);
+    if (this._safeSetItem(storages.primary, storageKey, key)) {
+      // Keep a single source of truth only after the new value is persisted.
+      storages.secondary.removeItem(storageKey);
+    }
   },
 
   // APIキーを取得
