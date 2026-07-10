@@ -51,8 +51,7 @@ export default [
         OpenAIChunkedProvider: 'writable',
         // Cross-file references used with typeof checks
         DEFAULT_DICTIONARY: 'writable',
-        handleBackToMain: 'readonly',
-        updateCostDisplay: 'readonly'
+        handleBackToMain: 'readonly'
       }
     },
     rules: {

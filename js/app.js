@@ -5599,11 +5599,9 @@ function renderAIResponsesFromState() {
   }
 }
 
-// コスト表示更新
+// コスト表示更新（履歴・下書き復元後に AppState.costs を画面へ反映）
 function updateCostDisplayFromState() {
-  if (typeof updateCostDisplay === 'function') {
-    updateCostDisplay();
-  }
+  updateCosts();
 }
 
 // 履歴から復元
