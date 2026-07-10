@@ -134,6 +134,18 @@ describe('SecureStorage degrades gracefully on storage write failures', () => {
     });
   });
 
+  it('keeps the secondary API key when the target storage write fails', () => {
+    const { SecureStorage, localStorage, sessionStorage } = createSecureStorageContext({
+      localData: { _ak_openai: 'existing-key' },
+      sessionThrowsOnSetItem: true
+    });
+
+    SecureStorage.setApiKey('openai', 'new-key');
+
+    assert.equal(sessionStorage.getItem('_ak_openai'), null);
+    assert.equal(localStorage.getItem('_ak_openai'), 'existing-key');
+  });
+
   it('setApiKey does not throw when the persistent (localStorage) target throws', () => {
     // Preset the persist option directly (rather than via setPersistApiKeys)
     // so the write failure under test is isolated to setApiKey itself.
