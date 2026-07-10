@@ -2,13 +2,16 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { loadScript } from '../helpers/load-script.mjs';
 
-function createStorage(initial = {}) {
+function createStorage(initial = {}, { throwOnSetItem = false } = {}) {
   const store = new Map(Object.entries(initial));
   return {
     getItem(key) {
       return store.has(key) ? store.get(key) : null;
     },
     setItem(key, value) {
+      if (throwOnSetItem) {
+        throw new DOMException('QuotaExceededError', 'QuotaExceededError');
+      }
       store.set(key, String(value));
     },
     removeItem(key) {
@@ -25,10 +28,12 @@ function createSecureStorageContext({
   isWindowControlsOverlay = false,
   userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)',
   localData = {},
-  sessionData = {}
+  sessionData = {},
+  localThrowsOnSetItem = false,
+  sessionThrowsOnSetItem = false
 } = {}) {
-  const localStorage = createStorage(localData);
-  const sessionStorage = createStorage(sessionData);
+  const localStorage = createStorage(localData, { throwOnSetItem: localThrowsOnSetItem });
+  const sessionStorage = createStorage(sessionData, { throwOnSetItem: sessionThrowsOnSetItem });
   const window = {
     matchMedia(query) {
       if (query === '(display-mode: standalone)') {
@@ -115,5 +120,65 @@ describe('SecureStorage persistApiKeys policy', () => {
     const exported = SecureStorage.exportAll();
 
     assert.equal(exported.options.persistApiKeys, true);
+  });
+});
+
+describe('SecureStorage degrades gracefully on storage write failures', () => {
+  it('setApiKey does not throw when the target storage.setItem throws (quota/private mode)', () => {
+    const { SecureStorage } = createSecureStorageContext({
+      sessionThrowsOnSetItem: true
+    });
+
+    assert.doesNotThrow(() => {
+      SecureStorage.setApiKey('openai', 'some-key');
+    });
+  });
+
+  it('keeps the secondary API key when the target storage write fails', () => {
+    const { SecureStorage, localStorage, sessionStorage } = createSecureStorageContext({
+      localData: { _ak_openai: 'existing-key' },
+      sessionThrowsOnSetItem: true
+    });
+
+    SecureStorage.setApiKey('openai', 'new-key');
+
+    assert.equal(sessionStorage.getItem('_ak_openai'), null);
+    assert.equal(localStorage.getItem('_ak_openai'), 'existing-key');
+  });
+
+  it('setApiKey does not throw when the persistent (localStorage) target throws', () => {
+    // Preset the persist option directly (rather than via setPersistApiKeys)
+    // so the write failure under test is isolated to setApiKey itself.
+    const { SecureStorage } = createSecureStorageContext({
+      isStandalone: true,
+      localData: { _opt_persistApiKeys: 'true' },
+      localThrowsOnSetItem: true
+    });
+
+    assert.equal(SecureStorage.isPersistApiKeysEnabled(), true);
+    assert.doesNotThrow(() => {
+      SecureStorage.setApiKey('openai', 'some-key');
+    });
+  });
+
+  it('setModel does not throw when localStorage.setItem throws', () => {
+    const { SecureStorage } = createSecureStorageContext({
+      localThrowsOnSetItem: true
+    });
+
+    assert.doesNotThrow(() => {
+      SecureStorage.setModel('gemini', 'gemini-pro');
+    });
+  });
+
+  it('setOption does not throw when localStorage.setItem throws, and getOption falls back to the default', () => {
+    const { SecureStorage } = createSecureStorageContext({
+      localThrowsOnSetItem: true
+    });
+
+    assert.doesNotThrow(() => {
+      SecureStorage.setOption('costLimit', 500);
+    });
+    assert.equal(SecureStorage.getOption('costLimit', 100), 100);
   });
 });

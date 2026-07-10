@@ -55,6 +55,14 @@
 - 一般的な問題: [GitHub Issues](https://github.com/gatyoukatyou/ai-meeting-assistant/issues)
 - 深刻な脆弱性: [Security Advisories](https://github.com/gatyoukatyou/ai-meeting-assistant/security/advisories/new)
 
+### 脅威モデル（技術的補足）
+- APIキーはWeb Storage（既定はsessionStorage、記憶ON設定時はlocalStorage）に**平文**で保存されます。暗号化は行っていません
+- 同一オリジンで実行されるスクリプト（本アプリ自身のバグやXSS）はWeb Storageを読み取れます。この対策として、厳格なCSPと一貫したエスケープ処理によりXSSの混入自体を防ぐ設計としています
+- sessionStorageは既定でタブ/ブラウザを閉じると消去され、平文データが残る期間を限定します
+- 記憶（persistApiKeys）オプションはユーザーの明示的なオプトインが必要で、対応環境（デスクトップアプリ表示モードなど）に限定してのみ有効化されます
+- WebCrypto等によるクライアントサイド暗号化は検討しましたが、復号鍵も同一オリジンのJavaScriptから参照可能である以上、アプリ自身のオリジンを起点とする攻撃（XSS等）に対しては保護効果がないため、実装を見送りました
+- Web Storageへの書き込み（`localStorage.setItem`等）はストレージ容量超過やSafariプライベートモード等で例外を投げる場合があります。本アプリはこれらの例外を捕捉し、保存に失敗してもアプリの動作は継続する設計です（データは保存されない場合があります）
+
 ---
 
 ## English
