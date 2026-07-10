@@ -5544,7 +5544,10 @@ function renderAIResponsesFromState() {
     const el = document.getElementById(`response-${type}`);
     if (!el) return;
 
-    if (!AppState.aiResponses[type] || AppState.aiResponses[type].length === 0) {
+    const hasResponse = Array.isArray(AppState.aiResponses[type]) && AppState.aiResponses[type].length > 0;
+    syncAIResponseActionState(type, hasResponse);
+
+    if (!hasResponse) {
       el.removeAttribute('data-selection-content');
       el.textContent = t('app.aiResponse.placeholder');
       return;
@@ -5564,7 +5567,10 @@ function renderAIResponsesFromState() {
   // minutes: textContentのみ
   const minutesEl = document.getElementById('response-minutes');
   if (minutesEl) {
-    if (AppState.aiResponses.minutes) {
+    const hasMinutes = Boolean(AppState.aiResponses.minutes);
+    syncAIResponseActionState('minutes', hasMinutes);
+
+    if (hasMinutes) {
       minutesEl.textContent = AppState.aiResponses.minutes;
       minutesEl.setAttribute('data-selection-content', 'true');
     } else {
@@ -5710,11 +5716,8 @@ async function restoreFromHistory(recordId) {
     titleInput.value = record.title;
   }
 
-  // 議事録ボタン有効化（録音停止状態として扱う）
-  const minutesBtn = document.getElementById('minutesBtn');
-  if (minutesBtn) {
-    minutesBtn.disabled = false;
-  }
+  // 文字起こし復元後は全ての議事録生成ボタンを同期
+  syncMinutesButtonState();
 
   // 復元元ID保持（上書き保存用）
   AppState.restoredHistoryId = record.id;
@@ -5868,11 +5871,8 @@ async function importFromMarkdown(file) {
       titleInput.value = parsed.title;
     }
 
-    // 議事録ボタン有効化
-    const minutesBtn = document.getElementById('minutesBtn');
-    if (minutesBtn && (AppState.transcriptChunks.length > 0 || parsed.aiResponses.minutes)) {
-      minutesBtn.disabled = false;
-    }
+    // 読み込んだ文字起こしから議事録を生成・再生成できるよう全ボタンを同期
+    syncMinutesButtonState();
 
     // インポートセッションはrestoredHistoryIdをリセット（新規保存される）
     AppState.restoredHistoryId = null;
@@ -7458,22 +7458,29 @@ function updateMeetingModeBodyClass() {
 // PR-3: Sync Minutes Button State
 // =====================================
 function syncMinutesButtonState() {
-  // 録音中は議事録ボタン無効、停止後に有効
-  const disabled = AppState.isRecording;
+  const hasTranscript = getFilteredTranscriptText().trim().length > 0;
+  const disabled = AppState.isRecording || !hasTranscript;
+  const title = AppState.isRecording
+    ? t('app.recording.minutesTooltipDisabled')
+    : hasTranscript
+      ? t('app.recording.minutesTooltipReady')
+      : t('app.recording.noTranscript');
   const buttons = [
     document.getElementById('quickMinutesBtn'),
     document.getElementById('tabMinutesBtn'),
     document.getElementById('minutesBtn')
   ];
   buttons.forEach(btn => {
-    if (btn) btn.disabled = disabled;
+    if (!btn) return;
+    btn.disabled = disabled;
+    btn.title = title;
   });
 }
 
 // =====================================
 // PR-3: Empty State & Regenerate Button Management
 // =====================================
-function hideEmptyState(type) {
+function syncAIResponseActionState(type, hasResponse) {
   const emptyStateMap = {
     'summary': 'emptySummary',
     'consult': 'emptyConsult',
@@ -7485,17 +7492,15 @@ function hideEmptyState(type) {
     'minutes': 'regenerateMinutesBtn'
   };
 
-  const emptyId = emptyStateMap[type];
-  const regenId = regenerateMap[type];
+  const emptyEl = document.getElementById(emptyStateMap[type]);
+  if (emptyEl) emptyEl.style.display = hasResponse ? 'none' : '';
 
-  if (emptyId) {
-    const el = document.getElementById(emptyId);
-    if (el) el.style.display = 'none';
-  }
-  if (regenId) {
-    const btn = document.getElementById(regenId);
-    if (btn) btn.style.display = 'block';
-  }
+  const regenerateBtn = document.getElementById(regenerateMap[type]);
+  if (regenerateBtn) regenerateBtn.style.display = hasResponse ? 'block' : 'none';
+}
+
+function hideEmptyState(type) {
+  syncAIResponseActionState(type, true);
 }
 
 function initRegenerateButtons() {
