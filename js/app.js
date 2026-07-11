@@ -37,6 +37,9 @@ let isMeetingMode = false;
 let recordingStartTime = null;
 let meetingModeTimerId = null;
 
+// 最大録音時間の自動停止（切り忘れによるSTT課金の垂れ流し防止）
+let recordingLimitTimerId = null;
+
 const MEETING_TITLE_STORE = (typeof MeetingTitleStore !== 'undefined') ? MeetingTitleStore : null;
 const MEETING_CONTEXT_STORE = (typeof MeetingContextStore !== 'undefined') ? MeetingContextStore : null;
 
@@ -208,6 +211,8 @@ const AppState = {
   set recordingStartTime(value) { recordingStartTime = value; },
   get meetingModeTimerId() { return meetingModeTimerId; },
   set meetingModeTimerId(value) { meetingModeTimerId = value; },
+  get recordingLimitTimerId() { return recordingLimitTimerId; },
+  set recordingLimitTimerId(value) { recordingLimitTimerId = value; },
   get aiWorkOrderModules() { return aiWorkOrderModules; },
   set aiWorkOrderModules(value) { aiWorkOrderModules = value; },
   get meetingContext() { return meetingContext; },
@@ -1801,6 +1806,9 @@ async function startRecording() {
     // 録音モニターを開始（Issue #18: スマホでの録音中断対策）
     startRecordingMonitor();
 
+    // 最大録音時間の監視を開始（切り忘れ防止）
+    startRecordingLimitWatch();
+
     const providerName = getProviderDisplayName(provider);
     showToast(t('toast.recording.started', { provider: providerName }), 'success');
 
@@ -2245,6 +2253,7 @@ async function cleanupRecording() {
     console.log('[Cleanup] Interval cleared');
   }
   clearRecorderRestartTimeout();
+  stopRecordingLimitWatch();
 
   // 4. PCMストリームを停止
   if (AppState.pcmStreamProcessor) {
@@ -2556,6 +2565,49 @@ function startRecordingMonitor() {
   });
 
   console.log('[Monitor] Recording monitor started');
+}
+
+/**
+ * 最大録音時間の監視を開始
+ * 切り忘れによるSTT課金の垂れ流しを防ぐため、設定した上限（既定120分、0で無制限）
+ * に達したら録音を安全停止する。一時停止中の時間は上限にカウントしない。
+ */
+function startRecordingLimitWatch() {
+  stopRecordingLimitWatch();
+  if (!window.RecordingDurationLimitService) {
+    console.warn('[RecordingLimit] RecordingDurationLimitService not available');
+    return;
+  }
+  const maxMinutes = RecordingDurationLimitService.normalizeMaxMinutes(
+    SecureStorage.getOption('maxRecordingMinutes', RecordingDurationLimitService.DEFAULT_MAX_RECORDING_MINUTES)
+  );
+  if (!RecordingDurationLimitService.isLimitEnabled(maxMinutes)) {
+    console.log('[RecordingLimit] Limit disabled (unlimited)');
+    return;
+  }
+
+  AppState.recordingLimitTimerId = setInterval(() => {
+    if (!AppState.isRecording || AppState.isStopping) return;
+    if (!RecordingDurationLimitService.shouldAutoStop(getActiveDurationMs(), maxMinutes)) return;
+
+    stopRecordingLimitWatch();
+    console.log(`[RecordingLimit] Max recording duration reached (${maxMinutes} min) - stopping safely`);
+    showToast(t('toast.recording.autoStopped', { minutes: maxMinutes }), 'warning');
+    stopRecording().catch((e) => {
+      console.error('[RecordingLimit] Auto stop failed:', e);
+    });
+  }, RecordingDurationLimitService.CHECK_INTERVAL_MS);
+  console.log(`[RecordingLimit] Watching (limit: ${maxMinutes} min)`);
+}
+
+/**
+ * 最大録音時間の監視を停止
+ */
+function stopRecordingLimitWatch() {
+  if (AppState.recordingLimitTimerId) {
+    clearInterval(AppState.recordingLimitTimerId);
+    AppState.recordingLimitTimerId = null;
+  }
 }
 
 /**

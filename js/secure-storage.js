@@ -139,6 +139,7 @@ const SecureStorage = {
         persistApiKeys: this.getOption('persistApiKeys', false),
         costAlertEnabled: this.getOption('costAlertEnabled', true),
         costLimit: this.getOption('costLimit', 100),
+        maxRecordingMinutes: this.getOption('maxRecordingMinutes', 120),
         llmPriority: this.getOption('llmPriority', 'auto'),
         sttProvider: this.getOption('sttProvider', 'openai_stt'),
         sttUserDictionary: this.getOption('sttUserDictionary', ''),
@@ -183,6 +184,11 @@ const SecureStorage = {
         this.setOption('clearOnClose', data.options.clearOnClose || false);
         this.setOption('costAlertEnabled', data.options.costAlertEnabled !== undefined ? data.options.costAlertEnabled : true);
         this.setOption('costLimit', data.options.costLimit || 100);
+        // 0 = 無制限を許容するため || ではなく明示的に検証する
+        var maxRecordingMinutes = Number(data.options.maxRecordingMinutes);
+        if (Number.isFinite(maxRecordingMinutes) && maxRecordingMinutes >= 0) {
+          this.setOption('maxRecordingMinutes', Math.floor(maxRecordingMinutes));
+        }
         // llmPriority旧値マイグレーション: openai → openai_llm
         var llmPriority = data.options.llmPriority || 'auto';
         if (llmPriority === 'openai') llmPriority = 'openai_llm';
@@ -214,6 +220,7 @@ const SecureStorage = {
     localStorage.removeItem('_opt_persistApiKeys');
     localStorage.removeItem('_opt_costAlertEnabled');
     localStorage.removeItem('_opt_costLimit');
+    localStorage.removeItem('_opt_maxRecordingMinutes');
     localStorage.removeItem('_opt_llmPriority');
     localStorage.removeItem('_opt_sttProvider');
     localStorage.removeItem('_opt_sttUserDictionary');

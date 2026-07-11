@@ -283,6 +283,10 @@
       "costLimit": "1セッションの上限金額（円）",
       "costLimitPlaceholder": "例: 100",
       "costAlertEnabled": "上限の80%で警告を表示",
+      "recordingLimitTitle": "録音時間の上限",
+      "maxRecordingMinutes": "最大録音時間（分）",
+      "maxRecordingMinutesPlaceholder": "例: 120",
+      "maxRecordingMinutesHint": "切り忘れによる文字起こしの垂れ流しを防ぐため、設定時間に達すると録音を自動停止します。0で無制限。",
       "enhancedContextTitle": "強化コンテキスト",
       "enhancedContextEnabled": "ファイル添付による会議資料の提供を有効化",
       "enhancedContextHint": "有効にすると、TXT/MD/PDF/DOCX/CSVファイルを添付してAIに追加の会議資料を提供できます。"
@@ -330,6 +334,7 @@
       "paused": "録音を一時停止しました",
       "resumed": "録音を再開しました",
       "stopped": "録音を停止しました",
+      "autoStopped": "最大録音時間（{minutes}分）に達したため、録音を自動停止しました",
       "interrupted": "録音が中断されました。ここまでの内容は保存されています。録音ボタンで再開できます"
     },
     "copy": {

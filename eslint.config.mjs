@@ -45,6 +45,7 @@ export default [
         HistoryBackupService: 'readonly',
         HistoryListService: 'readonly',
         DiagnosticsService: 'readonly',
+        RecordingDurationLimitService: 'readonly',
         STTProviders: 'writable',
         PCMStreamProcessor: 'writable',
         DeepgramWSProvider: 'writable',
