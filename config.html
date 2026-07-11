@@ -318,6 +318,17 @@
         </div>
       </div>
 
+      <div class="security-options accent-blue">
+        <div class="security-options-title">⏱️ <span data-i18n="config.options.recordingLimitTitle">Recording Limit</span></div>
+        <div class="setting-group" style="margin-bottom: 0.5rem;">
+          <label class="setting-label" style="font-size: 0.8rem;" data-i18n="config.options.maxRecordingMinutes">Max recording duration (minutes)</label>
+          <input type="number" class="setting-input" id="maxRecordingMinutes" data-i18n-placeholder="config.options.maxRecordingMinutesPlaceholder" placeholder="e.g. 120" value="120" min="0" step="10" style="max-width: 150px;">
+        </div>
+        <div class="setting-hint" data-i18n="config.options.maxRecordingMinutesHint">
+          Recording stops automatically after this duration to prevent leaving transcription running. Set 0 for unlimited.
+        </div>
+      </div>
+
       <div class="security-options accent-green">
         <div class="security-options-title">📎 <span data-i18n="config.options.enhancedContextTitle">Enhanced Context</span></div>
         <div class="checkbox-group">

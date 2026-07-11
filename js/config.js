@@ -338,6 +338,10 @@ function loadSavedSettings() {
   }
   document.getElementById('costAlertEnabled').checked = SecureStorage.getOption('costAlertEnabled', true);
   document.getElementById('costLimit').value = SecureStorage.getOption('costLimit', 100);
+  const maxRecordingMinutesEl = document.getElementById('maxRecordingMinutes');
+  if (maxRecordingMinutesEl) {
+    maxRecordingMinutesEl.value = SecureStorage.getOption('maxRecordingMinutes', 120);
+  }
   document.getElementById('llmPriority').value = SecureStorage.getOption('llmPriority', 'auto');
 
   // 強化コンテキストオプション
@@ -414,6 +418,12 @@ async function saveSettings() {
   }
   SecureStorage.setOption('costAlertEnabled', document.getElementById('costAlertEnabled').checked);
   SecureStorage.setOption('costLimit', parseInt(document.getElementById('costLimit').value) || 100);
+  const maxRecordingMinutesEl = document.getElementById('maxRecordingMinutes');
+  if (maxRecordingMinutesEl) {
+    // 0 = 無制限を許容するため || ではなく明示的に検証する
+    const rawMaxMinutes = parseInt(maxRecordingMinutesEl.value, 10);
+    SecureStorage.setOption('maxRecordingMinutes', Number.isFinite(rawMaxMinutes) && rawMaxMinutes >= 0 ? rawMaxMinutes : 120);
+  }
   SecureStorage.setOption('llmPriority', document.getElementById('llmPriority').value);
 
   // 強化コンテキストオプションを保存

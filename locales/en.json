@@ -283,6 +283,10 @@
       "costLimit": "Session cost limit (JPY)",
       "costLimitPlaceholder": "e.g. 100",
       "costAlertEnabled": "Show warning at 80% of limit",
+      "recordingLimitTitle": "Recording Limit",
+      "maxRecordingMinutes": "Max recording duration (minutes)",
+      "maxRecordingMinutesPlaceholder": "e.g. 120",
+      "maxRecordingMinutesHint": "Recording stops automatically after this duration to prevent leaving transcription running. Set 0 for unlimited.",
       "enhancedContextTitle": "Enhanced Context",
       "enhancedContextEnabled": "Enable file attachments for meeting context",
       "enhancedContextHint": "When enabled, you can attach TXT/MD/PDF/DOCX/CSV files to provide additional meeting materials to AI."
@@ -330,6 +334,7 @@
       "paused": "Recording paused",
       "resumed": "Recording resumed",
       "stopped": "Recording stopped",
+      "autoStopped": "Recording stopped automatically after reaching the {minutes}-minute limit",
       "interrupted": "Recording interrupted. Content saved. Press record button to continue"
     },
     "copy": {
