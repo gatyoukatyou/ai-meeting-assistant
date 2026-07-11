@@ -27,6 +27,9 @@ function createSecureStorageContext({
   isStandalone = false,
   isWindowControlsOverlay = false,
   userAgent = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)',
+  // iOS Safariのみ存在するプロパティ。ホーム画面Web Appで true、通常タブで false、
+  // iOS以外では undefined（= プロパティ自体なし）を再現する
+  iosNavigatorStandalone = undefined,
   localData = {},
   sessionData = {},
   localThrowsOnSetItem = false,
@@ -46,6 +49,9 @@ function createSecureStorageContext({
     }
   };
   const navigator = { userAgent };
+  if (iosNavigatorStandalone !== undefined) {
+    navigator.standalone = iosNavigatorStandalone;
+  }
 
   const { SecureStorage } = loadScript('js/secure-storage.js', {
     window,
@@ -82,6 +88,32 @@ describe('SecureStorage persistApiKeys policy', () => {
 
     assert.equal(localStorage.getItem('_ak_deepgram'), 'persisted-key');
     assert.equal(sessionStorage.getItem('_ak_deepgram'), null);
+  });
+
+  it('supports persistence in an iOS home-screen web app even when display-mode does not match', () => {
+    // iPhone XR / iOS 18.7 実機: display-mode: standalone に一致しないが navigator.standalone は true
+    const { SecureStorage, localStorage, sessionStorage } = createSecureStorageContext({
+      isStandalone: false,
+      iosNavigatorStandalone: true,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_9 like Mac OS X)'
+    });
+
+    assert.equal(SecureStorage.isPersistentApiKeysSupported(), true);
+
+    SecureStorage.setPersistApiKeys(true);
+    SecureStorage.setApiKey('deepgram', 'persisted-key');
+
+    assert.equal(localStorage.getItem('_ak_deepgram'), 'persisted-key');
+    assert.equal(sessionStorage.getItem('_ak_deepgram'), null);
+  });
+
+  it('does not support persistence in an iOS Safari browser tab', () => {
+    const { SecureStorage } = createSecureStorageContext({
+      iosNavigatorStandalone: false,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_9 like Mac OS X)'
+    });
+
+    assert.equal(SecureStorage.isPersistentApiKeysSupported(), false);
   });
 
   it('does not support persistence in a mobile browser tab', () => {
