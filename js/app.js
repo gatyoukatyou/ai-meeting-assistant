@@ -1,8 +1,6 @@
 // =====================================
 // グローバル変数
 // =====================================
-let isRecording = false;
-let isPaused = false;
 let pausedTotalMs = 0;
 let pauseStartedAt = null;
 let mediaRecorder = null;
@@ -20,7 +18,6 @@ const TRANSCRIPT_RENDER_CAP = 200;
 let transcriptRenderPending = false;
 
 // 停止時のレース防止用
-let isStopping = false;
 let finalStopPromise = null;
 let finalStopResolve = null;
 let recorderStopReason = null;
@@ -39,6 +36,8 @@ let meetingModeTimerId = null;
 
 // 最大録音時間の自動停止（切り忘れによるSTT課金の垂れ流し防止）
 let recordingLimitTimerId = null;
+
+const recorderLifecycle = RecorderLifecycleService.create();
 
 const MEETING_TITLE_STORE = (typeof MeetingTitleStore !== 'undefined') ? MeetingTitleStore : null;
 const MEETING_CONTEXT_STORE = (typeof MeetingContextStore !== 'undefined') ? MeetingContextStore : null;
@@ -159,10 +158,9 @@ let transcriptionQueueOverflow = TranscriptionQueueOverflowService.createInitial
 
 // App-wide state aggregate (Issue #131)
 const AppState = {
-  get isRecording() { return isRecording; },
-  set isRecording(value) { isRecording = value; },
-  get isPaused() { return isPaused; },
-  set isPaused(value) { isPaused = value; },
+  get recorderLifecycleState() { return recorderLifecycle.getState(); },
+  get isRecording() { return recorderLifecycle.isRecording(); },
+  get isPaused() { return recorderLifecycle.isPaused(); },
   get pausedTotalMs() { return pausedTotalMs; },
   set pausedTotalMs(value) { pausedTotalMs = value; },
   get pauseStartedAt() { return pauseStartedAt; },
@@ -183,8 +181,7 @@ const AppState = {
   set meetingStartMarkerId(value) { meetingStartMarkerId = value; },
   get transcriptRenderPending() { return transcriptRenderPending; },
   set transcriptRenderPending(value) { transcriptRenderPending = value; },
-  get isStopping() { return isStopping; },
-  set isStopping(value) { isStopping = value; },
+  get isStopping() { return recorderLifecycle.isStopping(); },
   get finalStopPromise() { return finalStopPromise; },
   set finalStopPromise(value) { finalStopPromise = value; },
   get finalStopResolve() { return finalStopResolve; },
@@ -1776,7 +1773,6 @@ async function startRecording() {
     return;
   }
 
-  AppState.isPaused = false;
   AppState.pausedTotalMs = 0;
   AppState.pauseStartedAt = null;
   AppState.recorderStopReason = null;
@@ -1786,6 +1782,7 @@ async function startRecording() {
 
   // 一時取得したストリームをcurrentAudioStreamに引き継ぐ
   AppState.currentAudioStream = tempAudioStream;
+  recorderLifecycle.transition(RecorderLifecycleService.EVENTS.PREPARE);
 
   try {
     // プロバイダータイプに応じて録音を開始
@@ -1795,7 +1792,7 @@ async function startRecording() {
       await startChunkedRecording(provider);
     }
 
-    AppState.isRecording = true;
+    recorderLifecycle.transition(RecorderLifecycleService.EVENTS.START);
     updateUI();
     syncMinutesButtonState(); // PR-3: 議事録ボタン無効化
     beginActiveMeetingDraft();
@@ -2240,10 +2237,9 @@ async function cleanupRecording() {
   stopRecordingMonitor();
 
   // 1. 停止フラグをオンにする（onstopで最終blobを処理するため）
-  AppState.isStopping = true;
+  recorderLifecycle.transition(RecorderLifecycleService.EVENTS.STOP);
 
-  // 2. 録音フラグをオフにして新しいblobの生成を止める
-  AppState.isRecording = false;
+  // 2. stopping状態にして新しいblobの生成を止める
   syncMinutesButtonState(); // PR-3: 議事録ボタン有効化
 
   // 3. インターバルをクリア（stop→restart の繰り返しを止める）
@@ -2295,7 +2291,7 @@ async function cleanupRecording() {
 
   // 9. MediaRecorderの参照破棄は最後
   AppState.mediaRecorder = null;
-  AppState.isStopping = false;
+  recorderLifecycle.transition(RecorderLifecycleService.EVENTS.FINISH);
   AppState.recorderStopReason = null;
   AppState.activeProviderId = null;
 
@@ -2398,7 +2394,10 @@ async function stopRecording() {
     AppState.pausedTotalMs += Date.now() - AppState.pauseStartedAt;
     AppState.pauseStartedAt = null;
   }
-  AppState.isPaused = false;
+  if (AppState.isPaused) {
+    // 既存どおり、停止処理に入る前に一時停止状態を解除する。
+    recorderLifecycle.transition(RecorderLifecycleService.EVENTS.RESUME);
+  }
   AppState.recorderStopReason = 'stop';
   clearRecorderRestartTimeout();
 
@@ -2427,7 +2426,7 @@ async function pauseRecording() {
   console.log('=== pauseRecording ===');
   if (!AppState.isRecording || AppState.isPaused) return;
 
-  AppState.isPaused = true;
+  recorderLifecycle.transition(RecorderLifecycleService.EVENTS.PAUSE);
   AppState.pauseStartedAt = Date.now();
   AppState.recorderStopReason = 'pause';
   clearRecorderRestartTimeout();
@@ -2471,7 +2470,7 @@ async function resumeRecording() {
     AppState.pausedTotalMs += resumedAt - AppState.pauseStartedAt;
   }
   AppState.pauseStartedAt = null;
-  AppState.isPaused = false;
+  recorderLifecycle.transition(RecorderLifecycleService.EVENTS.RESUME);
   AppState.recorderStopReason = null;
 
   try {
@@ -2491,7 +2490,7 @@ async function resumeRecording() {
     }
   } catch (e) {
     console.error('[Resume] Failed:', e);
-    AppState.isPaused = true;
+    recorderLifecycle.transition(RecorderLifecycleService.EVENTS.PAUSE);
     AppState.pauseStartedAt = Date.now();
     updateUI();
     showToast(t('error.recording', { message: e.message }), 'error');
