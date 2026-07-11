@@ -188,8 +188,8 @@
     "closeTabHint": "ブラウザの制限により自動で閉じられませんでした。手動でタブを閉じてください。",
     "security": {
       "title": "APIキーのセキュリティ",
-      "description": "APIキーは既定でセッション内のみ保持され、タブ/ブラウザを閉じると消えます。デスクトップアプリでは任意で記憶を有効化できます。外部サーバーには一切送信されません。",
-      "encrypted": "既定はセッション保持（デスクトップアプリのみ任意で記憶可）",
+      "description": "APIキーは既定でセッション内のみ保持され、タブ/ブラウザを閉じると消えます。インストールしたアプリでは任意で記憶を有効化できます。外部サーバーには一切送信されません。",
+      "encrypted": "既定はセッション保持（インストールしたアプリのみ任意で記憶可）",
       "httpsOnly": "API呼び出し時のみHTTPS経由で送信",
       "isolated": "他のWebサイトからはアクセス不可",
       "exportable": "設定のエクスポート/インポート対応（APIキー除外）",
@@ -199,8 +199,8 @@
     "storage": {
       "persistLabel": "APIキーはセッション限定（ブラウザ版では保持不可）",
       "persistWarning": "タブ/ブラウザを閉じると消えます。エクスポートにAPIキーは含まれません。",
-      "persistLabelEnabled": "このデスクトップアプリでAPIキーを記憶する（非推奨）",
-      "persistWarningEnabled": "APIキーはこの端末のlocalStorageに保存されます。共有端末ではOFFを推奨します。エクスポートにAPIキーは含まれません。"
+      "persistLabelEnabled": "このアプリでAPIキーを記憶する（非推奨）",
+      "persistWarningEnabled": "APIキーはこの端末のlocalStorageに平文で保存されます。共有端末ではOFFにしてください。端末の紛失・盗難時に漏洩する可能性があります。エクスポートにAPIキーは含まれません。"
     },
     "stt": {
       "clickToExpand": "クリックで設定を展開",

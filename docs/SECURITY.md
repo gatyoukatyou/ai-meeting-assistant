@@ -1,6 +1,6 @@
 # セキュリティ / Security
 
-最終更新日 / Last Updated: 2026-02-10
+最終更新日 / Last Updated: 2026-07-11
 
 ---
 
@@ -31,7 +31,8 @@
 
 ### APIキーの扱い
 - APIキーは既定でセッション内のみ保持され、タブ/ブラウザを閉じると消えます
-- デスクトップアプリ（Chrome/Edgeアプリ）のみ、設定で任意に端末保存を有効化できます（非推奨）
+- インストールしたアプリ表示（ホーム画面に追加したモバイルPWA、Chrome/Edgeデスクトップアプリ）のみ、設定で任意に端末保存を有効化できます（非推奨）
+- 記憶を有効にするとAPIキーは端末のlocalStorageに平文で残ります。共有端末では使用せず、端末の紛失・盗難に備えて画面ロックを有効にしてください
 - 開発者のサーバーに送信されることはありません
 - HTTPS通信のみを使用します
 
@@ -59,7 +60,7 @@
 - APIキーはWeb Storage（既定はsessionStorage、記憶ON設定時はlocalStorage）に**平文**で保存されます。暗号化は行っていません
 - 同一オリジンで実行されるスクリプト（本アプリ自身のバグやXSS）はWeb Storageを読み取れます。この対策として、厳格なCSPと一貫したエスケープ処理によりXSSの混入自体を防ぐ設計としています
 - sessionStorageは既定でタブ/ブラウザを閉じると消去され、平文データが残る期間を限定します
-- 記憶（persistApiKeys）オプションはユーザーの明示的なオプトインが必要で、対応環境（デスクトップアプリ表示モードなど）に限定してのみ有効化されます
+- 記憶（persistApiKeys）オプションはユーザーの明示的なオプトインが必要で、対応環境（ホーム画面に追加したモバイルPWAまたはデスクトップアプリ表示モード）に限定してのみ有効化されます。モバイルの通常ブラウザタブでは有効化できません
 - WebCrypto等によるクライアントサイド暗号化は検討しましたが、復号鍵も同一オリジンのJavaScriptから参照可能である以上、アプリ自身のオリジンを起点とする攻撃（XSS等）に対しては保護効果がないため、実装を見送りました
 - Web Storageへの書き込み（`localStorage.setItem`等）はストレージ容量超過やSafariプライベートモード等で例外を投げる場合があります。本アプリはこれらの例外を捕捉し、保存に失敗してもアプリの動作は継続する設計です（データは保存されない場合があります）
 
@@ -92,7 +93,8 @@ The Application is designed to minimize security risks.
 
 ### Handling of API Keys
 - API keys are session-only by default and cleared when the tab/browser closes
-- Desktop app mode (Chrome/Edge app) can optionally persist API keys on device via explicit user opt-in (not recommended)
+- Installed app mode (a mobile PWA added to the home screen or a Chrome/Edge desktop app) can optionally persist API keys on device via explicit user opt-in (not recommended)
+- Persisted API keys remain unencrypted in localStorage. Do not enable this on shared devices, and use a device screen lock to reduce the risk from loss or theft
 - They are never transmitted to developer-controlled servers
 - All communication uses HTTPS
 

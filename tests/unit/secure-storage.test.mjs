@@ -69,16 +69,51 @@ describe('SecureStorage persistApiKeys policy', () => {
     assert.equal(localStorage.getItem('_ak_openai'), null);
   });
 
-  it('stores keys in localStorage when persistApiKeys is enabled in desktop app mode', () => {
+  it('supports persistence in a mobile standalone PWA', () => {
     const { SecureStorage, localStorage, sessionStorage } = createSecureStorageContext({
-      isStandalone: true
+      isStandalone: true,
+      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7_9 like Mac OS X)'
     });
+
+    assert.equal(SecureStorage.isPersistentApiKeysSupported(), true);
+
+    SecureStorage.setPersistApiKeys(true);
+    SecureStorage.setApiKey('deepgram', 'persisted-key');
+
+    assert.equal(localStorage.getItem('_ak_deepgram'), 'persisted-key');
+    assert.equal(sessionStorage.getItem('_ak_deepgram'), null);
+  });
+
+  it('does not support persistence in a mobile browser tab', () => {
+    const { SecureStorage } = createSecureStorageContext({
+      userAgent: 'Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36'
+    });
+
+    assert.equal(SecureStorage.isPersistentApiKeysSupported(), false);
+  });
+
+  it('keeps desktop standalone persistence behavior unchanged', () => {
+    const { SecureStorage, localStorage, sessionStorage } = createSecureStorageContext({
+      isStandalone: true,
+      userAgent: 'Mozilla/5.0 (Macintosh; Intel Mac OS X 14_0)'
+    });
+
+    assert.equal(SecureStorage.isPersistentApiKeysSupported(), true);
 
     SecureStorage.setPersistApiKeys(true);
     SecureStorage.setApiKey('openai', 'persisted-key');
 
     assert.equal(localStorage.getItem('_ak_openai'), 'persisted-key');
     assert.equal(sessionStorage.getItem('_ak_openai'), null);
+  });
+
+  it('keeps desktop window-controls-overlay persistence behavior unchanged', () => {
+    const { SecureStorage } = createSecureStorageContext({
+      isWindowControlsOverlay: true,
+      userAgent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
+    });
+
+    assert.equal(SecureStorage.isPersistentApiKeysSupported(), true);
   });
 
   it('keeps preference but disables effective persistApiKeys on non-standalone browser tabs', () => {
@@ -102,24 +137,17 @@ describe('SecureStorage persistApiKeys policy', () => {
     assert.equal(SecureStorage.getApiKey('openai'), '');
   });
 
-  it('rejects persistent key mode on mobile user agents', () => {
-    const { SecureStorage } = createSecureStorageContext({
-      isStandalone: true,
-      userAgent: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'
-    });
-
-    assert.equal(SecureStorage.isPersistentApiKeysSupported(), false);
-  });
-
   it('includes persistApiKeys option in export payload', () => {
     const { SecureStorage } = createSecureStorageContext({
       isStandalone: true
     });
 
     SecureStorage.setPersistApiKeys(true);
+    SecureStorage.setApiKey('deepgram', 'must-not-be-exported');
     const exported = SecureStorage.exportAll();
 
     assert.equal(exported.options.persistApiKeys, true);
+    assert.equal(JSON.stringify(exported).includes('must-not-be-exported'), false);
   });
 });
 
