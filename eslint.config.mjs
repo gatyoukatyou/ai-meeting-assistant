@@ -40,6 +40,7 @@ export default [
         LLMClientService: 'readonly',
         MeetingContextService: 'readonly',
         TranscriptionQueueOverflowService: 'readonly',
+        RecorderLifecycleService: 'readonly',
         FetchRetryService: 'readonly',
         ExportService: 'readonly',
         HistoryBackupService: 'readonly',
