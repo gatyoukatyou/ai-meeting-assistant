@@ -188,8 +188,8 @@
     "closeTabHint": "Could not close automatically due to browser restrictions. Please close this tab manually.",
     "security": {
       "title": "API Key Security",
-      "description": "API keys are session-only by default and are cleared when the tab/browser closes. Desktop app mode can optionally remember keys. They are never sent to external servers.",
-      "encrypted": "Default: session-only storage (desktop app can optionally persist)",
+      "description": "API keys are session-only by default and are cleared when the tab/browser closes. Installed app mode can optionally remember keys. They are never sent to external servers.",
+      "encrypted": "Default: session-only storage (installed app mode can optionally persist)",
       "httpsOnly": "Only sent via HTTPS during API calls",
       "isolated": "Inaccessible from other websites",
       "exportable": "Import/export settings supported (API keys excluded)",
@@ -199,8 +199,8 @@
     "storage": {
       "persistLabel": "API keys are session-only (cannot be persisted in browser mode)",
       "persistWarning": "Keys are cleared when the tab/browser closes. Export does not include API keys.",
-      "persistLabelEnabled": "Remember API keys on this desktop app (not recommended)",
-      "persistWarningEnabled": "API keys are saved to localStorage on this device. Keep this OFF on shared devices. Export does not include API keys."
+      "persistLabelEnabled": "Remember API keys in this app (not recommended)",
+      "persistWarningEnabled": "API keys are stored unencrypted in localStorage on this device. Keep this OFF on shared devices. Keys may be exposed if the device is lost or stolen. Export does not include API keys."
     },
     "stt": {
       "clickToExpand": "Click to expand settings",

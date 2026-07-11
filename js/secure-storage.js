@@ -28,9 +28,6 @@ const SecureStorage = {
   isPersistentApiKeysSupported: function() {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
     if (typeof window.matchMedia !== 'function') return false;
-    const userAgent = navigator.userAgent || '';
-    const isMobile = /Android|iPhone|iPad|iPod/i.test(userAgent);
-    if (isMobile) return false;
     return (
       window.matchMedia('(display-mode: standalone)').matches ||
       window.matchMedia('(display-mode: window-controls-overlay)').matches
