@@ -27,6 +27,10 @@ const SecureStorage = {
 
   isPersistentApiKeysSupported: function() {
     if (typeof window === 'undefined' || typeof navigator === 'undefined') return false;
+    // iOSのホーム画面Web Appは display-mode メディアクエリに一致しない場合がある
+    // （iPhone XR / iOS 18.7 実機で確認）。iOS標準の navigator.standalone を先に見る。
+    // Safariの通常タブでは false、iOS以外では undefined になるため誤判定しない。
+    if (navigator.standalone === true) return true;
     if (typeof window.matchMedia !== 'function') return false;
     return (
       window.matchMedia('(display-mode: standalone)').matches ||
