@@ -123,4 +123,51 @@ describe('RecorderLifecycleService', () => {
     assert.equal(warnings.length, 1);
     assert.match(warnings[0], /Rejected transition/);
   });
+
+  it('reports a live, unmuted microphone pipeline as healthy', () => {
+    const service = loadService();
+
+    const result = service.evaluatePipelineHealth({
+      tracks: [{ readyState: 'live', muted: false }],
+      audioContextState: 'running'
+    });
+
+    assert.equal(result.healthy, true);
+    assert.deepEqual([...result.reasons], []);
+  });
+
+  it('reports missing, ended, muted, and suspended pipeline signals', () => {
+    const service = loadService();
+
+    assert.deepEqual([...service.evaluatePipelineHealth().reasons], ['missing_audio_track']);
+    assert.deepEqual(
+      [
+        ...service.evaluatePipelineHealth({
+          tracks: [{ readyState: 'ended', muted: true }],
+          audioContextState: 'suspended'
+        }).reasons
+      ],
+      ['audio_track_ended', 'audio_track_muted', 'audio_context_suspended']
+    );
+  });
+
+  it('suspends only for confirmed interruption reasons', () => {
+    const service = loadService();
+
+    assert.equal(service.shouldSuspendForInterruption('stream_ended'), true);
+    assert.equal(
+      service.shouldSuspendForInterruption('audiocontext_suspended', {
+        audioContextResumed: false
+      }),
+      true
+    );
+    assert.equal(
+      service.shouldSuspendForInterruption('audiocontext_suspended', {
+        audioContextResumed: true
+      }),
+      false
+    );
+    assert.equal(service.shouldSuspendForInterruption('background'), false);
+    assert.equal(service.shouldSuspendForInterruption('page_frozen'), false);
+  });
 });

@@ -63,6 +63,35 @@ const RecorderLifecycleService = (function () {
     STATES.RESUMING
   ]);
 
+  function evaluatePipelineHealth({ tracks = [], audioContextState = null } = {}) {
+    const reasons = [];
+    if (!Array.isArray(tracks) || tracks.length === 0) {
+      reasons.push('missing_audio_track');
+    } else {
+      if (tracks.some(track => track?.readyState !== 'live')) {
+        reasons.push('audio_track_ended');
+      }
+      if (tracks.some(track => track?.muted === true)) {
+        reasons.push('audio_track_muted');
+      }
+    }
+
+    if (['suspended', 'interrupted', 'closed'].includes(audioContextState)) {
+      reasons.push(`audio_context_${audioContextState}`);
+    }
+
+    return Object.freeze({
+      healthy: reasons.length === 0,
+      reasons: Object.freeze(reasons)
+    });
+  }
+
+  function shouldSuspendForInterruption(reason, { audioContextResumed = false } = {}) {
+    if (reason === 'stream_ended') return true;
+    if (reason === 'audiocontext_suspended') return audioContextResumed !== true;
+    return false;
+  }
+
   function create() {
     let state = STATES.IDLE;
     const listeners = new Set();
@@ -120,6 +149,8 @@ const RecorderLifecycleService = (function () {
   return Object.freeze({
     STATES,
     EVENTS,
+    evaluatePipelineHealth,
+    shouldSuspendForInterruption,
     create
   });
 })();
