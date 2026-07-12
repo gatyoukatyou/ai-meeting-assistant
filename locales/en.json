@@ -33,9 +33,12 @@
       "rec": "REC",
       "pause": "Pause",
       "resume": "Resume",
+      "resuming": "Resuming",
       "statusReady": "Ready",
       "statusRecording": "Recording",
       "statusPaused": "Paused",
+      "statusSuspended": "Interrupted",
+      "statusResuming": "Resuming",
       "statusConnecting": "Connecting",
       "statusReconnecting": "Reconnecting",
       "statusDisconnected": "Disconnected",
@@ -148,8 +151,10 @@
       "editMode": "Edit Mode",
       "recording": "Recording",
       "paused": "Paused",
+      "suspended": "Recording interrupted",
       "notRecording": "Not Recording",
       "focusHint": "Focus on your meeting",
+      "resumeHint": "Press the recording button to resume",
       "startRecordingHint": "Start recording to capture audio",
       "returnButton": "Return to normal view"
     },
@@ -335,7 +340,8 @@
       "resumed": "Recording resumed",
       "stopped": "Recording stopped",
       "autoStopped": "Recording stopped automatically after reaching the {minutes}-minute limit",
-      "interrupted": "Recording interrupted. Content saved. Press record button to continue"
+      "interrupted": "Recording interrupted. Content saved. Press record button to continue",
+      "resumeFailed": "Recording could not resume and was stopped safely. Content up to the interruption was saved ({message})"
     },
     "copy": {
       "success": "Copied",

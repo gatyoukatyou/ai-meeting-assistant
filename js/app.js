@@ -38,6 +38,8 @@ let meetingModeTimerId = null;
 let recordingLimitTimerId = null;
 
 const recorderLifecycle = RecorderLifecycleService.create();
+let suspensionPromise = null;
+let resumeFromSuspensionPromise = null;
 
 const MEETING_TITLE_STORE = (typeof MeetingTitleStore !== 'undefined') ? MeetingTitleStore : null;
 const MEETING_CONTEXT_STORE = (typeof MeetingContextStore !== 'undefined') ? MeetingContextStore : null;
@@ -394,7 +396,14 @@ function clearRecorderRestartTimeout() {
 
 function getActiveDurationMs(now = Date.now()) {
   if (!AppState.recordingStartTime) return 0;
-  const effectiveNow = (AppState.isPaused && AppState.pauseStartedAt) ? AppState.pauseStartedAt : now;
+  const inactiveStates = [
+    RecorderLifecycleService.STATES.PAUSED,
+    RecorderLifecycleService.STATES.SUSPENDED,
+    RecorderLifecycleService.STATES.RESUMING
+  ];
+  const effectiveNow = (
+    inactiveStates.includes(AppState.recorderLifecycleState) && AppState.pauseStartedAt
+  ) ? AppState.pauseStartedAt : now;
   const activeMs = effectiveNow - AppState.recordingStartTime - AppState.pausedTotalMs;
   return Math.max(activeMs, 0);
 }
@@ -1549,7 +1558,11 @@ document.addEventListener('DOMContentLoaded', async function() {
   // Phase 2: フローティング停止ボタン（スマホ用）
   const floatingStopBtn = document.getElementById('floatingStopBtn');
   if (floatingStopBtn) {
-    floatingStopBtn.addEventListener('click', toggleRecording);
+    floatingStopBtn.addEventListener('click', async () => {
+      if (AppState.isRecording && !AppState.isStopping) {
+        await stopRecording();
+      }
+    });
   }
 
   // Phase 3: メインパネル切り替えタブ（スマホ用）
@@ -1728,7 +1741,11 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function toggleRecording() {
   console.log('[Record] toggleRecording called, isRecording:', AppState.isRecording);
   try {
-    if (AppState.isRecording) {
+    if (AppState.recorderLifecycleState === RecorderLifecycleService.STATES.SUSPENDED) {
+      await resumeSuspendedRecording();
+    } else if (AppState.recorderLifecycleState === RecorderLifecycleService.STATES.RESUMING) {
+      console.log('[Record] Resume already in progress');
+    } else if (AppState.isRecording) {
       await stopRecording();
     } else {
       await startRecording();
@@ -1927,6 +1944,12 @@ async function startStreamingRecording(provider) {
 
   AppState.currentSTTProvider.setOnStatusChange((status) => {
     console.log('[Streaming] Status:', status);
+    if (
+      AppState.recorderLifecycleState === RecorderLifecycleService.STATES.SUSPENDED ||
+      AppState.recorderLifecycleState === RecorderLifecycleService.STATES.RESUMING
+    ) {
+      return;
+    }
     if (AppState.isPaused && status === 'connected') {
       return;
     }
@@ -2237,7 +2260,9 @@ async function cleanupRecording() {
   stopRecordingMonitor();
 
   // 1. 停止フラグをオンにする（onstopで最終blobを処理するため）
-  recorderLifecycle.transition(RecorderLifecycleService.EVENTS.STOP);
+  if (!AppState.isStopping) {
+    recorderLifecycle.transition(RecorderLifecycleService.EVENTS.STOP);
+  }
 
   // 2. stopping状態にして新しいblobの生成を止める
   syncMinutesButtonState(); // PR-3: 議事録ボタン有効化
@@ -2344,7 +2369,13 @@ function startNewMediaRecorder() {
       AppState.audioChunks = [];
     } finally {
       // 停止処理中の場合、Promiseを解決
-      if (AppState.isStopping && AppState.finalStopResolve) {
+      if (
+        (
+          AppState.isStopping ||
+          AppState.recorderLifecycleState === RecorderLifecycleService.STATES.SUSPENDED
+        ) &&
+        AppState.finalStopResolve
+      ) {
         console.log('[onstop] Resolving finalStopPromise');
         AppState.finalStopResolve();
         AppState.finalStopResolve = null;
@@ -2387,10 +2418,31 @@ function stopAndRestartRecording() {
   }, 100);
 }
 
+async function persistStoppedRecordingHistory() {
+  await flushActiveMeetingDraftSave();
+  const historySaved = await saveHistorySnapshot();
+  if (historySaved) {
+    await clearActiveMeetingDraft();
+  } else if (
+    activeMeetingDraftService &&
+    !activeMeetingDraftService.hasRecoverableContent(buildActiveMeetingDraftPayload())
+  ) {
+    await clearActiveMeetingDraft();
+  }
+}
+
 async function stopRecording() {
   console.log('=== stopRecording ===');
 
-  if (AppState.isPaused && AppState.pauseStartedAt) {
+  if (suspensionPromise) {
+    await suspensionPromise;
+  }
+  if (resumeFromSuspensionPromise) {
+    await resumeFromSuspensionPromise;
+    if (!AppState.isRecording) return;
+  }
+
+  if (AppState.pauseStartedAt) {
     AppState.pausedTotalMs += Date.now() - AppState.pauseStartedAt;
     AppState.pauseStartedAt = null;
   }
@@ -2403,16 +2455,7 @@ async function stopRecording() {
 
   // クリーンアップ処理を呼び出し
   await cleanupRecording();
-  await flushActiveMeetingDraftSave();
-  const historySaved = await saveHistorySnapshot();
-  if (historySaved) {
-    await clearActiveMeetingDraft();
-  } else if (
-    activeMeetingDraftService &&
-    !activeMeetingDraftService.hasRecoverableContent(buildActiveMeetingDraftPayload())
-  ) {
-    await clearActiveMeetingDraft();
-  }
+  await persistStoppedRecordingHistory();
 
   AppState.activeProviderId = null;
   AppState.pausedTotalMs = 0;
@@ -2502,6 +2545,235 @@ async function resumeRecording() {
   scheduleActiveMeetingDraftSave();
 }
 
+function getRecorderPipelineHealth() {
+  const tracks = AppState.currentAudioStream && typeof AppState.currentAudioStream.getAudioTracks === 'function'
+    ? AppState.currentAudioStream.getAudioTracks()
+    : AppState.currentAudioStream && typeof AppState.currentAudioStream.getTracks === 'function'
+      ? AppState.currentAudioStream.getTracks().filter(track => track.kind === 'audio')
+      : [];
+  const audioContextState = AppState.pcmStreamProcessor?.audioContext?.state || null;
+  return RecorderLifecycleService.evaluatePipelineHealth({
+    tracks: tracks.map(track => ({
+      readyState: track.readyState,
+      muted: track.muted
+    })),
+    audioContextState
+  });
+}
+
+async function suspendRecording(reason) {
+  if (suspensionPromise) return suspensionPromise;
+
+  const suspendableStates = [
+    RecorderLifecycleService.STATES.RECORDING,
+    RecorderLifecycleService.STATES.PAUSED,
+    RecorderLifecycleService.STATES.RESUMING
+  ];
+  if (!suspendableStates.includes(AppState.recorderLifecycleState)) return false;
+  if (!recorderLifecycle.transition(RecorderLifecycleService.EVENTS.SUSPEND)) return false;
+
+  if (!AppState.pauseStartedAt) {
+    AppState.pauseStartedAt = Date.now();
+  }
+  AppState.recorderStopReason = 'suspend';
+  clearRecorderRestartTimeout();
+  stopRecordingLimitWatch();
+  if (AppState.transcriptIntervalId) {
+    clearInterval(AppState.transcriptIntervalId);
+    AppState.transcriptIntervalId = null;
+  }
+
+  stopRecordingMonitor();
+  updateUI();
+  showToast(t('toast.recording.interrupted'), 'warning');
+  scheduleActiveMeetingDraftSave();
+
+  suspensionPromise = (async () => {
+    console.log(`[Suspend] Safely stopping recording pipeline (${reason})`);
+
+    if (AppState.pcmStreamProcessor) {
+      try {
+        await AppState.pcmStreamProcessor.stop();
+      } catch (error) {
+        console.warn('[Suspend] PCM stop failed:', error);
+      }
+      AppState.pcmStreamProcessor = null;
+    }
+
+    const recorder = AppState.mediaRecorder;
+    const shouldWaitForRecorder = recorder && recorder.state !== 'inactive';
+    if (shouldWaitForRecorder) {
+      try {
+        if (typeof recorder.requestData === 'function') recorder.requestData();
+      } catch (error) {
+        console.warn('[Suspend] MediaRecorder requestData failed:', error);
+      }
+      try {
+        recorder.stop();
+        if (AppState.finalStopPromise) {
+          await AppState.finalStopPromise;
+        }
+      } catch (error) {
+        console.warn('[Suspend] MediaRecorder stop failed:', error);
+      }
+    }
+
+    await waitForQueueDrain();
+
+    if (AppState.currentSTTProvider) {
+      try {
+        await AppState.currentSTTProvider.stop();
+      } catch (error) {
+        console.warn('[Suspend] STT provider stop failed:', error);
+      }
+      AppState.currentSTTProvider = null;
+    }
+
+    if (AppState.currentAudioStream) {
+      AppState.currentAudioStream.getTracks().forEach(track => track.stop());
+      AppState.currentAudioStream = null;
+    }
+    AppState.mediaRecorder = null;
+
+    await flushActiveMeetingDraftSave();
+    updateUI();
+    console.log('[Suspend] Recording pipeline stopped; meeting data preserved');
+    return true;
+  })().catch(error => {
+    console.error('[Suspend] Partial cleanup failed:', error);
+    showToast(t('error.recording', { message: error.message }), 'error');
+    return false;
+  }).finally(() => {
+    suspensionPromise = null;
+  });
+
+  return suspensionPromise;
+}
+
+async function finalizeFailedSuspensionResume(error) {
+  console.error('[Suspend] Resume failed:', error);
+  if (!AppState.isStopping) {
+    recorderLifecycle.transition(RecorderLifecycleService.EVENTS.STOP);
+  }
+  await cleanupRecording();
+  await persistStoppedRecordingHistory();
+  AppState.pausedTotalMs = 0;
+  AppState.pauseStartedAt = null;
+  updateUI();
+  showToast(t('toast.recording.resumeFailed', { message: error.message }), 'error');
+}
+
+async function resumeSuspendedRecording() {
+  if (resumeFromSuspensionPromise) return resumeFromSuspensionPromise;
+  if (suspensionPromise) {
+    await suspensionPromise;
+  }
+  if (AppState.recorderLifecycleState !== RecorderLifecycleService.STATES.SUSPENDED) return false;
+  if (!recorderLifecycle.transition(RecorderLifecycleService.EVENTS.RESUME)) return false;
+
+  updateUI();
+  resumeFromSuspensionPromise = (async () => {
+    try {
+      AppState.currentAudioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      AppState.recorderStopReason = null;
+
+      if (STREAMING_PROVIDERS.has(AppState.activeProviderId)) {
+        await startStreamingRecording(AppState.activeProviderId);
+      } else {
+        await startChunkedRecording(AppState.activeProviderId);
+      }
+
+      if (AppState.pauseStartedAt) {
+        AppState.pausedTotalMs += Date.now() - AppState.pauseStartedAt;
+        AppState.pauseStartedAt = null;
+      }
+
+      recorderLifecycle.transition(RecorderLifecycleService.EVENTS.RESUME_COMPLETE);
+      await startWakeLock();
+      startRecordingMonitor();
+      startRecordingLimitWatch();
+      updateUI();
+      scheduleActiveMeetingDraftSave();
+      showToast(t('toast.recording.resumed'), 'success');
+      return true;
+    } catch (error) {
+      await finalizeFailedSuspensionResume(error);
+      return false;
+    }
+  })().finally(() => {
+    resumeFromSuspensionPromise = null;
+  });
+
+  return resumeFromSuspensionPromise;
+}
+
+async function handleVisibleRecordingHealthCheck() {
+  try {
+    await reacquireWakeLock();
+    const checkableStates = [
+      RecorderLifecycleService.STATES.RECORDING,
+      RecorderLifecycleService.STATES.PAUSED
+    ];
+    if (!checkableStates.includes(AppState.recorderLifecycleState)) return;
+
+    if (AppState.pcmStreamProcessor?.audioContext?.state === 'suspended') {
+      const resumed = AppState.recordingMonitor
+        ? await AppState.recordingMonitor.tryResumeAudioContext()
+        : false;
+      if (
+        RecorderLifecycleService.shouldSuspendForInterruption('audiocontext_suspended', {
+          audioContextResumed: resumed
+        })
+      ) {
+        await suspendRecording('audiocontext_resume_failed');
+        return;
+      }
+    }
+
+    let health = getRecorderPipelineHealth();
+    if (health.reasons.includes('audio_track_muted')) {
+      await new Promise(resolve => setTimeout(resolve, 250));
+      health = getRecorderPipelineHealth();
+    }
+    if (!health.healthy) {
+      console.warn('[Monitor] Unhealthy pipeline after visibility restore:', health.reasons);
+      await suspendRecording(health.reasons.join(','));
+    }
+  } catch (error) {
+    console.error('[Monitor] Visible health check failed:', error);
+    await suspendRecording('health_check_failed');
+  }
+}
+
+async function handleRecorderInterruption(reason) {
+  if (['background', 'page_frozen', 'page_unload'].includes(reason)) {
+    AppState.recordingMonitor?.requestPendingData();
+    return;
+  }
+
+  if (reason === 'audiocontext_suspended') {
+    if (document.visibilityState !== 'visible') {
+      AppState.recordingMonitor?.requestPendingData();
+      return;
+    }
+    const resumed = AppState.recordingMonitor
+      ? await AppState.recordingMonitor.tryResumeAudioContext()
+      : false;
+    if (
+      RecorderLifecycleService.shouldSuspendForInterruption(reason, {
+        audioContextResumed: resumed
+      })
+    ) {
+      await suspendRecording(reason);
+    }
+    return;
+  }
+
+  if (RecorderLifecycleService.shouldSuspendForInterruption(reason)) {
+    await suspendRecording(reason);
+  }
+}
+
 // =====================================
 // 録音モニター（Issue #18: スマホでの録音中断対策）
 // =====================================
@@ -2522,32 +2794,16 @@ function startRecordingMonitor() {
   // 中断検知時のコールバック（安全停止＋再開案内）
   AppState.recordingMonitor.onInterruption = (reason, details) => {
     console.log(`[Monitor] Interruption: ${reason}`, details);
-
-    // ストリームが終了した場合（着信などで発生）は安全停止
-    if (reason === 'stream_ended') {
-      console.log('[Monitor] Stream ended - stopping recording safely');
-      // 現在までのデータを回収して安全停止
-      if (AppState.recordingMonitor) {
-        AppState.recordingMonitor.safeStopMediaRecorder();
-      }
-      showToast(t('toast.recording.interrupted'), 'warning');
-    }
-
-    // AudioContext suspended の場合は復帰を試みる（ベストエフォート）
-    if (reason === 'audiocontext_suspended') {
-      console.log('[Monitor] AudioContext suspended - attempting resume');
-      if (AppState.recordingMonitor) {
-        AppState.recordingMonitor.tryResumeAudioContext();
-      }
-    }
+    handleRecorderInterruption(reason).catch(error => {
+      console.error('[Monitor] Interruption handling failed:', error);
+    });
   };
 
   // 可視性変化時のコールバック（Wake Lock再取得）
   AppState.recordingMonitor.onVisibilityChange = async (isVisible) => {
     console.log(`[Monitor] Visibility change: ${isVisible ? 'visible' : 'hidden'}`);
     if (isVisible) {
-      // 復帰時にWake Lockを再取得
-      await reacquireWakeLock();
+      await handleVisibleRecordingHealthCheck();
     }
   };
 
@@ -3698,24 +3954,48 @@ function updateUI() {
   const floatingBtn = document.getElementById('floatingStopBtn');
   const meetingModeText = document.getElementById('meetingModeStatusText');
   const minutesBtn = document.getElementById('minutesBtn');
+  const isSuspended = AppState.recorderLifecycleState === RecorderLifecycleService.STATES.SUSPENDED;
+  const isResuming = AppState.recorderLifecycleState === RecorderLifecycleService.STATES.RESUMING;
 
   if (AppState.isRecording) {
     // Update button label via inner span (preserves data-i18n)
-    updateLabelSpan(btn, 'app.recording.rec', '🔴 ');
-    btn.classList.remove('btn-primary');
-    btn.classList.add('btn-danger');
+    if (isSuspended || isResuming) {
+      updateLabelSpan(
+        btn,
+        isResuming ? 'app.recording.resuming' : 'app.recording.resume',
+        isResuming ? '⏳ ' : '▶ '
+      );
+      btn.classList.remove('btn-danger');
+      btn.classList.add('btn-primary');
+      btn.disabled = isResuming;
+    } else {
+      updateLabelSpan(btn, 'app.recording.rec', '🔴 ');
+      btn.classList.remove('btn-primary');
+      btn.classList.add('btn-danger');
+      btn.disabled = false;
+    }
     if (pauseBtn) {
-      pauseBtn.style.display = 'inline-flex';
-      updateLabelSpan(pauseBtn, AppState.isPaused ? 'app.recording.resume' : 'app.recording.pause', AppState.isPaused ? '▶' : '⏸');
+      pauseBtn.style.display = (isSuspended || isResuming) ? 'none' : 'inline-flex';
+      if (!isSuspended && !isResuming) {
+        updateLabelSpan(pauseBtn, AppState.isPaused ? 'app.recording.resume' : 'app.recording.pause', AppState.isPaused ? '▶' : '⏸');
+      }
     }
     // Update status badge via inner span
-    if (AppState.isPaused) {
+    if (isSuspended) {
+      updateLabelSpan(badge, 'app.recording.statusSuspended', '⚠️ ');
+      badge.classList.remove('status-ready', 'status-recording', 'status-paused', 'status-error');
+      badge.classList.add('status-suspended');
+    } else if (isResuming) {
+      updateLabelSpan(badge, 'app.recording.statusResuming', '⏳ ');
+      badge.classList.remove('status-ready', 'status-recording', 'status-paused', 'status-error');
+      badge.classList.add('status-suspended');
+    } else if (AppState.isPaused) {
       updateLabelSpan(badge, 'app.recording.statusPaused', '⏸ ');
-      badge.classList.remove('status-ready', 'status-recording', 'status-error');
+      badge.classList.remove('status-ready', 'status-recording', 'status-suspended', 'status-error');
       badge.classList.add('status-paused');
     } else {
       updateLabelSpan(badge, 'app.recording.statusRecording', '🔴 ');
-      badge.classList.remove('status-ready', 'status-paused', 'status-error');
+      badge.classList.remove('status-ready', 'status-paused', 'status-suspended', 'status-error');
       badge.classList.add('status-recording');
     }
     // Phase 2: フローティング停止ボタンを表示（スマホ用）
@@ -3723,7 +4003,11 @@ function updateUI() {
       floatingBtn.classList.add('visible');
     }
     if (meetingModeText) {
-      const key = AppState.isPaused ? 'app.meeting.paused' : 'app.meeting.recording';
+      const key = isSuspended || isResuming
+        ? 'app.meeting.suspended'
+        : AppState.isPaused
+          ? 'app.meeting.paused'
+          : 'app.meeting.recording';
       meetingModeText.setAttribute('data-i18n', key);
       meetingModeText.textContent = t(key);
     }
@@ -3741,13 +4025,14 @@ function updateUI() {
     updateLabelSpan(btn, 'app.recording.start', '🎤 ');
     btn.classList.remove('btn-danger');
     btn.classList.add('btn-primary');
+    btn.disabled = false;
     if (pauseBtn) {
       pauseBtn.style.display = 'none';
       pauseBtn.disabled = false;
     }
     // Update status badge via inner span
     updateLabelSpan(badge, 'app.recording.statusReady', '🟢 ');
-    badge.classList.remove('status-recording', 'status-paused', 'status-error');
+    badge.classList.remove('status-recording', 'status-paused', 'status-suspended', 'status-error');
     badge.classList.add('status-ready');
     // Phase 2: フローティング停止ボタンを非表示
     if (floatingBtn) {
@@ -3784,7 +4069,7 @@ function updateStatusBadge(text, status) {
     // No span exists, update badge directly
     badge.textContent = text;
   }
-  badge.classList.remove('status-ready', 'status-recording', 'status-error', 'status-paused');
+  badge.classList.remove('status-ready', 'status-recording', 'status-error', 'status-paused', 'status-suspended');
 
   switch (status) {
     case 'recording':
@@ -4034,15 +4319,22 @@ function enterMeetingMode() {
     if (stopBtn) stopBtn.style.display = 'none';
   } else {
     // 録音中
-    if (statusIcon) statusIcon.textContent = AppState.isPaused ? '⏸' : '🔴';
+    const isSuspended = AppState.recorderLifecycleState === RecorderLifecycleService.STATES.SUSPENDED;
+    const isResuming = AppState.recorderLifecycleState === RecorderLifecycleService.STATES.RESUMING;
+    if (statusIcon) statusIcon.textContent = (isSuspended || isResuming) ? '⚠️' : AppState.isPaused ? '⏸' : '🔴';
     if (statusText) {
-      const key = AppState.isPaused ? 'app.meeting.paused' : 'app.meeting.recording';
+      const key = isSuspended || isResuming
+        ? 'app.meeting.suspended'
+        : AppState.isPaused
+          ? 'app.meeting.paused'
+          : 'app.meeting.recording';
       statusText.setAttribute('data-i18n', key);
       statusText.textContent = t(key);
     }
     if (focusHint) {
-      focusHint.setAttribute('data-i18n', 'app.meeting.focusHint');
-      focusHint.textContent = t('app.meeting.focusHint');
+      const key = isSuspended || isResuming ? 'app.meeting.resumeHint' : 'app.meeting.focusHint';
+      focusHint.setAttribute('data-i18n', key);
+      focusHint.textContent = t(key);
     }
     if (stopBtn) stopBtn.style.display = '';
   }

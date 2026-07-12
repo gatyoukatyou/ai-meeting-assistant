@@ -33,9 +33,12 @@
       "rec": "REC",
       "pause": "一時停止",
       "resume": "再開",
+      "resuming": "再開中",
       "statusReady": "待機中",
       "statusRecording": "録音中",
       "statusPaused": "一時停止中",
+      "statusSuspended": "中断",
+      "statusResuming": "再開中",
       "statusConnecting": "接続中",
       "statusReconnecting": "再接続中",
       "statusDisconnected": "切断",
@@ -148,8 +151,10 @@
       "editMode": "編集モード",
       "recording": "録音中",
       "paused": "一時停止中",
+      "suspended": "録音中断",
       "notRecording": "未録音",
       "focusHint": "会議に集中してください",
+      "resumeHint": "録音ボタンを押して再開してください",
       "startRecordingHint": "録音を開始してください",
       "returnButton": "通常画面に戻る"
     },
@@ -335,7 +340,8 @@
       "resumed": "録音を再開しました",
       "stopped": "録音を停止しました",
       "autoStopped": "最大録音時間（{minutes}分）に達したため、録音を自動停止しました",
-      "interrupted": "録音が中断されました。ここまでの内容は保存されています。録音ボタンで再開できます"
+      "interrupted": "録音が中断されました。ここまでの内容は保存されています。録音ボタンで再開できます",
+      "resumeFailed": "録音を再開できなかったため安全に停止しました。ここまでの内容は保存されています（{message}）"
     },
     "copy": {
       "success": "コピーしました",

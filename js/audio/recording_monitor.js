@@ -119,6 +119,8 @@ class RecordingMonitor {
       this._listenersRegistered = false;
     }
 
+    this._clearMediaHandlers();
+
     // 参照をクリア
     this.isMonitoring = false;
     this.mediaRecorder = null;
@@ -137,10 +139,16 @@ class RecordingMonitor {
       this.mediaRecorder = options.mediaRecorder;
     }
     if (options.audioContext !== undefined) {
+      if (this.audioContext && this.audioContext !== options.audioContext) {
+        this.audioContext.onstatechange = null;
+      }
       this.audioContext = options.audioContext;
       this._setupAudioContextMonitoring();
     }
     if (options.mediaStream !== undefined) {
+      if (this.mediaStream && this.mediaStream !== options.mediaStream) {
+        this._clearStreamHandlers(this.mediaStream);
+      }
       this.mediaStream = options.mediaStream;
       this._setupStreamMonitoring();
     }
@@ -173,6 +181,23 @@ class RecordingMonitor {
   }
 
   /**
+   * MediaRecorderを停止せず、現在までのデータだけを回収する。
+   * hidden遷移時の軽量処理として利用する。
+   * @returns {boolean} requestDataを実行したか
+   */
+  requestPendingData() {
+    try {
+      if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') return false;
+      if (typeof this.mediaRecorder.requestData !== 'function') return false;
+      this.mediaRecorder.requestData();
+      return true;
+    } catch (e) {
+      console.warn('[RecordingMonitor] requestData failed:', e);
+      return false;
+    }
+  }
+
+  /**
    * MediaRecorderのデータを安全に回収してから停止
    * @returns {boolean} 停止操作を行ったか
    */
@@ -184,13 +209,7 @@ class RecordingMonitor {
       if (state === 'inactive') return false;
 
       // 現在までのデータを回収
-      if (typeof this.mediaRecorder.requestData === 'function') {
-        try {
-          this.mediaRecorder.requestData();
-        } catch (e) {
-          console.warn('[RecordingMonitor] requestData failed:', e);
-        }
-      }
+      this.requestPendingData();
 
       // 停止
       this.mediaRecorder.stop();
@@ -354,6 +373,30 @@ class RecordingMonitor {
       });
     } catch (e) {
       console.error('[RecordingMonitor] _setupStreamMonitoring error:', e);
+    }
+  }
+
+  _clearStreamHandlers(stream) {
+    try {
+      if (!stream || typeof stream.getTracks !== 'function') return;
+      stream.getTracks().forEach(track => {
+        track.onended = null;
+        track.onmute = null;
+        track.onunmute = null;
+      });
+    } catch (e) {
+      console.warn('[RecordingMonitor] Failed to clear stream handlers:', e);
+    }
+  }
+
+  _clearMediaHandlers() {
+    this._clearStreamHandlers(this.mediaStream);
+    if (this.audioContext) {
+      try {
+        this.audioContext.onstatechange = null;
+      } catch (e) {
+        console.warn('[RecordingMonitor] Failed to clear AudioContext handler:', e);
+      }
     }
   }
 
