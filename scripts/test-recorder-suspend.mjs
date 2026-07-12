@@ -217,17 +217,32 @@ async function runPausedRestore(page) {
 }
 
 async function runNormalStop(page) {
-  await setupRecording(page);
+  await setupRecording(page, { provider: 'deepgram_realtime' });
   const result = await page.evaluate(async () => {
-    AppState.currentSTTProvider = {
-      stop: async () => {
-        AppState.sttConnectionStatus = 'disconnected';
-      }
+    DeepgramWSProvider.prototype.start = async function () {
+      this._stopped = false;
+      this.updateStatus('connected');
+    };
+    // 本番のoncloseと同様、意図的stopでもdisconnectedを発火させる。
+    DeepgramWSProvider.prototype.stop = async function () {
+      this.updateStatus('disconnected');
+    };
+    PCMStreamProcessor.prototype.start = async function () {
+      this.isProcessing = true;
+    };
+    await startStreamingRecording('deepgram_realtime');
+
+    let suspendCalled = false;
+    const originalSuspend = suspendRecording;
+    suspendRecording = async (...args) => {
+      suspendCalled = true;
+      return originalSuspend(...args);
     };
     await stopRecording();
-    return AppState.recorderLifecycleState;
+    return { state: AppState.recorderLifecycleState, suspendCalled };
   });
-  assert(result === STATES.IDLE, `expected idle after stop, got ${result}`);
+  assert(result.state === STATES.IDLE, `expected idle after stop, got ${result.state}`);
+  assert(!result.suspendCalled, 'suspend hook must not fire during intentional stop');
 }
 
 async function runResumeFailure(page) {
