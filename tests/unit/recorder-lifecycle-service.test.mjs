@@ -133,6 +133,7 @@ describe('RecorderLifecycleService', () => {
     });
 
     assert.equal(result.healthy, true);
+    assert.equal(result.status, service.PIPELINE_HEALTH_STATUS.HEALTHY);
     assert.deepEqual([...result.reasons], []);
   });
 
@@ -169,5 +170,84 @@ describe('RecorderLifecycleService', () => {
     );
     assert.equal(service.shouldSuspendForInterruption('background'), false);
     assert.equal(service.shouldSuspendForInterruption('page_frozen'), false);
+  });
+
+  it('keeps the legacy input and healthy result fields backward compatible', () => {
+    const service = loadService();
+    const result = service.evaluatePipelineHealth();
+
+    assert.equal(result.healthy, false);
+    assert.equal(result.status, service.PIPELINE_HEALTH_STATUS.UNHEALTHY);
+    assert.deepEqual([...result.reasons], ['missing_audio_track']);
+  });
+
+  it('reports each extended pipeline reason independently', () => {
+    const service = loadService();
+    const liveTrack = [{ readyState: 'live', muted: false }];
+    const cases = [
+      [{ tracks: liveTrack, stream: { present: false, active: true } }, 'missing_stream'],
+      [{ tracks: liveTrack, stream: { present: true, active: false } }, 'inactive_stream'],
+      [{ tracks: liveTrack, stt: { required: true, status: 'reconnecting' } }, 'stt_reconnecting'],
+      [{ tracks: liveTrack, stt: { required: true, status: 'disconnected' } }, 'stt_disconnected'],
+      [{ tracks: liveTrack, pcm: { required: true, active: false } }, 'pcm_inactive'],
+      [{ tracks: liveTrack, recorder: { required: true, state: 'inactive' } }, 'recorder_inactive']
+    ];
+
+    cases.forEach(([snapshot, expectedReason]) => {
+      const result = service.evaluatePipelineHealth(snapshot);
+      assert.deepEqual([...result.reasons], [expectedReason]);
+    });
+  });
+
+  it('classifies recoverable reasons without marking the pipeline healthy', () => {
+    const service = loadService();
+    const result = service.evaluatePipelineHealth({
+      tracks: [{ readyState: 'live', muted: true }],
+      audioContextState: 'suspended',
+      stt: { required: true, status: 'reconnecting' }
+    });
+
+    assert.equal(result.healthy, false);
+    assert.equal(result.status, service.PIPELINE_HEALTH_STATUS.RECOVERABLE);
+    assert.deepEqual(
+      [...result.reasons],
+      ['audio_track_muted', 'audio_context_suspended', 'stt_reconnecting']
+    );
+  });
+
+  it('uses unhealthy as the worst status when reason classes are mixed', () => {
+    const service = loadService();
+    const result = service.evaluatePipelineHealth({
+      tracks: [{ readyState: 'live', muted: true }],
+      stt: { required: true, status: 'disconnected' }
+    });
+
+    assert.equal(result.status, service.PIPELINE_HEALTH_STATUS.UNHEALTHY);
+    assert.deepEqual([...result.reasons], ['audio_track_muted', 'stt_disconnected']);
+  });
+
+  it('skips optional checks when blocks are omitted or not required', () => {
+    const service = loadService();
+    const result = service.evaluatePipelineHealth({
+      tracks: [{ readyState: 'live', muted: false }],
+      stt: { required: false, status: 'disconnected' },
+      pcm: { required: false, active: false },
+      recorder: { required: false, state: 'inactive' }
+    });
+
+    assert.equal(result.status, service.PIPELINE_HEALTH_STATUS.HEALTHY);
+    assert.deepEqual([...result.reasons], []);
+  });
+
+  it('freezes classification constants and evaluation results', () => {
+    const service = loadService();
+    const result = service.evaluatePipelineHealth({
+      tracks: [{ readyState: 'live', muted: false }]
+    });
+
+    assert.equal(Object.isFrozen(service.PIPELINE_HEALTH_STATUS), true);
+    assert.equal(Object.isFrozen(service.PIPELINE_HEALTH_REASON_STATUS), true);
+    assert.equal(Object.isFrozen(result), true);
+    assert.equal(Object.isFrozen(result.reasons), true);
   });
 });
