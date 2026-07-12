@@ -3959,7 +3959,11 @@ function updateUI() {
 
   if (AppState.isRecording) {
     // Update button label via inner span (preserves data-i18n)
-    updateLabelSpan(btn, 'app.recording.rec', '🔴 ');
+    updateLabelSpan(
+      btn,
+      isSuspended || isResuming ? 'app.recording.stop' : 'app.recording.rec',
+      isSuspended || isResuming ? '⏹ ' : '🔴 '
+    );
     btn.classList.remove('btn-primary');
     btn.classList.add('btn-danger');
     btn.disabled = false;
