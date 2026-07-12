@@ -63,8 +63,51 @@ const RecorderLifecycleService = (function () {
     STATES.RESUMING
   ]);
 
-  function evaluatePipelineHealth({ tracks = [], audioContextState = null } = {}) {
+  const PIPELINE_HEALTH_STATUS = Object.freeze({
+    HEALTHY: 'healthy',
+    RECOVERABLE: 'recoverable',
+    UNHEALTHY: 'unhealthy'
+  });
+
+  const PIPELINE_HEALTH_REASON_STATUS = Object.freeze({
+    missing_stream: PIPELINE_HEALTH_STATUS.UNHEALTHY,
+    inactive_stream: PIPELINE_HEALTH_STATUS.UNHEALTHY,
+    missing_audio_track: PIPELINE_HEALTH_STATUS.UNHEALTHY,
+    audio_track_ended: PIPELINE_HEALTH_STATUS.UNHEALTHY,
+    audio_track_muted: PIPELINE_HEALTH_STATUS.RECOVERABLE,
+    audio_context_suspended: PIPELINE_HEALTH_STATUS.RECOVERABLE,
+    audio_context_interrupted: PIPELINE_HEALTH_STATUS.RECOVERABLE,
+    audio_context_closed: PIPELINE_HEALTH_STATUS.UNHEALTHY,
+    stt_reconnecting: PIPELINE_HEALTH_STATUS.RECOVERABLE,
+    stt_disconnected: PIPELINE_HEALTH_STATUS.UNHEALTHY,
+    pcm_inactive: PIPELINE_HEALTH_STATUS.UNHEALTHY,
+    recorder_inactive: PIPELINE_HEALTH_STATUS.UNHEALTHY
+  });
+
+  const PIPELINE_HEALTH_STATUS_PRIORITY = Object.freeze({
+    [PIPELINE_HEALTH_STATUS.HEALTHY]: 0,
+    [PIPELINE_HEALTH_STATUS.RECOVERABLE]: 1,
+    [PIPELINE_HEALTH_STATUS.UNHEALTHY]: 2
+  });
+
+  function evaluatePipelineHealth({
+    tracks = [],
+    audioContextState = null,
+    stream,
+    stt,
+    pcm,
+    recorder
+  } = {}) {
     const reasons = [];
+
+    if (stream !== undefined) {
+      if (stream?.present !== true) {
+        reasons.push('missing_stream');
+      } else if (stream.active !== true) {
+        reasons.push('inactive_stream');
+      }
+    }
+
     if (!Array.isArray(tracks) || tracks.length === 0) {
       reasons.push('missing_audio_track');
     } else {
@@ -80,8 +123,38 @@ const RecorderLifecycleService = (function () {
       reasons.push(`audio_context_${audioContextState}`);
     }
 
+    if (stt?.required === true) {
+      if (stt.status === 'reconnecting' || stt.status === 'connecting') {
+        reasons.push('stt_reconnecting');
+      } else if (stt.status !== 'connected') {
+        reasons.push('stt_disconnected');
+      }
+    }
+
+    if (pcm?.required === true && pcm.active !== true) {
+      reasons.push('pcm_inactive');
+    }
+
+    if (
+      recorder?.required === true &&
+      recorder.state !== 'recording' &&
+      recorder.state !== 'paused'
+    ) {
+      reasons.push('recorder_inactive');
+    }
+
+    const status = reasons.reduce((worstStatus, reason) => {
+      const reasonStatus =
+        PIPELINE_HEALTH_REASON_STATUS[reason] || PIPELINE_HEALTH_STATUS.UNHEALTHY;
+      return PIPELINE_HEALTH_STATUS_PRIORITY[reasonStatus] >
+        PIPELINE_HEALTH_STATUS_PRIORITY[worstStatus]
+        ? reasonStatus
+        : worstStatus;
+    }, PIPELINE_HEALTH_STATUS.HEALTHY);
+
     return Object.freeze({
-      healthy: reasons.length === 0,
+      healthy: status === PIPELINE_HEALTH_STATUS.HEALTHY,
+      status,
       reasons: Object.freeze(reasons)
     });
   }
@@ -149,6 +222,8 @@ const RecorderLifecycleService = (function () {
   return Object.freeze({
     STATES,
     EVENTS,
+    PIPELINE_HEALTH_STATUS,
+    PIPELINE_HEALTH_REASON_STATUS,
     evaluatePipelineHealth,
     shouldSuspendForInterruption,
     create
