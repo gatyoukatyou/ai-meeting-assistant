@@ -1244,7 +1244,11 @@ document.addEventListener('DOMContentLoaded', async function() {
       pauseGuard = true;
       pauseBtn.disabled = true;
       try {
-        if (AppState.isPaused) {
+        if (AppState.recorderLifecycleState === RecorderLifecycleService.STATES.SUSPENDED) {
+          await resumeSuspendedRecording();
+        } else if (AppState.recorderLifecycleState === RecorderLifecycleService.STATES.RESUMING) {
+          console.log('[Record] Suspension recovery already in progress');
+        } else if (AppState.isPaused) {
           await resumeRecording();
         } else {
           await pauseRecording();
@@ -1741,11 +1745,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 async function toggleRecording() {
   console.log('[Record] toggleRecording called, isRecording:', AppState.isRecording);
   try {
-    if (AppState.recorderLifecycleState === RecorderLifecycleService.STATES.SUSPENDED) {
-      await resumeSuspendedRecording();
-    } else if (AppState.recorderLifecycleState === RecorderLifecycleService.STATES.RESUMING) {
-      console.log('[Record] Resume already in progress');
-    } else if (AppState.isRecording) {
+    if (AppState.isRecording) {
       await stopRecording();
     } else {
       await startRecording();
@@ -3959,24 +3959,20 @@ function updateUI() {
 
   if (AppState.isRecording) {
     // Update button label via inner span (preserves data-i18n)
-    if (isSuspended || isResuming) {
-      updateLabelSpan(
-        btn,
-        isResuming ? 'app.recording.resuming' : 'app.recording.resume',
-        isResuming ? '⏳ ' : '▶ '
-      );
-      btn.classList.remove('btn-danger');
-      btn.classList.add('btn-primary');
-      btn.disabled = isResuming;
-    } else {
-      updateLabelSpan(btn, 'app.recording.rec', '🔴 ');
-      btn.classList.remove('btn-primary');
-      btn.classList.add('btn-danger');
-      btn.disabled = false;
-    }
+    updateLabelSpan(btn, 'app.recording.rec', '🔴 ');
+    btn.classList.remove('btn-primary');
+    btn.classList.add('btn-danger');
+    btn.disabled = false;
     if (pauseBtn) {
-      pauseBtn.style.display = (isSuspended || isResuming) ? 'none' : 'inline-flex';
-      if (!isSuspended && !isResuming) {
+      pauseBtn.style.display = 'inline-flex';
+      pauseBtn.disabled = isResuming;
+      if (isSuspended || isResuming) {
+        updateLabelSpan(
+          pauseBtn,
+          isResuming ? 'app.recording.resuming' : 'app.recording.resume',
+          isResuming ? '⏳ ' : '▶ '
+        );
+      } else {
         updateLabelSpan(pauseBtn, AppState.isPaused ? 'app.recording.resume' : 'app.recording.pause', AppState.isPaused ? '▶' : '⏸');
       }
     }
