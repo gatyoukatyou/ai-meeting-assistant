@@ -2608,12 +2608,6 @@ function getRecorderPipelineHealth() {
 async function suspendRecording(reason) {
   if (suspensionPromise) return suspensionPromise;
 
-  if (typeof DebugLogger !== 'undefined') {
-    DebugLogger.log('[RecorderHealth]', 'Suspending recording', {
-      reasons: String(reason || 'unknown').split(',').filter(Boolean)
-    });
-  }
-
   const suspendableStates = [
     RecorderLifecycleService.STATES.RECORDING,
     RecorderLifecycleService.STATES.PAUSED,
@@ -2621,6 +2615,12 @@ async function suspendRecording(reason) {
   ];
   if (!suspendableStates.includes(AppState.recorderLifecycleState)) return false;
   if (!recorderLifecycle.transition(RecorderLifecycleService.EVENTS.SUSPEND)) return false;
+
+  if (typeof DebugLogger !== 'undefined') {
+    DebugLogger.log('[RecorderHealth]', 'Suspending recording', {
+      reasons: String(reason || 'unknown').split(',').filter(Boolean)
+    });
+  }
 
   if (!AppState.pauseStartedAt) {
     AppState.pauseStartedAt = Date.now();
@@ -2797,6 +2797,7 @@ async function handleVisibleRecordingHealthCheck() {
     if (mutedOnlyRecoverable) {
       const mutedSince = Date.now();
       while (true) {
+        if (!checkableStates.includes(AppState.recorderLifecycleState)) return;
         if (RecorderLifecycleService.isMutedHealthConfirmed({ mutedSince })) {
           const reason = health.reasons.join(',');
           console.warn('[Monitor] Audio track remained muted after visibility restore:', health.reasons);
@@ -2813,6 +2814,7 @@ async function handleVisibleRecordingHealthCheck() {
       }
     }
 
+    if (health.status === RecorderLifecycleService.PIPELINE_HEALTH_STATUS.HEALTHY) return;
     if (health.status === RecorderLifecycleService.PIPELINE_HEALTH_STATUS.RECOVERABLE) {
       // STT reconnecting and transient audio signals are allowed to recover in place.
       return;

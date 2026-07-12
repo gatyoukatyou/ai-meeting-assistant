@@ -299,6 +299,19 @@ describe('RecorderLifecycleService', () => {
     assert.equal(service.isMutedHealthConfirmed({ mutedSince: 1000, now: 2500 }), true);
   });
 
+  it('returns healthy when a muted track recovers within the grace period', () => {
+    const service = loadService();
+    const snapshot = {
+      tracks: [{ readyState: 'live', muted: false }],
+      audioContextState: 'running'
+    };
+
+    assert.equal(
+      service.evaluatePipelineHealth(snapshot).status,
+      service.PIPELINE_HEALTH_STATUS.HEALTHY
+    );
+  });
+
   it('uses unhealthy as the worst status when reason classes are mixed', () => {
     const service = loadService();
     const result = service.evaluatePipelineHealth({
