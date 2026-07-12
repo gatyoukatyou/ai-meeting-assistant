@@ -215,6 +215,49 @@ describe('RecorderLifecycleService', () => {
     );
   });
 
+  it('fails closed when required STT status is unavailable', () => {
+    const service = loadService();
+    const result = service.evaluatePipelineHealth({
+      tracks: [{ readyState: 'live', muted: false }],
+      stt: { required: true, status: undefined }
+    });
+
+    assert.equal(result.status, service.PIPELINE_HEALTH_STATUS.UNHEALTHY);
+    assert.deepEqual([...result.reasons], ['stt_disconnected']);
+  });
+
+  it('treats connecting STT as recoverable during reconnection', () => {
+    const service = loadService();
+    const result = service.evaluatePipelineHealth({
+      tracks: [{ readyState: 'live', muted: false }],
+      stt: { required: true, status: 'connecting' }
+    });
+
+    assert.equal(result.status, service.PIPELINE_HEALTH_STATUS.RECOVERABLE);
+    assert.deepEqual([...result.reasons], ['stt_reconnecting']);
+  });
+
+  it('fails closed when required recorder state is unavailable', () => {
+    const service = loadService();
+    const result = service.evaluatePipelineHealth({
+      tracks: [{ readyState: 'live', muted: false }],
+      recorder: { required: true, state: undefined }
+    });
+
+    assert.equal(result.status, service.PIPELINE_HEALTH_STATUS.UNHEALTHY);
+    assert.deepEqual([...result.reasons], ['recorder_inactive']);
+  });
+
+  it('reports only missing_stream when the stream is absent', () => {
+    const service = loadService();
+    const result = service.evaluatePipelineHealth({
+      tracks: [{ readyState: 'live', muted: false }],
+      stream: { present: false, active: false }
+    });
+
+    assert.deepEqual([...result.reasons], ['missing_stream']);
+  });
+
   it('uses unhealthy as the worst status when reason classes are mixed', () => {
     const service = loadService();
     const result = service.evaluatePipelineHealth({

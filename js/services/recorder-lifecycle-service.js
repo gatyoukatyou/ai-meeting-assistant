@@ -103,8 +103,7 @@ const RecorderLifecycleService = (function () {
     if (stream !== undefined) {
       if (stream?.present !== true) {
         reasons.push('missing_stream');
-      }
-      if (stream?.active !== true) {
+      } else if (stream.active !== true) {
         reasons.push('inactive_stream');
       }
     }
@@ -125,9 +124,9 @@ const RecorderLifecycleService = (function () {
     }
 
     if (stt?.required === true) {
-      if (stt.status === 'reconnecting') {
+      if (stt.status === 'reconnecting' || stt.status === 'connecting') {
         reasons.push('stt_reconnecting');
-      } else if (stt.status === 'disconnected') {
+      } else if (stt.status !== 'connected') {
         reasons.push('stt_disconnected');
       }
     }
@@ -136,7 +135,11 @@ const RecorderLifecycleService = (function () {
       reasons.push('pcm_inactive');
     }
 
-    if (recorder?.required === true && recorder.state === 'inactive') {
+    if (
+      recorder?.required === true &&
+      recorder.state !== 'recording' &&
+      recorder.state !== 'paused'
+    ) {
       reasons.push('recorder_inactive');
     }
 
