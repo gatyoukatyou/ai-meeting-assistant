@@ -23,6 +23,7 @@ let finalStopResolve = null;
 let recorderStopReason = null;
 let recorderRestartTimeoutId = null;
 let activeProviderId = null;
+let sttConnectionStatus = null;
 let activeMeetingDraftId = null;
 let activeMeetingDraftStartedAt = null;
 let activeMeetingDraftSaveTimer = null;
@@ -194,6 +195,8 @@ const AppState = {
   set recorderRestartTimeoutId(value) { recorderRestartTimeoutId = value; },
   get activeProviderId() { return activeProviderId; },
   set activeProviderId(value) { activeProviderId = value; },
+  get sttConnectionStatus() { return sttConnectionStatus; },
+  set sttConnectionStatus(value) { sttConnectionStatus = value; },
   get activeMeetingDraftId() { return activeMeetingDraftId; },
   set activeMeetingDraftId(value) { activeMeetingDraftId = value; },
   get activeMeetingDraftStartedAt() { return activeMeetingDraftStartedAt; },
@@ -1864,6 +1867,7 @@ async function validateSTTProviderForRecording(provider) {
 // =====================================
 async function startChunkedRecording(provider) {
   console.log('[Chunked] Starting recording for provider:', provider);
+  AppState.sttConnectionStatus = null;
 
   // iOS Safari対応: startRecording()で既に取得済みのストリームを再利用
   // 二重取得を防止し、Safari/Chrome両対応を維持
@@ -1919,6 +1923,7 @@ async function startChunkedRecording(provider) {
 // =====================================
 async function startStreamingRecording(provider) {
   console.log('[Streaming] Starting recording for provider:', provider);
+  AppState.sttConnectionStatus = null;
 
   // プロバイダーインスタンスを作成
   switch (provider) {
@@ -1944,6 +1949,21 @@ async function startStreamingRecording(provider) {
 
   AppState.currentSTTProvider.setOnStatusChange((status) => {
     console.log('[Streaming] Status:', status);
+    AppState.sttConnectionStatus = status;
+    if (
+      status === 'disconnected' &&
+      AppState.recorderLifecycleState === RecorderLifecycleService.STATES.RECORDING
+    ) {
+      if (typeof DebugLogger !== 'undefined') {
+        DebugLogger.log('[RecorderHealth]', 'STT disconnected during recording', {
+          status,
+          reasons: ['stt_disconnected']
+        });
+      }
+      suspendRecording('stt_disconnected').catch(error => {
+        console.error('[RecorderHealth] STT disconnect handling failed:', error);
+      });
+    }
     if (
       AppState.recorderLifecycleState === RecorderLifecycleService.STATES.SUSPENDED ||
       AppState.recorderLifecycleState === RecorderLifecycleService.STATES.RESUMING
@@ -2304,6 +2324,7 @@ async function cleanupRecording() {
   if (AppState.currentSTTProvider) {
     await AppState.currentSTTProvider.stop();
     AppState.currentSTTProvider = null;
+    AppState.sttConnectionStatus = null;
     console.log('[Cleanup] STT provider stopped');
   }
 
@@ -2319,6 +2340,7 @@ async function cleanupRecording() {
   recorderLifecycle.transition(RecorderLifecycleService.EVENTS.FINISH);
   AppState.recorderStopReason = null;
   AppState.activeProviderId = null;
+  AppState.sttConnectionStatus = null;
 
   console.log('[Cleanup] Cleanup complete');
 }
@@ -2552,12 +2574,34 @@ function getRecorderPipelineHealth() {
       ? AppState.currentAudioStream.getTracks().filter(track => track.kind === 'audio')
       : [];
   const audioContextState = AppState.pcmStreamProcessor?.audioContext?.state || null;
+  const isStreaming = STREAMING_PROVIDERS.has(AppState.activeProviderId);
+  const requirements = RecorderLifecycleService.derivePipelineRequirements({
+    state: AppState.recorderLifecycleState,
+    isStreaming
+  });
+  const isRecorderRestarting = AppState.recorderRestartTimeoutId !== null;
   return RecorderLifecycleService.evaluatePipelineHealth({
     tracks: tracks.map(track => ({
       readyState: track.readyState,
       muted: track.muted
     })),
-    audioContextState
+    audioContextState,
+    stream: {
+      present: AppState.currentAudioStream != null,
+      active: AppState.currentAudioStream?.active === true
+    },
+    stt: {
+      required: requirements.stt,
+      status: AppState.sttConnectionStatus
+    },
+    pcm: {
+      required: requirements.pcm,
+      active: AppState.pcmStreamProcessor?.isActive() === true
+    },
+    recorder: {
+      required: requirements.recorder && !isRecorderRestarting,
+      state: AppState.mediaRecorder?.state
+    }
   });
 }
 
@@ -2571,6 +2615,12 @@ async function suspendRecording(reason) {
   ];
   if (!suspendableStates.includes(AppState.recorderLifecycleState)) return false;
   if (!recorderLifecycle.transition(RecorderLifecycleService.EVENTS.SUSPEND)) return false;
+
+  if (typeof DebugLogger !== 'undefined') {
+    DebugLogger.log('[RecorderHealth]', 'Suspending recording', {
+      reasons: String(reason || 'unknown').split(',').filter(Boolean)
+    });
+  }
 
   if (!AppState.pauseStartedAt) {
     AppState.pauseStartedAt = Date.now();
@@ -2627,6 +2677,7 @@ async function suspendRecording(reason) {
         console.warn('[Suspend] STT provider stop failed:', error);
       }
       AppState.currentSTTProvider = null;
+      AppState.sttConnectionStatus = null;
     }
 
     if (AppState.currentAudioStream) {
@@ -2731,14 +2782,45 @@ async function handleVisibleRecordingHealthCheck() {
     }
 
     let health = getRecorderPipelineHealth();
-    if (health.reasons.includes('audio_track_muted')) {
-      await new Promise(resolve => setTimeout(resolve, 250));
-      health = getRecorderPipelineHealth();
+    if (typeof DebugLogger !== 'undefined') {
+      DebugLogger.log('[RecorderHealth]', 'Visible pipeline health check', {
+        status: health.status,
+        reasons: health.reasons
+      });
     }
-    if (!health.healthy) {
-      console.warn('[Monitor] Unhealthy pipeline after visibility restore:', health.reasons);
-      await suspendRecording(health.reasons.join(','));
+
+    if (health.status === RecorderLifecycleService.PIPELINE_HEALTH_STATUS.HEALTHY) return;
+
+    const mutedOnlyRecoverable =
+      health.status === RecorderLifecycleService.PIPELINE_HEALTH_STATUS.RECOVERABLE &&
+      health.reasons.includes('audio_track_muted');
+    if (mutedOnlyRecoverable) {
+      const mutedSince = Date.now();
+      while (true) {
+        if (!checkableStates.includes(AppState.recorderLifecycleState)) return;
+        if (RecorderLifecycleService.isMutedHealthConfirmed({ mutedSince })) {
+          const reason = health.reasons.join(',');
+          console.warn('[Monitor] Audio track remained muted after visibility restore:', health.reasons);
+          await suspendRecording(reason);
+          return;
+        }
+        await new Promise(resolve => setTimeout(resolve, 250));
+        health = getRecorderPipelineHealth();
+        if (!health.reasons.includes('audio_track_muted')) break;
+        if (health.status === RecorderLifecycleService.PIPELINE_HEALTH_STATUS.UNHEALTHY) {
+          await suspendRecording(health.reasons.join(','));
+          return;
+        }
+      }
     }
+
+    if (health.status === RecorderLifecycleService.PIPELINE_HEALTH_STATUS.HEALTHY) return;
+    if (health.status === RecorderLifecycleService.PIPELINE_HEALTH_STATUS.RECOVERABLE) {
+      // STT reconnecting and transient audio signals are allowed to recover in place.
+      return;
+    }
+    console.warn('[Monitor] Unhealthy pipeline after visibility restore:', health.reasons);
+    await suspendRecording(health.reasons.join(','));
   } catch (error) {
     console.error('[Monitor] Visible health check failed:', error);
     await suspendRecording('health_check_failed');
