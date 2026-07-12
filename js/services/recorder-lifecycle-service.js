@@ -159,6 +159,20 @@ const RecorderLifecycleService = (function () {
     });
   }
 
+  function derivePipelineRequirements({ state, isStreaming = false } = {}) {
+    const recording = state === STATES.RECORDING;
+    return Object.freeze({
+      stt: recording && isStreaming,
+      pcm: recording && isStreaming,
+      recorder: recording && !isStreaming
+    });
+  }
+
+  function isMutedHealthConfirmed({ mutedSince, now = Date.now(), graceMs = 1500 } = {}) {
+    if (!Number.isFinite(mutedSince) || !Number.isFinite(now)) return false;
+    return now - mutedSince >= graceMs;
+  }
+
   function shouldSuspendForInterruption(reason, { audioContextResumed = false } = {}) {
     if (reason === 'stream_ended') return true;
     if (reason === 'audiocontext_suspended') return audioContextResumed !== true;
@@ -225,6 +239,8 @@ const RecorderLifecycleService = (function () {
     PIPELINE_HEALTH_STATUS,
     PIPELINE_HEALTH_REASON_STATUS,
     evaluatePipelineHealth,
+    derivePipelineRequirements,
+    isMutedHealthConfirmed,
     shouldSuspendForInterruption,
     create
   });

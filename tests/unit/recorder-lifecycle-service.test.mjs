@@ -258,6 +258,47 @@ describe('RecorderLifecycleService', () => {
     assert.deepEqual([...result.reasons], ['missing_stream']);
   });
 
+  it('derives required pipeline blocks from lifecycle state and recording mode', () => {
+    const service = loadService();
+
+    assert.deepEqual(
+      {
+        ...service.derivePipelineRequirements({
+          state: service.STATES.RECORDING,
+          isStreaming: true
+        })
+      },
+      { stt: true, pcm: true, recorder: false }
+    );
+    assert.deepEqual(
+      {
+        ...service.derivePipelineRequirements({
+          state: service.STATES.RECORDING,
+          isStreaming: false
+        })
+      },
+      { stt: false, pcm: false, recorder: true }
+    );
+    assert.deepEqual(
+      {
+        ...service.derivePipelineRequirements({ state: service.STATES.PAUSED, isStreaming: true })
+      },
+      { stt: false, pcm: false, recorder: false }
+    );
+  });
+
+  it('confirms muted health only after the configured grace period', () => {
+    const service = loadService();
+
+    assert.equal(service.isMutedHealthConfirmed({ mutedSince: 1000, now: 1249 }), false);
+    assert.equal(
+      service.isMutedHealthConfirmed({ mutedSince: 1000, now: 1250, graceMs: 250 }),
+      true
+    );
+    assert.equal(service.isMutedHealthConfirmed({ mutedSince: 1000, now: 2499 }), false);
+    assert.equal(service.isMutedHealthConfirmed({ mutedSince: 1000, now: 2500 }), true);
+  });
+
   it('uses unhealthy as the worst status when reason classes are mixed', () => {
     const service = loadService();
     const result = service.evaluatePipelineHealth({
