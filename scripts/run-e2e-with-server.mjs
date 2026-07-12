@@ -53,6 +53,7 @@ async function main() {
   try {
     await runNpmScript('test:model-registry');
     await runNpmScript('test:upload');
+    await runNpmScript('test:recorder');
   } finally {
     if (!server.reused) {
       await server.stop();
