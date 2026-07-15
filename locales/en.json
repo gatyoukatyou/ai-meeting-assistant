@@ -364,7 +364,8 @@
       "success": "Downloaded from history",
       "shared": "Share sheet opened. Select 'Save to Files' to save",
       "openedInNewTab": "Opened in new tab. Long-press or use share button to save",
-      "copyFallback": "Popup blocked. Please copy from the preview"
+      "copyFallback": "Popup blocked. Please copy from the preview",
+      "storageNearlyFull": "Storage is {percent}% full. Consider exporting your history."
     },
     "diagnostic": {
       "copied": "Diagnostic pack copied",

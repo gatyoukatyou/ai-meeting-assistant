@@ -3,11 +3,23 @@
 // =====================================
 (function(global) {
   const DB_NAME = 'aiMeetingHistory';
-  const DB_VERSION = 2;
+  const DB_VERSION = 3;
   const STORE_NAME = 'records';
   const DRAFT_STORE_NAME = 'activeMeetingDrafts';
-  const MAX_RECORDS = 5;
   const MAX_DRAFTS = 3;
+  const STORAGE_WARNING_THRESHOLD = 0.8;
+  const DEFAULT_CATEGORY = '会議・打合せ';
+  const DEFAULT_STATUS = 'raw';
+  const VALID_PROFILES = new Set(['meeting', 'memo']);
+  const VALID_CATEGORIES = new Set([
+    DEFAULT_CATEGORY,
+    '相談・確認',
+    '指示・依頼',
+    'アイデア',
+    'その他'
+  ]);
+  const VALID_STATUSES = new Set([DEFAULT_STATUS, 'organized']);
+  let storagePersistencePromise = null;
 
   if (!global.indexedDB) {
     console.warn('[HistoryStore] IndexedDB is not supported in this environment.');
@@ -20,9 +32,27 @@
       request.onerror = () => reject(request.error);
       request.onupgradeneeded = event => {
         const db = event.target.result;
+        let store;
         if (!db.objectStoreNames.contains(STORE_NAME)) {
-          const store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
+          store = db.createObjectStore(STORE_NAME, { keyPath: 'id' });
           store.createIndex('createdAt', 'createdAt', { unique: false });
+        } else {
+          store = event.target.transaction.objectStore(STORE_NAME);
+        }
+        if (!store.indexNames.contains('category')) {
+          store.createIndex('category', 'category', { unique: false });
+        }
+        if (!store.indexNames.contains('status')) {
+          store.createIndex('status', 'status', { unique: false });
+        }
+        if (event.oldVersion < 3) {
+          const cursorRequest = store.openCursor();
+          cursorRequest.onsuccess = cursorEvent => {
+            const cursor = cursorEvent.target.result;
+            if (!cursor) return;
+            cursor.update(withV3Defaults(cursor.value));
+            cursor.continue();
+          };
         }
         if (!db.objectStoreNames.contains(DRAFT_STORE_NAME)) {
           const draftStore = db.createObjectStore(DRAFT_STORE_NAME, { keyPath: 'sessionId' });
@@ -34,17 +64,74 @@
     });
   }
 
+  function withV3Defaults(record) {
+    const source = record || {};
+    return {
+      ...source,
+      schemaVersion: 3,
+      profile: VALID_PROFILES.has(source.profile) ? source.profile : 'meeting',
+      category: VALID_CATEGORIES.has(source.category) ? source.category : DEFAULT_CATEGORY,
+      tags: Array.isArray(source.tags) ? source.tags : [],
+      status: VALID_STATUSES.has(source.status) ? source.status : DEFAULT_STATUS,
+      structured: Object.prototype.hasOwnProperty.call(source, 'structured')
+        ? source.structured
+        : null
+    };
+  }
+
+  function requestPersistentStorage() {
+    if (storagePersistencePromise) return storagePersistencePromise;
+    if (!global.navigator?.storage?.persist) return Promise.resolve(null);
+    storagePersistencePromise = global.navigator.storage
+      .persist()
+      .then(granted => {
+        console.info(`[HistoryStore] Persistent storage ${granted ? 'granted' : 'not granted'}.`);
+        return granted;
+      })
+      .catch(error => {
+        console.warn('[HistoryStore] Persistent storage request failed.', error);
+        return false;
+      });
+    return storagePersistencePromise;
+  }
+
+  async function getStorageEstimate() {
+    if (!global.navigator?.storage?.estimate) return null;
+    try {
+      const { usage, quota } = await global.navigator.storage.estimate();
+      if (!Number.isFinite(usage) || !Number.isFinite(quota) || quota <= 0) return null;
+      return { usage, quota, ratio: usage / quota };
+    } catch (error) {
+      console.warn('[HistoryStore] Storage estimate failed.', error);
+      return null;
+    }
+  }
+
+  async function warnIfStorageNearlyFull() {
+    const estimate = await getStorageEstimate();
+    if (!estimate || estimate.ratio <= STORAGE_WARNING_THRESHOLD) return;
+    if (typeof global.showToast !== 'function') return;
+    const percent = Math.round(estimate.ratio * 100);
+    const key = 'toast.history.storageNearlyFull';
+    const translated = typeof global.t === 'function' ? global.t(key, { percent }) : key;
+    const message =
+      translated === key
+        ? `保存領域の使用率が${percent}%です。履歴のエクスポートを検討してください。`
+        : translated;
+    global.showToast(message, 'warning');
+  }
+
   async function saveRecord(record) {
     if (!record || !record.id) {
       throw new Error('Invalid history record payload');
     }
     const db = await openDB();
     const now = new Date().toISOString();
-    const payload = {
+    const payload = withV3Defaults({
       createdAt: record.createdAt || now,
       ...record,
       updatedAt: now
-    };
+    });
 
     await new Promise((resolve, reject) => {
       const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -55,40 +142,7 @@
       tx.onerror = () => reject(tx.error);
     });
 
-    await enforceLimit(db);
-  }
-
-  async function enforceLimit(db) {
-    await new Promise((resolve, reject) => {
-      const tx = db.transaction(STORE_NAME, 'readwrite');
-      const store = tx.objectStore(STORE_NAME);
-      const countRequest = store.count();
-      countRequest.onsuccess = () => {
-        const total = countRequest.result || 0;
-        const excess = total - MAX_RECORDS;
-        if (excess <= 0) {
-          resolve();
-          return;
-        }
-        const index = store.index('createdAt');
-        const cursorRequest = index.openCursor(null, 'next'); // oldest first
-        let toDelete = excess;
-        cursorRequest.onsuccess = event => {
-          const cursor = event.target.result;
-          if (!cursor || toDelete <= 0) return;
-          const deleteRequest = cursor.delete();
-          deleteRequest.onsuccess = () => {
-            toDelete--;
-            cursor.continue();
-          };
-          deleteRequest.onerror = () => reject(deleteRequest.error);
-        };
-        cursorRequest.onerror = () => reject(cursorRequest.error);
-      };
-      countRequest.onerror = () => reject(countRequest.error);
-      tx.oncomplete = resolve;
-      tx.onerror = () => reject(tx.error);
-    });
+    await warnIfStorageNearlyFull();
   }
 
   function listRecords() {
@@ -266,6 +320,9 @@
     saveDraft,
     listDrafts,
     getDraft,
-    deleteDraft
+    deleteDraft,
+    getStorageEstimate
   };
+
+  requestPersistentStorage();
 })(window);
