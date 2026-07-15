@@ -255,6 +255,8 @@ const AppState = {
   set currentTimelineSearch(value) { currentTimelineSearch = value; },
   get restoredHistoryId() { return restoredHistoryId; },
   set restoredHistoryId(value) { restoredHistoryId = value; },
+  get lastSavedHistoryId() { return lastSavedHistoryId; },
+  set lastSavedHistoryId(value) { lastSavedHistoryId = value; },
   get currentAudioStream() { return currentAudioStream; },
   set currentAudioStream(value) { currentAudioStream = value; },
   get selectedMimeType() { return selectedMimeType; },
@@ -720,6 +722,9 @@ let currentTimelineSearch = '';
 
 // 履歴復元用（上書き保存のため）
 let restoredHistoryId = null;
+let lastSavedHistoryId = null;
+let activeStructuringRecordId = null;
+let structuringInFlight = false;
 
 function navigateTo(target) {
   const safe = safeURL(target);
@@ -1272,6 +1277,21 @@ document.addEventListener('DOMContentLoaded', async function() {
   if (clearTranscriptBtn) {
     clearTranscriptBtn.addEventListener('click', clearTranscript);
   }
+
+  document.getElementById('organizeTranscriptBtn')?.addEventListener('click', () => {
+    startStructuringReview().catch(err => console.error('[Structuring] Failed to start', err));
+  });
+  document.getElementById('closeStructuringModalBtn')?.addEventListener('click', closeStructuringModal);
+  document.getElementById('cancelStructuringBtn')?.addEventListener('click', closeStructuringModal);
+  document.getElementById('saveStructuringBtn')?.addEventListener('click', () => {
+    saveStructuredReview().catch(err => console.error('[Structuring] Failed to save', err));
+  });
+  document.getElementById('regenerateStructuringBtn')?.addEventListener('click', () => {
+    regenerateStructuredReview().catch(err => console.error('[Structuring] Failed to regenerate', err));
+  });
+  document.getElementById('structuringModal')?.addEventListener('click', event => {
+    if (event.target.id === 'structuringModal') closeStructuringModal();
+  });
 
   // CSP対応: 文字起こしチャンクのボタン操作をイベントデリゲーションで処理
   var transcriptContainer = document.getElementById('transcriptText');
@@ -4133,6 +4153,7 @@ function updateUI() {
     // 録音開始時間をリセット
     AppState.recordingStartTime = null;
   }
+  updateStructuringActionVisibility();
 }
 
 // ステータスバッジを直接更新（streaming系プロバイダー用）
@@ -4472,6 +4493,8 @@ function clearTranscript() {
     AppState.transcriptChunks = [];
     AppState.chunkIdCounter = 0;
     AppState.meetingStartMarkerId = null;
+    AppState.lastSavedHistoryId = null;
+    updateStructuringActionVisibility();
     renderTranscriptChunks();
 
     // 会議タイトルをクリア (#55, #52)
@@ -4947,6 +4970,8 @@ function loadDemoMeetingSession(options = {}) {
   AppState.meetingMemos = demo.meetingMemos;
   AppState.memoIdCounter = demo.memoIdCounter;
   AppState.restoredHistoryId = null;
+  AppState.lastSavedHistoryId = null;
+  updateStructuringActionVisibility();
 
   const titleInput = document.getElementById('meetingTitleInput');
   if (titleInput) {
@@ -5715,6 +5740,8 @@ function applyActiveMeetingDraftToState(rawDraft) {
   AppState.activeMeetingDraftStartedAt = draft.startedAt || draft.updatedAt || new Date().toISOString();
   AppState.storedActiveMeetingDraftAvailable = true;
   AppState.restoredHistoryId = null;
+  AppState.lastSavedHistoryId = null;
+  updateStructuringActionVisibility();
 
   renderTranscriptChunks();
   renderAIResponsesFromState();
@@ -5886,13 +5913,198 @@ async function saveHistorySnapshot() {
   try {
     await HistoryStore.save(record);
     showToast(t('toast.history.saved'), 'success');
+    AppState.lastSavedHistoryId = record.id;
     AppState.restoredHistoryId = null; // リセット
+    updateStructuringActionVisibility();
     await refreshHistoryListIfOpen();
     return true;
   } catch (err) {
     console.error('[History] Failed to save record', err);
     showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
     return false;
+  }
+}
+
+function updateStructuringActionVisibility() {
+  const action = document.getElementById('structuringAction');
+  if (!action) return;
+  const hasSavedTranscript = Boolean(
+    AppState.lastSavedHistoryId &&
+    !AppState.isRecording &&
+    (AppState.fullTranscript || getFullTranscriptText()).trim()
+  );
+  action.hidden = !hasSavedTranscript;
+}
+
+function setStructuringBusy(busy) {
+  structuringInFlight = busy;
+  ['organizeTranscriptBtn', 'regenerateStructuringBtn', 'saveStructuringBtn'].forEach(id => {
+    const button = document.getElementById(id);
+    if (button) button.disabled = busy;
+  });
+}
+
+function getStructuringPrompt(transcript, additionalInstruction = '') {
+  const instruction = additionalInstruction
+    ? t('ai.prompt.structuringAdditional', { instruction: additionalInstruction })
+    : '';
+  return StructuringService.buildPrompt(
+    t('ai.prompt.structuring'),
+    transcript,
+    instruction
+  );
+}
+
+async function generateStructuredProposal(record, additionalInstruction = '') {
+  const llm = getAvailableLlm();
+  if (!llm) {
+    showToast(t('toast.llm.notConfigured'), 'warning');
+    return null;
+  }
+
+  const prompt = getStructuringPrompt(record.transcript, additionalInstruction);
+  const firstResponse = await callLLM(llm.provider, prompt);
+  try {
+    return StructuringService.parseResponse(firstResponse);
+  } catch (firstError) {
+    console.warn('[Structuring] Invalid JSON response; retrying once', firstError);
+    const retryResponse = await callLLM(
+      llm.provider,
+      `${prompt}\n\n${t('ai.prompt.structuringRetry')}`
+    );
+    return StructuringService.parseResponse(retryResponse);
+  }
+}
+
+function setStructuringListValue(id, values) {
+  const input = document.getElementById(id);
+  if (input) input.value = Array.isArray(values) ? values.join('\n') : '';
+}
+
+function populateStructuringModal(proposal) {
+  document.getElementById('structuringTitleInput').value = proposal.title || '';
+  document.getElementById('structuringCategorySelect').value = proposal.category;
+  document.getElementById('structuringTagsInput').value = proposal.tags.join(', ');
+  setStructuringListValue('structuringKeyPointsInput', proposal.keyPoints);
+  setStructuringListValue('structuringDecisionsInput', proposal.decisions);
+  setStructuringListValue('structuringActionsInput', proposal.actionCandidates);
+  setStructuringListValue('structuringQuestionsInput', proposal.openQuestions);
+}
+
+function openStructuringModal() {
+  document.getElementById('structuringModal')?.classList.add('active');
+  document.body.classList.add('modal-open');
+}
+
+function closeStructuringModal() {
+  if (structuringInFlight) return;
+  document.getElementById('structuringModal')?.classList.remove('active');
+  document.body.classList.remove('modal-open');
+  activeStructuringRecordId = null;
+}
+
+async function startStructuringReview() {
+  if (structuringInFlight || typeof HistoryStore === 'undefined') return;
+  const recordId = AppState.lastSavedHistoryId || AppState.restoredHistoryId;
+  if (!recordId) {
+    showToast(t('toast.structuring.missingRecord'), 'error');
+    return;
+  }
+  const record = await HistoryStore.get(recordId);
+  if (!record || !record.transcript || !record.transcript.trim()) {
+    showToast(t('toast.structuring.missingRecord'), 'error');
+    return;
+  }
+
+  setStructuringBusy(true);
+  showToast(t('toast.structuring.generating'), 'info');
+  try {
+    const proposal = await generateStructuredProposal(record);
+    if (!proposal) return;
+    activeStructuringRecordId = record.id;
+    populateStructuringModal(proposal);
+    document.getElementById('structuringInstructionInput').value = '';
+    openStructuringModal();
+  } catch (error) {
+    console.error('[Structuring] Generation failed', error);
+    showToast(t('toast.structuring.failed'), 'error');
+  } finally {
+    setStructuringBusy(false);
+  }
+}
+
+async function regenerateStructuredReview() {
+  if (structuringInFlight || !activeStructuringRecordId) return;
+  if (!confirm(t('structuring.regenerateConfirm'))) return;
+  const record = await HistoryStore.get(activeStructuringRecordId);
+  if (!record) {
+    showToast(t('toast.structuring.missingRecord'), 'error');
+    return;
+  }
+  const instruction = document.getElementById('structuringInstructionInput').value.trim();
+  setStructuringBusy(true);
+  try {
+    const proposal = await generateStructuredProposal(record, instruction);
+    if (proposal) populateStructuringModal(proposal);
+  } catch (error) {
+    console.error('[Structuring] Regeneration failed', error);
+    showToast(t('toast.structuring.failed'), 'error');
+  } finally {
+    setStructuringBusy(false);
+  }
+}
+
+function readStructuringList(id) {
+  const input = document.getElementById(id);
+  return input
+    ? input.value.split(/\r?\n/).map(item => item.trim()).filter(Boolean)
+    : [];
+}
+
+async function saveStructuredReview() {
+  if (structuringInFlight || !activeStructuringRecordId) return;
+  const original = await HistoryStore.get(activeStructuringRecordId);
+  if (!original) {
+    showToast(t('toast.structuring.missingRecord'), 'error');
+    return;
+  }
+  const normalized = StructuringService.normalizeResult({
+    title: document.getElementById('structuringTitleInput').value,
+    category: document.getElementById('structuringCategorySelect').value,
+    tags: document.getElementById('structuringTagsInput').value.split(/[,、]/),
+    keyPoints: readStructuringList('structuringKeyPointsInput'),
+    decisions: readStructuringList('structuringDecisionsInput'),
+    actionCandidates: readStructuringList('structuringActionsInput'),
+    openQuestions: readStructuringList('structuringQuestionsInput')
+  });
+  const updated = {
+    ...original,
+    title: normalized.title || original.title,
+    category: normalized.category,
+    tags: normalized.tags,
+    status: 'organized',
+    structured: {
+      keyPoints: normalized.keyPoints,
+      decisions: normalized.decisions,
+      actionCandidates: normalized.actionCandidates,
+      openQuestions: normalized.openQuestions
+    }
+  };
+
+  setStructuringBusy(true);
+  try {
+    await HistoryStore.save(updated);
+    AppState.lastSavedHistoryId = original.id;
+    const titleInput = document.getElementById('meetingTitleInput');
+    if (titleInput) titleInput.value = updated.title;
+    showToast(t('toast.structuring.saved'), 'success');
+    await refreshHistoryListIfOpen();
+    setStructuringBusy(false);
+    closeStructuringModal();
+  } catch (error) {
+    console.error('[Structuring] Save failed', error);
+    showToast(t('toast.structuring.saveFailed'), 'error');
+    setStructuringBusy(false);
   }
 }
 
@@ -6146,6 +6358,8 @@ async function restoreFromHistory(recordId) {
 
   // 復元元ID保持（上書き保存用）
   AppState.restoredHistoryId = record.id;
+  AppState.lastSavedHistoryId = record.id;
+  updateStructuringActionVisibility();
 
   closeHistoryModal();
   showToast(t('toast.history.restored'), 'success');
@@ -6301,6 +6515,8 @@ async function importFromMarkdown(file) {
 
     // インポートセッションはrestoredHistoryIdをリセット（新規保存される）
     AppState.restoredHistoryId = null;
+    AppState.lastSavedHistoryId = null;
+    updateStructuringActionVisibility();
 
     closeHistoryModal();
     showToast(t('history.importSuccess'), 'success');

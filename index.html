@@ -58,6 +58,11 @@
         <span class="status-badge status-ready" id="statusBadge">
           <span data-i18n="app.recording.statusReady">待機中</span>
         </span>
+        <div class="structuring-action" id="structuringAction" hidden>
+          <button type="button" class="btn btn-primary" id="organizeTranscriptBtn">
+            ✨ <span data-i18n="structuring.organize">整理する</span>
+          </button>
+        </div>
         <button type="button" class="meeting-mode-chip" id="meetingModeChip">
           <span class="btn-icon">🎯</span>
           <span class="btn-label" id="meetingModeLabel" data-i18n="app.meeting.meetingMode">会議モード</span>
@@ -454,6 +459,61 @@
     </div>
   </main>
 
+  <div class="modal-overlay" id="structuringModal">
+    <div class="modal structuring-modal">
+      <div class="modal-header">
+        <h2>✨ <span data-i18n="structuring.modalTitle">会話を整理</span></h2>
+        <button type="button" class="modal-close" id="closeStructuringModalBtn">×</button>
+      </div>
+      <div class="modal-body">
+        <p class="structuring-candidate-note" data-i18n="structuring.candidateNote">AIの提案です。内容を確認・修正してから保存してください。</p>
+        <div class="setting-group">
+          <label class="setting-label" for="structuringTitleInput" data-i18n="structuring.title">タイトル</label>
+          <input type="text" class="input" id="structuringTitleInput">
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" for="structuringCategorySelect" data-i18n="structuring.category">カテゴリ</label>
+          <select class="input" id="structuringCategorySelect">
+            <option value="会議・打合せ" data-i18n="structuring.categories.meeting">会議・打合せ</option>
+            <option value="相談・確認" data-i18n="structuring.categories.consultation">相談・確認</option>
+            <option value="指示・依頼" data-i18n="structuring.categories.request">指示・依頼</option>
+            <option value="アイデア" data-i18n="structuring.categories.idea">アイデア</option>
+            <option value="その他" data-i18n="structuring.categories.other">その他</option>
+          </select>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" for="structuringTagsInput" data-i18n="structuring.tags">タグ（最大5個、カンマ区切り）</label>
+          <input type="text" class="input" id="structuringTagsInput">
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" for="structuringKeyPointsInput" data-i18n="structuring.keyPoints">要点（1行1項目）</label>
+          <textarea class="input" id="structuringKeyPointsInput" rows="4"></textarea>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" for="structuringDecisionsInput" data-i18n="structuring.decisions">決定事項（1行1項目）</label>
+          <textarea class="input" id="structuringDecisionsInput" rows="4"></textarea>
+        </div>
+        <div class="setting-group structuring-action-candidates">
+          <label class="setting-label" for="structuringActionsInput" data-i18n="structuring.actionCandidates">アクション候補（確定タスクではありません・1行1項目）</label>
+          <textarea class="input" id="structuringActionsInput" rows="4"></textarea>
+        </div>
+        <div class="setting-group">
+          <label class="setting-label" for="structuringQuestionsInput" data-i18n="structuring.openQuestions">未解決事項（1行1項目）</label>
+          <textarea class="input" id="structuringQuestionsInput" rows="4"></textarea>
+        </div>
+        <div class="setting-group structuring-regenerate">
+          <label class="setting-label" for="structuringInstructionInput" data-i18n="structuring.additionalInstruction">追加指示（任意）</label>
+          <textarea class="input" id="structuringInstructionInput" rows="2" data-i18n-placeholder="structuring.additionalInstructionPlaceholder" placeholder="例: 私が対応すべき候補を具体的に"></textarea>
+          <button type="button" class="btn btn-secondary" id="regenerateStructuringBtn">↻ <span data-i18n="structuring.regenerate">再生成</span></button>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" id="cancelStructuringBtn" data-i18n="common.cancel">キャンセル</button>
+        <button type="button" class="btn btn-primary" id="saveStructuringBtn" data-i18n="common.save">保存</button>
+      </div>
+    </div>
+  </div>
+
   <!-- フッター -->
   <footer style="text-align: center; padding: 1rem; font-size: 0.75rem; color: var(--text-secondary); border-top: 1px solid var(--border); background: var(--card-bg);">
     <div style="display: flex; justify-content: center; gap: 1.5rem; flex-wrap: wrap;">
@@ -738,6 +798,7 @@
   <script src="js/services/transcription-queue-overflow-service.js" defer></script>
   <script src="js/services/recorder-lifecycle-service.js" defer></script>
   <script src="js/services/recording-duration-limit-service.js" defer></script>
+  <script src="js/services/structuring-service.js" defer></script>
   <script src="js/services/fetch-retry-service.js" defer></script>
   <script src="js/services/export-service.js" defer></script>
   <script src="js/services/history-backup-service.js" defer></script>
