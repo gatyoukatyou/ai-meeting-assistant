@@ -860,6 +860,22 @@ footer { flex-shrink: 0; }
   padding:1rem;
 }
 .modal-overlay.active{ display:flex; }
+.structuring-action{
+  display:flex;
+  justify-content:flex-end;
+  padding:0 .75rem .5rem;
+}
+.structuring-action[hidden]{ display:none; }
+.structuring-modal{ max-width:760px; }
+.structuring-candidate-note{
+  margin:0 0 1rem;
+  color:var(--text-secondary);
+}
+.structuring-action-candidates{
+  border-left:4px solid var(--primary);
+  padding-left:.75rem;
+}
+.structuring-regenerate .btn{ margin-top:.5rem; }
 .modal-body{
   padding:1.5rem;
   overflow-y:auto;

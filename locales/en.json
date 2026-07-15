@@ -367,6 +367,13 @@
       "copyFallback": "Popup blocked. Please copy from the preview",
       "storageNearlyFull": "Storage is {percent}% full. Consider exporting your history."
     },
+    "structuring": {
+      "generating": "Organizing the conversation…",
+      "saved": "Saved the organized conversation to history",
+      "failed": "The conversation could not be organized. The original transcript remains saved.",
+      "saveFailed": "The organized content could not be saved. The original transcript was not changed.",
+      "missingRecord": "The history record to organize could not be found"
+    },
     "diagnostic": {
       "copied": "Diagnostic pack copied",
       "downloaded": "Diagnostic JSON saved",
@@ -418,7 +425,33 @@
       "idea": "Based on the following meeting content, please suggest 3 new ideas or proposals.",
       "consult": "You are a thoughtful advisor participating in this meeting.\nPlease read the transcript below and respond from two perspectives:\n\n[Opinions & Feedback]\n- Organize the main discussion points\n- Point out perspectives that might be overlooked\n- Provide constructive improvement suggestions\n\n[Ideas & Approaches]\n- Ideas to develop the discussion further\n- Alternative approaches from different angles\n- Creative alternatives\n\nPlease respond specifically and concisely.",
       "minutes": "From the following meeting transcript, please create structured meeting minutes.\n\nInclude:\n1. **Agenda**: List the main topics discussed\n2. **Decisions**: Clearly state any conclusions reached\n3. **Action Items**: Who will do what (as far as possible)\n4. **Next Steps**: Any upcoming actions or schedules\n\nFormat:\n- Use ## for headings\n- Use bullet points\n- **Bold** important content",
-      "custom": "Please answer the question about the following meeting content.\n\n[Meeting Content]\n{transcript}\n\n[Question]\n{question}"
+      "custom": "Please answer the question about the following meeting content.\n\n[Meeting Content]\n{transcript}\n\n[Question]\n{question}",
+      "structuring": "Organize the conversation using only the transcript below as evidence. Return exactly one JSON object without Markdown or explanatory text.\n\nJSON format:\n{\n  \"title\": \"concise title\",\n  \"category\": \"one of 会議・打合せ|相談・確認|指示・依頼|アイデア|その他\",\n  \"tags\": [\"up to five tags\"],\n  \"keyPoints\": [\"key point\"],\n  \"decisions\": [\"decision\"],\n  \"actionCandidates\": [\"action candidate\"],\n  \"openQuestions\": [\"open question\"]\n}\n\nactionCandidates are suggestions for HUMAN review, not confirmed tasks or TODOs. Do not invent owners, deadlines, or decisions. Use an empty array when an item does not apply.\n{additionalInstruction}\n\n[Transcript]\n{transcript}",
+      "structuringAdditional": "Additional instruction: {instruction}",
+      "structuringRetry": "The previous response was not valid JSON. Follow the JSON format above exactly and return only the JSON object."
+    }
+  },
+  "structuring": {
+    "organize": "Organize",
+    "modalTitle": "Organize conversation",
+    "candidateNote": "This is an AI proposal. Review and edit it before saving.",
+    "title": "Title",
+    "category": "Category",
+    "tags": "Tags (up to five, comma-separated)",
+    "keyPoints": "Key points (one per line)",
+    "decisions": "Decisions (one per line)",
+    "actionCandidates": "Action candidates (not confirmed tasks; one per line)",
+    "openQuestions": "Open questions (one per line)",
+    "additionalInstruction": "Additional instruction (optional)",
+    "additionalInstructionPlaceholder": "Example: Make the candidates I should handle more specific",
+    "regenerate": "Regenerate",
+    "regenerateConfirm": "Your current edits will be discarded. Regenerate using the additional instruction?",
+    "categories": {
+      "meeting": "Meeting",
+      "consultation": "Consultation",
+      "request": "Request",
+      "idea": "Idea",
+      "other": "Other"
     }
   },
   "export": {

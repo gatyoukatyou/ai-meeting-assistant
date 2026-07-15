@@ -367,6 +367,13 @@
       "copyFallback": "ポップアップがブロックされました。プレビューからコピーしてください",
       "storageNearlyFull": "保存領域の使用率が{percent}%です。履歴のエクスポートを検討してください。"
     },
+    "structuring": {
+      "generating": "会話を整理しています…",
+      "saved": "整理した内容を履歴に保存しました",
+      "failed": "会話を整理できませんでした。元の文字起こしは保存されています。",
+      "saveFailed": "整理した内容を保存できませんでした。元の文字起こしは変更されていません。",
+      "missingRecord": "整理する履歴が見つかりません"
+    },
     "diagnostic": {
       "copied": "診断パックをコピーしました",
       "downloaded": "診断JSONを保存しました",
@@ -418,7 +425,33 @@
       "idea": "以下の会議内容を踏まえて、新しいアイデアや提案を3つ挙げてください。",
       "consult": "あなたは会議に参加している思慮深いアドバイザーです。\n以下の文字起こしを読み、2つの観点から回答してください：\n\n【意見・フィードバック】\n- 議論の論点整理\n- 見落としがちな視点の指摘\n- 建設的な改善提案\n\n【アイディア・発想】\n- 議論を発展させるアイディア\n- 別角度からのアプローチ\n- 創造的な代替案\n\n日本語で、具体的かつ簡潔に回答してください。",
       "minutes": "以下の会議の文字起こしから、構造化された議事録を作成してください。\n\n含めるべき項目:\n1. **議題**: 話し合われた主要トピックをリストアップ\n2. **決定事項**: 結論が出たことを明記\n3. **タスク・アクション**: 誰が何をするか（可能な範囲で）\n4. **次回予定**: 次のアクションや予定があれば記載\n\nフォーマット:\n- 見出しは ## を使用\n- 箇条書きを活用\n- 重要な内容は **太字** で強調",
-      "custom": "以下の会議内容について質問に答えてください。\n\n【会議内容】\n{transcript}\n\n【質問】\n{question}"
+      "custom": "以下の会議内容について質問に答えてください。\n\n【会議内容】\n{transcript}\n\n【質問】\n{question}",
+      "structuring": "以下の文字起こしだけを根拠に、会話を整理してください。必ずJSONオブジェクトだけを返し、Markdownや説明文を付けないでください。\n\nJSON形式:\n{\n  \"title\": \"簡潔なタイトル\",\n  \"category\": \"会議・打合せ|相談・確認|指示・依頼|アイデア|その他のいずれか\",\n  \"tags\": [\"最大5個\"],\n  \"keyPoints\": [\"要点\"],\n  \"decisions\": [\"決定事項\"],\n  \"actionCandidates\": [\"アクション候補\"],\n  \"openQuestions\": [\"未解決事項\"]\n}\n\nactionCandidatesは確定したタスクやTODOではなく、HUMANが確認するための候補として抽出してください。根拠のない担当者・期限・決定を補わないでください。該当項目がなければ空配列にしてください。\n{additionalInstruction}\n\n【文字起こし】\n{transcript}",
+      "structuringAdditional": "追加指示: {instruction}",
+      "structuringRetry": "前の応答は有効なJSONとして解析できませんでした。上記のJSON形式に厳密に従い、JSONオブジェクトだけを再出力してください。"
+    }
+  },
+  "structuring": {
+    "organize": "整理する",
+    "modalTitle": "会話を整理",
+    "candidateNote": "AIの提案です。内容を確認・修正してから保存してください。",
+    "title": "タイトル",
+    "category": "カテゴリ",
+    "tags": "タグ（最大5個、カンマ区切り）",
+    "keyPoints": "要点（1行1項目）",
+    "decisions": "決定事項（1行1項目）",
+    "actionCandidates": "アクション候補（確定タスクではありません・1行1項目）",
+    "openQuestions": "未解決事項（1行1項目）",
+    "additionalInstruction": "追加指示（任意）",
+    "additionalInstructionPlaceholder": "例: 私が対応すべき候補を具体的に",
+    "regenerate": "再生成",
+    "regenerateConfirm": "現在の編集内容は破棄されます。追加指示を反映して再生成しますか？",
+    "categories": {
+      "meeting": "会議・打合せ",
+      "consultation": "相談・確認",
+      "request": "指示・依頼",
+      "idea": "アイデア",
+      "other": "その他"
     }
   },
   "export": {

@@ -15,6 +15,7 @@
     "test:upload": "npm run test:upload-basic && npm run test:upload-formats && npm run test:upload-edge",
     "test:recorder": "node scripts/test-recorder-suspend.mjs",
     "test:history-store": "node scripts/test-history-store-migration.mjs",
+    "test:structuring": "node scripts/test-structuring-review.mjs",
     "test:e2e": "node scripts/run-e2e-with-server.mjs",
     "test": "npm run test:unit && npm run test:ui-smoke && npm run test:e2e",
     "lint": "eslint .",
