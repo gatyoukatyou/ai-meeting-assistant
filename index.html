@@ -58,6 +58,11 @@
         <span class="status-badge status-ready" id="statusBadge">
           <span data-i18n="app.recording.statusReady">待機中</span>
         </span>
+        <div class="structuring-action" id="structuringAction" hidden>
+          <button type="button" class="btn btn-primary" id="organizeTranscriptBtn">
+            ✨ <span data-i18n="structuring.organize">整理する</span>
+          </button>
+        </div>
         <button type="button" class="meeting-mode-chip" id="meetingModeChip">
           <span class="btn-icon">🎯</span>
           <span class="btn-label" id="meetingModeLabel" data-i18n="app.meeting.meetingMode">会議モード</span>
@@ -250,11 +255,6 @@
           <span data-i18n="history.titleLabel">会議タイトル</span>
         </label>
         <input type="text" id="meetingTitleInput" class="input" style="flex:1;" data-i18n-placeholder="history.titlePlaceholder" placeholder="例: 営業定例 (2026/01/06)">
-      </div>
-      <div class="structuring-action" id="structuringAction" hidden>
-        <button type="button" class="btn btn-primary" id="organizeTranscriptBtn">
-          ✨ <span data-i18n="structuring.organize">整理する</span>
-        </button>
       </div>
       <div class="panel-body" id="transcriptBody">
         <div class="transcript-text" id="transcriptText"><span class="transcript-placeholder" id="transcriptPlaceholder" data-i18n="app.transcript.placeholder">録音を開始すると、ここに文字起こしが表示されます...</span></div>

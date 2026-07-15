@@ -861,9 +861,8 @@ footer { flex-shrink: 0; }
 }
 .modal-overlay.active{ display:flex; }
 .structuring-action{
-  display:flex;
-  justify-content:flex-end;
-  padding:0 .75rem .5rem;
+  display:inline-flex;
+  align-items:center;
 }
 .structuring-action[hidden]{ display:none; }
 .structuring-modal{ max-width:760px; }
