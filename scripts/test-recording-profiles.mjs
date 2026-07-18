@@ -113,6 +113,26 @@ async function runProfileFlow(page) {
   assert(meetingRecord.profile === 'meeting', `meeting record profile mismatch: ${meetingRecord.profile}`);
   assert(meetingRecord.status === 'raw', 'meeting raw autosave regressed');
 
+  const restoredMemoRecord = await page.evaluate(async id => {
+    confirm = () => true;
+    await restoreFromHistory(id);
+    await saveHistorySnapshot();
+    const record = await HistoryStore.get(id);
+    return {
+      id: record.id,
+      profile: record.profile,
+      restoredHistoryId: AppState.restoredHistoryId,
+      lastSavedHistoryId: AppState.lastSavedHistoryId
+    };
+  }, memoRecord.id);
+  assert(restoredMemoRecord.id === memoRecord.id, 'restored memo was not overwritten in place');
+  assert(
+    restoredMemoRecord.profile === 'memo',
+    `restored memo profile changed to the active UI profile: ${restoredMemoRecord.profile}`
+  );
+  assert(restoredMemoRecord.restoredHistoryId === null, 'restored history id was not reset after overwrite');
+  assert(restoredMemoRecord.lastSavedHistoryId === memoRecord.id, 'last saved history id was not preserved');
+
   await page.reload({ waitUntil: 'domcontentloaded' });
   await page.waitForFunction(
     () => typeof AppState !== 'undefined' && document.documentElement.dataset.recordingProfile
@@ -168,7 +188,7 @@ async function run() {
       { timeout: 30000 }
     );
     await runProfileFlow(page);
-    console.log('\u001b[32m✓\u001b[0m P1 memo/meeting entry, persistence, raw save, and status UI');
+    console.log('\u001b[32m✓\u001b[0m P1 memo/meeting entry, persistence, restored overwrite, raw save, and status UI');
     await context.close();
   } finally {
     if (browser) await browser.close();
