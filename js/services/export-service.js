@@ -61,6 +61,84 @@ const ExportService = (function () {
     return `${safeTitle}-${dateStr}.md`;
   }
 
+  function quoteYamlString(value) {
+    return JSON.stringify(String(value ?? ''));
+  }
+
+  function normalizeRecordDate(value) {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? new Date(0).toISOString() : date.toISOString();
+  }
+
+  function normalizeRecordList(value) {
+    return Array.isArray(value)
+      ? value.filter(item => typeof item === 'string' && item.trim()).map(item => item.trim())
+      : [];
+  }
+
+  function appendRecordListSection(lines, heading, values, options) {
+    const items = normalizeRecordList(values);
+    lines.push(`## ${heading}`, '');
+    if (options?.note) lines.push(options.note, '');
+    items.forEach(item => lines.push(`${options?.checkbox ? '- [ ]' : '-'} ${item}`));
+    lines.push('');
+  }
+
+  function generateRecordMarkdown(record) {
+    const source = record || {};
+    const profile = source.profile === 'memo' ? 'memo' : 'meeting';
+    const status = source.status === 'organized' ? 'organized' : 'raw';
+    const tags = normalizeRecordList(source.tags);
+    const duration = Number(source.durationSec);
+    const durationSec = Number.isFinite(duration) ? Math.max(0, Math.round(duration)) : 0;
+    const title = String(source.title || source.id || 'Untitled').replace(/[\r\n]+/g, ' ').trim();
+    const minutes = typeof source.minutes === 'string'
+      ? source.minutes
+      : (typeof source.aiResponses?.minutes === 'string' ? source.aiResponses.minutes : '');
+    const transcript = typeof source.transcript === 'string' ? source.transcript : '';
+
+    const lines = [
+      '---',
+      `id: ${quoteYamlString(source.id || '')}`,
+      `created_at: ${quoteYamlString(normalizeRecordDate(source.createdAt))}`,
+      `profile: ${quoteYamlString(profile)}`,
+      `category: ${quoteYamlString(source.category || '会議・打合せ')}`,
+      tags.length ? 'tags:' : 'tags: []'
+    ];
+    tags.forEach(tag => lines.push(`  - ${quoteYamlString(tag)}`));
+    lines.push(
+      `status: ${quoteYamlString(status)}`,
+      `duration_sec: ${durationSec}`,
+      '---',
+      `# ${title}`,
+      ''
+    );
+
+    if (status === 'organized' && source.structured && typeof source.structured === 'object') {
+      appendRecordListSection(lines, '要点', source.structured.keyPoints);
+      appendRecordListSection(lines, '決定事項', source.structured.decisions);
+      appendRecordListSection(lines, 'アクション候補', source.structured.actionCandidates, {
+        checkbox: true,
+        note: '以下は候補であり、確定タスクではありません。'
+      });
+      appendRecordListSection(lines, '未解決事項', source.structured.openQuestions);
+    }
+
+    if (profile === 'meeting' && minutes.trim()) {
+      lines.push('## 議事録', '', minutes, '');
+    }
+    lines.push('## 文字起こし', '', transcript);
+
+    return `${lines.join('\n').trimEnd()}\n`;
+  }
+
+  function generateRecordsMarkdown(records) {
+    return (Array.isArray(records) ? records : [])
+      .map(generateRecordMarkdown)
+      .map(markdown => markdown.trimEnd())
+      .join('\n\n');
+  }
+
   function generateMarkdown(context) {
     const c = context || {};
     const t = typeof c.t === 'function' ? c.t : function (k) { return k; };
@@ -268,7 +346,9 @@ const ExportService = (function () {
   return {
     buildMarkdownFileName,
     collectAiWorkOrderInstructions,
-    generateMarkdown
+    generateMarkdown,
+    generateRecordMarkdown,
+    generateRecordsMarkdown
   };
 })();
 

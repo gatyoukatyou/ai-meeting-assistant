@@ -56,6 +56,7 @@ async function main() {
     await runNpmScript('test:history-store');
     await runNpmScript('test:structuring');
     await runNpmScript('test:history-browse');
+    await runNpmScript('test:history-export');
     await runNpmScript('test:recorder');
   } finally {
     if (!server.reused) {
