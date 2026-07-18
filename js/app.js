@@ -318,6 +318,8 @@ var exportService = (typeof ExportService !== 'undefined') ? ExportService : nul
 var historyBackupService = (typeof HistoryBackupService !== 'undefined') ? HistoryBackupService : null;
 var historyListService = (typeof HistoryListService !== 'undefined') ? HistoryListService : null;
 var diagnosticsService = (typeof DiagnosticsService !== 'undefined') ? DiagnosticsService : null;
+let historyRecordsCache = [];
+let selectedHistoryRecordId = null;
 
 // Handle fatal errors - show modal and safely stop recording
 function handleFatalError(error) {
@@ -1500,6 +1502,44 @@ document.addEventListener('DOMContentLoaded', async function() {
   const historyList = document.getElementById('historyList');
   if (historyList) {
     historyList.addEventListener('click', handleHistoryListAction);
+  }
+
+  const historyDetailView = document.getElementById('historyDetailView');
+  if (historyDetailView) {
+    historyDetailView.addEventListener('click', handleHistoryDetailAction);
+  }
+
+  ['historySearchInput', 'historyCategoryFilter', 'historyStatusFilter',
+    'historyStartDateFilter', 'historyEndDateFilter'].forEach(id => {
+    const filter = document.getElementById(id);
+    if (filter) {
+      filter.addEventListener(id === 'historySearchInput' ? 'input' : 'change', () => {
+        renderHistoryList(historyRecordsCache);
+      });
+    }
+  });
+
+  const historyDetailRestoreBtn = document.getElementById('historyDetailRestoreBtn');
+  if (historyDetailRestoreBtn) {
+    historyDetailRestoreBtn.addEventListener('click', () => {
+      if (selectedHistoryRecordId) {
+        restoreFromHistory(selectedHistoryRecordId).catch(err => console.error('[History] restore failed', err));
+      }
+    });
+  }
+
+  const historyDetailDeleteBtn = document.getElementById('historyDetailDeleteBtn');
+  if (historyDetailDeleteBtn) {
+    historyDetailDeleteBtn.addEventListener('click', () => {
+      if (selectedHistoryRecordId) {
+        deleteHistoryRecord(selectedHistoryRecordId).catch(err => console.error('[History] delete failed', err));
+      }
+    });
+  }
+
+  const historyDetailCloseBtn = document.getElementById('historyDetailCloseBtn');
+  if (historyDetailCloseBtn) {
+    historyDetailCloseBtn.addEventListener('click', closeHistoryModal);
   }
 
   const openContextModalBtn = document.getElementById('openContextModalBtn');
@@ -6531,6 +6571,7 @@ async function importFromMarkdown(file) {
 async function openHistoryModal() {
   const modal = document.getElementById('historyModal');
   if (!modal) return;
+  showHistoryListView();
   await renderHistoryList();
   modal.classList.add('active');
   document.body.classList.add('modal-open');
@@ -6541,9 +6582,46 @@ function closeHistoryModal() {
   if (!modal) return;
   modal.classList.remove('active');
   document.body.classList.remove('modal-open');
+  selectedHistoryRecordId = null;
 }
 
-async function renderHistoryList() {
+function readHistoryFilters() {
+  return {
+    query: document.getElementById('historySearchInput')?.value || '',
+    category: document.getElementById('historyCategoryFilter')?.value || '',
+    status: document.getElementById('historyStatusFilter')?.value || '',
+    startDate: document.getElementById('historyStartDateFilter')?.value || '',
+    endDate: document.getElementById('historyEndDateFilter')?.value || ''
+  };
+}
+
+function getHistoryCategoryLabel(category) {
+  const keys = {
+    '会議・打合せ': 'structuring.categories.meeting',
+    '相談・確認': 'structuring.categories.consultation',
+    '指示・依頼': 'structuring.categories.request',
+    'アイデア': 'structuring.categories.idea',
+    'その他': 'structuring.categories.other'
+  };
+  return t(keys[category] || keys['会議・打合せ']);
+}
+
+function createHistoryBadge(text, className = '') {
+  const badge = document.createElement('span');
+  badge.className = `history-badge ${className}`.trim();
+  badge.textContent = text;
+  return badge;
+}
+
+function showHistoryListView() {
+  const listView = document.getElementById('historyListView');
+  const detailView = document.getElementById('historyDetailView');
+  if (listView) listView.hidden = false;
+  if (detailView) detailView.hidden = true;
+  selectedHistoryRecordId = null;
+}
+
+async function renderHistoryList(recordsOverride) {
   const list = document.getElementById('historyList');
   if (!list) return;
 
@@ -6556,14 +6634,27 @@ async function renderHistoryList() {
     return;
   }
 
-  let records;
-  try {
-    records = await HistoryStore.list();
-  } catch (err) {
-    console.error('[History] Failed to list records', err);
-    showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
-    return;
+  let records = recordsOverride;
+  if (!Array.isArray(records)) {
+    try {
+      records = await HistoryStore.list();
+      historyRecordsCache = records;
+    } catch (err) {
+      console.error('[History] Failed to list records', err);
+      showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
+      return;
+    }
   }
+
+  const filteredRecords = historyListService.filterRecords(records, readHistoryFilters());
+  const resultCount = document.getElementById('historyResultCount');
+  if (resultCount) {
+    resultCount.textContent = t('history.resultCount', {
+      filtered: filteredRecords.length,
+      total: records.length
+    });
+  }
+
   if (!records.length) {
     const empty = document.createElement('p');
     empty.style.color = 'var(--text-secondary)';
@@ -6572,7 +6663,15 @@ async function renderHistoryList() {
     return;
   }
 
-  records.forEach(record => {
+  if (!filteredRecords.length) {
+    const empty = document.createElement('p');
+    empty.style.color = 'var(--text-secondary)';
+    empty.textContent = t('history.noMatches');
+    list.appendChild(empty);
+    return;
+  }
+
+  filteredRecords.forEach(record => {
     const display = historyListService.prepareDisplayRecord(record, {
       getDefaultTitle: getDefaultMeetingTitle,
       formatTimestamp: formatHistoryTimestamp,
@@ -6581,42 +6680,42 @@ async function renderHistoryList() {
 
     const item = document.createElement('div');
     item.className = 'history-item';
-    item.style.border = '1px solid var(--border)';
-    item.style.borderRadius = '8px';
-    item.style.padding = '0.75rem';
-    item.style.display = 'flex';
-    item.style.justifyContent = 'space-between';
-    item.style.gap = '1rem';
-    item.style.flexWrap = 'wrap';
 
-    const meta = document.createElement('div');
-    meta.style.flex = '1';
+    const meta = document.createElement('button');
+    meta.type = 'button';
+    meta.className = 'history-item-open';
+    meta.dataset.action = 'detail';
+    meta.dataset.id = record.id;
 
     const title = document.createElement('div');
-    title.style.fontWeight = '600';
-    title.style.marginBottom = '0.25rem';
+    title.className = 'history-item-title';
     title.textContent = display.title;
     meta.appendChild(title);
 
     const details = document.createElement('div');
-    details.style.fontSize = '0.85rem';
-    details.style.color = 'var(--text-secondary)';
+    details.className = 'history-item-details';
     details.textContent = `${t('history.recordSavedAt')} ${display.savedAt} ・ ${t('history.recordDuration')} ${display.duration}`;
     meta.appendChild(details);
 
+    const badges = document.createElement('div');
+    badges.className = 'history-item-badges';
+    badges.appendChild(createHistoryBadge(getHistoryCategoryLabel(display.category)));
+    badges.appendChild(createHistoryBadge(
+      t(display.status === 'organized' ? 'history.statusOrganized' : 'history.statusRaw'),
+      display.status === 'organized' ? 'history-badge-organized' : ''
+    ));
+    display.tags.forEach(tag => badges.appendChild(createHistoryBadge(`#${tag}`)));
+    meta.appendChild(badges);
+
     if (display.hasSummaryPreview) {
       const preview = document.createElement('p');
-      preview.style.fontSize = '0.9rem';
-      preview.style.marginTop = '0.5rem';
-      preview.style.whiteSpace = 'pre-line';
+      preview.className = 'history-item-preview';
       preview.textContent = display.summaryPreview;
       meta.appendChild(preview);
     }
 
     const actions = document.createElement('div');
-    actions.style.display = 'flex';
-    actions.style.flexDirection = 'column';
-    actions.style.gap = '0.5rem';
+    actions.className = 'history-item-actions';
 
     // 再読み込みボタン（Phase2）
     const restoreBtn = document.createElement('button');
@@ -6647,17 +6746,107 @@ async function renderHistoryList() {
 }
 
 function handleHistoryListAction(event) {
-  const button = event.target.closest('button[data-action]');
+  const button = event.target.closest('[data-action]');
   if (!button) return;
   const id = button.dataset.id;
   const action = button.dataset.action;
 
-  if (action === 'download') {
+  if (action === 'detail') {
+    showHistoryDetail(id).catch(err => console.error('[History] detail failed', err));
+  } else if (action === 'download') {
     downloadHistoryRecord(id).catch(err => console.error('[History] download failed', err));
   } else if (action === 'delete') {
     deleteHistoryRecord(id).catch(err => console.error('[History] delete failed', err));
   } else if (action === 'restore') {
     restoreFromHistory(id).catch(err => console.error('[History] restore failed', err));
+  }
+}
+
+function appendHistoryDetailSection(container, titleKey, values) {
+  const section = document.createElement('section');
+  section.className = 'history-detail-section';
+  const heading = document.createElement('h4');
+  heading.textContent = t(titleKey);
+  section.appendChild(heading);
+
+  if (Array.isArray(values)) {
+    if (values.length) {
+      const list = document.createElement('ul');
+      values.forEach(value => {
+        const item = document.createElement('li');
+        item.textContent = value;
+        list.appendChild(item);
+      });
+      section.appendChild(list);
+    } else {
+      const empty = document.createElement('p');
+      empty.className = 'history-detail-text';
+      empty.textContent = t('history.detailNone');
+      section.appendChild(empty);
+    }
+  } else {
+    const text = document.createElement('p');
+    text.className = 'history-detail-text';
+    text.textContent = values || t('history.detailNone');
+    section.appendChild(text);
+  }
+  container.appendChild(section);
+}
+
+async function showHistoryDetail(id) {
+  if (!id || typeof HistoryStore === 'undefined') return;
+  const record = await HistoryStore.get(id);
+  if (!record) {
+    showToast(t('toast.history.failed', { message: t('history.missingRecord') }), 'error');
+    return;
+  }
+
+  const content = document.getElementById('historyDetailContent');
+  const listView = document.getElementById('historyListView');
+  const detailView = document.getElementById('historyDetailView');
+  if (!content || !listView || !detailView) return;
+
+  const detail = historyListService.prepareDetailRecord(record, {
+    getDefaultTitle: getDefaultMeetingTitle,
+    formatTimestamp: formatHistoryTimestamp,
+    truncatePreview: truncateText
+  });
+  content.innerHTML = '';
+
+  const title = document.createElement('h3');
+  title.textContent = detail.title;
+  content.appendChild(title);
+
+  const meta = document.createElement('div');
+  meta.className = 'history-detail-meta';
+  meta.appendChild(createHistoryBadge(detail.savedAt));
+  meta.appendChild(createHistoryBadge(getHistoryCategoryLabel(detail.category)));
+  meta.appendChild(createHistoryBadge(
+    t(detail.status === 'organized' ? 'history.statusOrganized' : 'history.statusRaw'),
+    detail.status === 'organized' ? 'history-badge-organized' : ''
+  ));
+  detail.tags.forEach(tag => meta.appendChild(createHistoryBadge(`#${tag}`)));
+  content.appendChild(meta);
+
+  if (detail.structured) {
+    appendHistoryDetailSection(content, 'history.detailKeyPoints', detail.structured.keyPoints);
+    appendHistoryDetailSection(content, 'history.detailDecisions', detail.structured.decisions);
+    appendHistoryDetailSection(content, 'history.detailActionCandidates', detail.structured.actionCandidates);
+    appendHistoryDetailSection(content, 'history.detailOpenQuestions', detail.structured.openQuestions);
+  }
+  if (detail.minutes) {
+    appendHistoryDetailSection(content, 'history.detailMinutes', detail.minutes);
+  }
+  appendHistoryDetailSection(content, 'history.detailTranscript', detail.transcript);
+
+  selectedHistoryRecordId = id;
+  listView.hidden = true;
+  detailView.hidden = false;
+}
+
+function handleHistoryDetailAction(event) {
+  if (event.target.closest('[data-action="back-to-list"]')) {
+    showHistoryListView();
   }
 }
 
@@ -6681,6 +6870,7 @@ async function downloadHistoryRecord(id) {
 
 async function deleteHistoryRecord(id) {
   if (!id || typeof HistoryStore === 'undefined') return;
+  if (!confirm(t('history.deleteConfirm'))) return;
   try {
     await HistoryStore.delete(id);
   } catch (err) {
@@ -6689,6 +6879,7 @@ async function deleteHistoryRecord(id) {
     return;
   }
   showToast(t('toast.history.deleted'), 'info');
+  showHistoryListView();
   await renderHistoryList();
 }
 

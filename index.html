@@ -641,14 +641,59 @@
 
 <!-- 履歴モーダル -->
   <div class="modal-overlay" id="historyModal">
-    <div class="modal" style="max-width:700px;">
+    <div class="modal history-modal">
       <div class="modal-header">
         <h2>🗂️ <span data-i18n="history.modalTitle">会議履歴</span></h2>
         <button class="modal-close" id="closeHistoryModalBtn">×</button>
       </div>
       <div class="modal-body">
-        <p style="margin-bottom:0.75rem; font-size:0.9rem; color:var(--text-secondary);" data-i18n="history.modalDescription">最大5件まで自動保存され、古い履歴から削除されます。</p>
-        <div id="historyList" class="history-list" data-i18n-empty="history.empty" style="display:flex; flex-direction:column; gap:0.75rem;"></div>
+        <div id="historyListView">
+          <p class="history-description" data-i18n="history.modalDescription">録音停止時に自動保存され、削除するまで端末内に保持されます。</p>
+          <div class="history-filters" aria-label="履歴の絞り込み" data-i18n-aria-label="history.filtersLabel">
+            <label class="history-filter history-search-filter">
+              <span data-i18n="history.searchLabel">全文検索</span>
+              <input type="search" id="historySearchInput" class="setting-input" data-i18n-placeholder="history.searchPlaceholder" placeholder="タイトル・タグ・文字起こし・整理内容を検索">
+            </label>
+            <label class="history-filter">
+              <span data-i18n="history.categoryLabel">カテゴリ</span>
+              <select id="historyCategoryFilter" class="setting-input">
+                <option value="" data-i18n="history.filterAll">すべて</option>
+                <option value="会議・打合せ" data-i18n="structuring.categories.meeting">会議・打合せ</option>
+                <option value="相談・確認" data-i18n="structuring.categories.consultation">相談・確認</option>
+                <option value="指示・依頼" data-i18n="structuring.categories.request">指示・依頼</option>
+                <option value="アイデア" data-i18n="structuring.categories.idea">アイデア</option>
+                <option value="その他" data-i18n="structuring.categories.other">その他</option>
+              </select>
+            </label>
+            <label class="history-filter">
+              <span data-i18n="history.statusLabel">整理状態</span>
+              <select id="historyStatusFilter" class="setting-input">
+                <option value="" data-i18n="history.filterAll">すべて</option>
+                <option value="raw" data-i18n="history.statusRaw">未整理</option>
+                <option value="organized" data-i18n="history.statusOrganized">整理済み</option>
+              </select>
+            </label>
+            <label class="history-filter">
+              <span data-i18n="history.startDateLabel">開始日</span>
+              <input type="date" id="historyStartDateFilter" class="setting-input">
+            </label>
+            <label class="history-filter">
+              <span data-i18n="history.endDateLabel">終了日</span>
+              <input type="date" id="historyEndDateFilter" class="setting-input">
+            </label>
+          </div>
+          <p id="historyResultCount" class="history-result-count" aria-live="polite"></p>
+          <div id="historyList" class="history-list" data-i18n-empty="history.empty"></div>
+        </div>
+        <div id="historyDetailView" class="history-detail" hidden>
+          <button type="button" class="btn btn-ghost btn-sm history-back-button" data-action="back-to-list">← <span data-i18n="history.backToList">一覧へ戻る</span></button>
+          <div id="historyDetailContent"></div>
+          <div class="history-detail-actions">
+            <button type="button" class="btn btn-secondary" id="historyDetailRestoreBtn">🔄 <span data-i18n="history.restore">再読み込み</span></button>
+            <button type="button" class="btn btn-ghost" id="historyDetailDeleteBtn">🗑 <span data-i18n="history.delete">削除</span></button>
+            <button type="button" class="btn btn-primary" id="historyDetailCloseBtn" data-i18n="common.close">閉じる</button>
+          </div>
+        </div>
       </div>
       <div class="modal-footer" style="justify-content:space-between;">
         <button class="btn btn-ghost" id="clearHistoryBtn">🧹 <span data-i18n="history.clearAll">履歴を全て削除</span></button>
