@@ -6055,6 +6055,7 @@ async function saveHistorySnapshot() {
       if (original) {
         record.id = AppState.restoredHistoryId;
         record.createdAt = original.createdAt; // 元の作成日時を維持
+        record.profile = original.profile; // 復元元の録音プロファイルを維持
       }
     } catch (e) {
       console.warn('[History] Failed to get original record for overwrite', e);
