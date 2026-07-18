@@ -6552,16 +6552,20 @@ function parseImportMarkdown(mdContent) {
     result.title = titleMatch[1].trim();
   }
 
-  // 文字起こし抽出（<details>タグ内）
-  const transcriptMatch = mdContent.match(/<details>[\s\S]*?<summary>[\s\S]*?<\/summary>\s*([\s\S]*?)\s*<\/details>/i);
+  // 文字起こし抽出（front matter付き新形式を優先し、従来の<details>形式へフォールバック）
+  const transcriptMatch =
+    mdContent.match(/^##\s+文字起こし[^\S\r\n]*\r?\n+([\s\S]*?)(?=\r?\n(?:---[^\S\r\n]*\r?\n+)?##\s+保存時の詳細出力（従来形式）[^\S\r\n]*(?:\r?\n|(?![\s\S]))|(?![\s\S]))/m) ||
+    mdContent.match(/<details>[\s\S]*?<summary>[\s\S]*?<\/summary>\s*([\s\S]*?)\s*<\/details>/i);
   if (transcriptMatch) {
     result.transcript = transcriptMatch[1].trim();
     // チャンクに変換
     result.transcriptChunks = parseTranscriptToChunks(result.transcript);
   }
 
-  // 議事録抽出（## 📝 で始まるセクション）
-  const minutesMatch = mdContent.match(/##\s*📝[^\n]*\n\n([\s\S]*?)(?=\n---|\n##|$)/);
+  // 議事録抽出（front matter付き新形式を優先し、従来の絵文字付き見出しへフォールバック）
+  const minutesMatch =
+    mdContent.match(/^##\s+議事録[^\S\r\n]*\r?\n+([\s\S]*?)(?=\r?\n##\s+文字起こし[^\S\r\n]*(?:\r?\n|(?![\s\S]))|(?![\s\S]))/m) ||
+    mdContent.match(/##\s*📝[^\n]*\n\n([\s\S]*?)(?=\n---|\n##|$)/);
   if (minutesMatch) {
     result.minutes = minutesMatch[1].trim();
     result.aiResponses.minutes = result.minutes;

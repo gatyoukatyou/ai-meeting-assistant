@@ -107,6 +107,25 @@ describe('ExportService', () => {
     assert.match(markdown, /## 文字起こし\n\nraw transcript/);
   });
 
+  it('preserves the stored legacy export payload after the new record contract', () => {
+    const markdown = ExportService.generateRecordMarkdown({
+      id: 'legacy-1',
+      title: '互換性確認',
+      createdAt: '2026-07-18T04:00:00.000Z',
+      profile: 'meeting',
+      category: '会議・打合せ',
+      tags: [],
+      status: 'raw',
+      transcript: 'new contract transcript',
+      exportMarkdown: '# 旧出力\n\n## 💬 AI回答\n\nlegacy-summary-marker\n\n## 💰 コスト詳細\n\nlegacy-cost-marker\n'
+    });
+
+    assert.match(markdown, /## 文字起こし\n\nnew contract transcript/);
+    assert.match(markdown, /## 保存時の詳細出力（従来形式）/);
+    assert.match(markdown, /legacy-summary-marker/);
+    assert.match(markdown, /legacy-cost-marker/);
+  });
+
   it('concatenates records with a blank line before each next front matter block', () => {
     const first = {
       id: 'newer', title: 'Newer', createdAt: '2026-07-18T00:00:00Z',

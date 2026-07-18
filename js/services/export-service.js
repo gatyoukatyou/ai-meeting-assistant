@@ -129,6 +129,20 @@ const ExportService = (function () {
     }
     lines.push('## 文字起こし', '', transcript);
 
+    const legacyExport = typeof source.exportMarkdown === 'string'
+      ? source.exportMarkdown.replace(/\r\n/g, '\n').trim()
+      : '';
+    if (legacyExport) {
+      lines.push(
+        '',
+        '---',
+        '',
+        '## 保存時の詳細出力（従来形式）',
+        '',
+        legacyExport
+      );
+    }
+
     return `${lines.join('\n').trimEnd()}\n`;
   }
 
