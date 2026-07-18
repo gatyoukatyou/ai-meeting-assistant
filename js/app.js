@@ -319,6 +319,7 @@ var historyBackupService = (typeof HistoryBackupService !== 'undefined') ? Histo
 var historyListService = (typeof HistoryListService !== 'undefined') ? HistoryListService : null;
 var diagnosticsService = (typeof DiagnosticsService !== 'undefined') ? DiagnosticsService : null;
 let historyRecordsCache = [];
+let historyFilteredRecordsCache = [];
 let selectedHistoryRecordId = null;
 
 // Handle fatal errors - show modal and safely stop recording
@@ -1525,6 +1526,22 @@ document.addEventListener('DOMContentLoaded', async function() {
       if (selectedHistoryRecordId) {
         restoreFromHistory(selectedHistoryRecordId).catch(err => console.error('[History] restore failed', err));
       }
+    });
+  }
+
+  const historyDetailExportBtn = document.getElementById('historyDetailExportBtn');
+  if (historyDetailExportBtn) {
+    historyDetailExportBtn.addEventListener('click', () => {
+      if (selectedHistoryRecordId) {
+        downloadHistoryRecord(selectedHistoryRecordId).catch(err => console.error('[History] export failed', err));
+      }
+    });
+  }
+
+  const historyBulkExportBtn = document.getElementById('historyBulkExportBtn');
+  if (historyBulkExportBtn) {
+    historyBulkExportBtn.addEventListener('click', () => {
+      downloadVisibleHistoryRecords().catch(err => console.error('[History] bulk export failed', err));
     });
   }
 
@@ -6628,6 +6645,8 @@ async function renderHistoryList(recordsOverride) {
   list.innerHTML = '';
 
   if (typeof HistoryStore === 'undefined') {
+    historyFilteredRecordsCache = [];
+    updateHistoryBulkExportButton();
     const unsupported = document.createElement('p');
     unsupported.textContent = t('history.notSupported');
     list.appendChild(unsupported);
@@ -6647,6 +6666,8 @@ async function renderHistoryList(recordsOverride) {
   }
 
   const filteredRecords = historyListService.filterRecords(records, readHistoryFilters());
+  historyFilteredRecordsCache = filteredRecords;
+  updateHistoryBulkExportButton();
   const resultCount = document.getElementById('historyResultCount');
   if (resultCount) {
     resultCount.textContent = t('history.resultCount', {
@@ -6729,7 +6750,7 @@ async function renderHistoryList(recordsOverride) {
     downloadBtn.className = 'btn btn-primary btn-sm';
     downloadBtn.dataset.action = 'download';
     downloadBtn.dataset.id = record.id;
-    downloadBtn.textContent = `📥 ${t('history.download')}`;
+    downloadBtn.textContent = `📥 ${t('history.exportMarkdown')}`;
     actions.appendChild(downloadBtn);
 
     const deleteBtn = document.createElement('button');
@@ -6743,6 +6764,11 @@ async function renderHistoryList(recordsOverride) {
     item.appendChild(actions);
     list.appendChild(item);
   });
+}
+
+function updateHistoryBulkExportButton() {
+  const button = document.getElementById('historyBulkExportBtn');
+  if (button) button.disabled = historyFilteredRecordsCache.length === 0;
 }
 
 function handleHistoryListAction(event) {
@@ -6860,12 +6886,37 @@ async function downloadHistoryRecord(id) {
     showToast(t('toast.history.failed', { message: err.message || 'Unknown error' }), 'error');
     return;
   }
-  if (!record || !record.exportMarkdown) {
+  if (!record) {
     showToast(t('toast.history.failed', { message: t('history.missingRecord') }), 'error');
     return;
   }
-  const safeTitle = sanitizeFileName(record.title || 'meeting');
-  await downloadMarkdownFile(record.exportMarkdown, `${safeTitle}.md`, 'toast.history');
+  if (!exportService || typeof exportService.generateRecordMarkdown !== 'function') {
+    showToast(t('toast.history.failed', { message: t('history.exportUnavailable') }), 'error');
+    return;
+  }
+  const markdown = exportService.generateRecordMarkdown(record);
+  await downloadMarkdownFile(markdown, `${record.id}.md`, 'toast.history');
+}
+
+function getLocalExportDateKey(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}${month}${day}`;
+}
+
+async function downloadVisibleHistoryRecords() {
+  if (!historyFilteredRecordsCache.length) return;
+  if (!exportService || typeof exportService.generateRecordsMarkdown !== 'function') {
+    showToast(t('toast.history.failed', { message: t('history.exportUnavailable') }), 'error');
+    return;
+  }
+  const markdown = exportService.generateRecordsMarkdown(historyFilteredRecordsCache);
+  await downloadMarkdownFile(
+    markdown,
+    `conversations-${getLocalExportDateKey()}.md`,
+    'toast.history'
+  );
 }
 
 async function deleteHistoryRecord(id) {

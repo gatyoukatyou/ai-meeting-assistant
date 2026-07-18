@@ -49,4 +49,77 @@ describe('ExportService', () => {
     assert.match(markdown, /# Weekly Sync/);
     assert.match(markdown, /hello world/);
   });
+
+  it('generates the organized record contract with YAML-safe values', () => {
+    const markdown = ExportService.generateRecordMarkdown({
+      id: 'conversation-20260718-001',
+      title: '資金: #確認\n次の行',
+      createdAt: '2026-07-18T03:30:00.000Z',
+      profile: 'meeting',
+      category: '相談・確認',
+      tags: ['顧客: 重要', '#至急', '引用 "あり"'],
+      status: 'organized',
+      durationSec: 312,
+      structured: {
+        keyPoints: ['資金計画を確認'],
+        decisions: ['来週再確認'],
+        actionCandidates: ['資料を更新'],
+        openQuestions: ['支払日は未定']
+      },
+      minutes: '議事録本文',
+      transcript: '文字起こし全文'
+    });
+
+    assert.match(markdown, /^---\nid: "conversation-20260718-001"\n/);
+    assert.match(markdown, /created_at: "2026-07-18T03:30:00\.000Z"/);
+    assert.match(markdown, /profile: "meeting"/);
+    assert.match(markdown, /category: "相談・確認"/);
+    assert.match(markdown, / {2}- "顧客: 重要"\n {2}- "#至急"\n {2}- "引用 \\"あり\\""/);
+    assert.match(markdown, /status: "organized"\nduration_sec: 312/);
+    assert.match(markdown, /# 資金: #確認 次の行/);
+    assert.match(markdown, /## 要点\n\n- 資金計画を確認/);
+    assert.match(markdown, /## アクション候補\n\n以下は候補であり、確定タスクではありません。\n\n- \[ \] 資料を更新/);
+    assert.match(markdown, /## 議事録\n\n議事録本文/);
+    assert.match(markdown, /## 文字起こし\n\n文字起こし全文/);
+  });
+
+  it('omits organized sections for raw records while preserving the transcript', () => {
+    const markdown = ExportService.generateRecordMarkdown({
+      id: 'raw-1',
+      title: '未整理メモ',
+      createdAt: '2026-07-18T04:00:00+09:00',
+      profile: 'memo',
+      category: 'その他',
+      tags: [],
+      status: 'raw',
+      durationSec: 5,
+      structured: {
+        keyPoints: ['出力してはいけない']
+      },
+      minutes: 'メモプロファイルでは出力しない',
+      transcript: 'raw transcript'
+    });
+
+    assert.match(markdown, /status: "raw"/);
+    assert.match(markdown, /tags: \[\]/);
+    assert.doesNotMatch(markdown, /## 要点|## 決定事項|## アクション候補|## 未解決事項/);
+    assert.doesNotMatch(markdown, /## 議事録/);
+    assert.match(markdown, /## 文字起こし\n\nraw transcript/);
+  });
+
+  it('concatenates records with a blank line before each next front matter block', () => {
+    const first = {
+      id: 'newer', title: 'Newer', createdAt: '2026-07-18T00:00:00Z',
+      profile: 'memo', category: 'その他', tags: [], status: 'raw', transcript: 'first'
+    };
+    const second = {
+      id: 'older', title: 'Older', createdAt: '2026-07-17T00:00:00Z',
+      profile: 'memo', category: 'その他', tags: [], status: 'raw', transcript: 'second'
+    };
+    const markdown = ExportService.generateRecordsMarkdown([first, second]);
+
+    assert.equal((markdown.match(/^---\nid:/gm) || []).length, 2);
+    assert.match(markdown, /first\n\n---\nid: "older"/);
+    assert.ok(markdown.indexOf('id: "newer"') < markdown.indexOf('id: "older"'));
+  });
 });
