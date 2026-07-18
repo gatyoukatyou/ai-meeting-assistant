@@ -55,6 +55,7 @@ async function main() {
     await runNpmScript('test:upload');
     await runNpmScript('test:history-store');
     await runNpmScript('test:structuring');
+    await runNpmScript('test:history-browse');
     await runNpmScript('test:recorder');
   } finally {
     if (!server.reused) {
