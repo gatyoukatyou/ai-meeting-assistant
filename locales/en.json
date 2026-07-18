@@ -46,6 +46,12 @@
       "minutesTooltipReady": "Create meeting minutes",
       "noTranscript": "No transcript available"
     },
+    "profile": {
+      "memo": "Memo",
+      "meeting": "Meeting",
+      "switchToMemo": "Switch to memo profile",
+      "switchToMeeting": "Switch to meeting profile"
+    },
     "panel": {
       "transcript": "Transcript",
       "aiResponse": "AI Response",

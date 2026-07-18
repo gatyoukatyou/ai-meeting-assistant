@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="ja" data-i18n-title="app.pageTitle" data-style="brutalism">
+<html lang="ja" data-i18n-title="app.pageTitle" data-style="brutalism" data-recording-profile="memo">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -47,6 +47,10 @@
     <!-- Row 2: 操作ツールバー -->
     <div class="header-row-2">
       <div class="header-record">
+        <button type="button" class="meeting-mode-chip recording-profile-chip" id="recordingProfileChip" data-profile="memo">
+          <span class="btn-icon" id="recordingProfileIcon">📝</span>
+          <span class="btn-label" id="recordingProfileLabel" data-i18n="app.profile.memo">メモ</span>
+        </button>
         <button type="button" class="btn btn-primary record-btn" id="recordBtn">
           <span class="btn-icon">🎙️</span>
           <span class="btn-label" data-i18n="app.recording.start">録音開始</span>

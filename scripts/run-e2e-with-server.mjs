@@ -57,6 +57,7 @@ async function main() {
     await runNpmScript('test:structuring');
     await runNpmScript('test:history-browse');
     await runNpmScript('test:history-export');
+    await runNpmScript('test:recording-profiles');
     await runNpmScript('test:recorder');
   } finally {
     if (!server.reused) {

@@ -35,6 +35,7 @@ export async function setupPage(browser) {
   const context = await browser.newContext();
   const page = await context.newPage();
   page.on('console', () => {});
+  await page.addInitScript(() => localStorage.setItem('_recordingProfile', 'meeting'));
 
   await page.goto(`${BASE_URL}/index.html`, { waitUntil: 'networkidle', timeout: 30000 });
 
