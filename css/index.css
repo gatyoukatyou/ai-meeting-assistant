@@ -810,6 +810,33 @@ footer { flex-shrink: 0; }
   background: var(--accent-green);
 }
 
+.recording-profile-chip[data-profile="memo"] {
+  background: var(--accent-green);
+}
+
+.recording-profile-chip[data-profile="meeting"] {
+  background: var(--accent-blue);
+}
+
+html[data-recording-profile="memo"] .main-container {
+  grid-template-columns: 1fr;
+}
+
+html[data-recording-profile="memo"] #transcriptPanel {
+  display: flex !important;
+  grid-column: 1 / -1;
+}
+
+html[data-recording-profile="memo"] #aiPanel,
+html[data-recording-profile="memo"] #meetingModeChip,
+html[data-recording-profile="memo"] #meetingModeToggle,
+html[data-recording-profile="memo"] #openContextModalBtn,
+html[data-recording-profile="memo"] #contextStatusBadge,
+html[data-recording-profile="memo"] .main-tab[data-main-tab="ai"],
+html[data-recording-profile="memo"] .header-more-menu-item[data-action="context"] {
+  display: none !important;
+}
+
 /* ===== STT Status Chip (Progressive Disclosure) ===== */
 .stt-status-chip {
   display: inline-flex;

@@ -17,6 +17,7 @@
     "test:history-store": "node scripts/test-history-store-migration.mjs",
     "test:history-browse": "node scripts/test-history-browse.mjs",
     "test:history-export": "node scripts/test-history-export.mjs",
+    "test:recording-profiles": "node scripts/test-recording-profiles.mjs",
     "test:structuring": "node scripts/test-structuring-review.mjs",
     "test:e2e": "node scripts/run-e2e-with-server.mjs",
     "test": "npm run test:unit && npm run test:ui-smoke && npm run test:e2e",

@@ -48,6 +48,7 @@ async function createRawStoppedRecord(page, suffix) {
       id: record.id,
       count: records.length,
       status: record.status,
+      profile: record.profile,
       createdAt: record.createdAt,
       transcript: record.transcript,
       buttonVisible: !document.getElementById('structuringAction').hidden
@@ -58,6 +59,7 @@ async function createRawStoppedRecord(page, suffix) {
 async function runOrganizedFlow(page) {
   const raw = await createRawStoppedRecord(page, 'organized');
   assert(raw.status === 'raw', `expected raw before structuring, got ${raw.status}`);
+  assert(raw.profile === 'memo', `expected memo profile before structuring, got ${raw.profile}`);
   assert(raw.buttonVisible, 'organize action should be visible after stopped-record save');
 
   await page.evaluate(() => {
@@ -113,6 +115,7 @@ async function runOrganizedFlow(page) {
   assert(result.record.createdAt === raw.createdAt, 'structuring must preserve createdAt');
   assert(result.record.transcript === raw.transcript, 'structuring must preserve the transcript');
   assert(result.record.status === 'organized', 'saved review must set status organized');
+  assert(result.record.profile === 'memo', 'structured save must preserve the memo profile');
   assert(result.record.title === 'HUMAN確認済みタイトル', 'edited title was not saved');
   assert(
     result.record.structured.actionCandidates[0] === '具体化した候補',

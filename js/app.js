@@ -44,6 +44,20 @@ let resumeFromSuspensionPromise = null;
 
 const MEETING_TITLE_STORE = (typeof MeetingTitleStore !== 'undefined') ? MeetingTitleStore : null;
 const MEETING_CONTEXT_STORE = (typeof MeetingContextStore !== 'undefined') ? MeetingContextStore : null;
+const RECORDING_PROFILE_STORAGE_KEY = '_recordingProfile';
+const RECORDING_PROFILES = Object.freeze({ MEMO: 'memo', MEETING: 'meeting' });
+let recordingProfile = loadRecordingProfile();
+
+function loadRecordingProfile() {
+  try {
+    return localStorage.getItem(RECORDING_PROFILE_STORAGE_KEY) === RECORDING_PROFILES.MEETING
+      ? RECORDING_PROFILES.MEETING
+      : RECORDING_PROFILES.MEMO;
+  } catch (error) {
+    console.warn('[Storage] Failed to load recording profile', error);
+    return RECORDING_PROFILES.MEMO;
+  }
+}
 
 // ファイルアップロード関連の定数
 const CONTEXT_SCHEMA_VERSION = 3;  // v3: participants, handoff, toggles追加
@@ -277,6 +291,8 @@ const AppState = {
   set whisperUserDictionary(value) { whisperUserDictionary = value; },
   get currentLLMProvider() { return currentLLMProvider; },
   set currentLLMProvider(value) { currentLLMProvider = value; },
+  get recordingProfile() { return recordingProfile; },
+  set recordingProfile(value) { recordingProfile = value; },
 };
 
 // --- Format utilities (delegated to js/lib/format-utils.js) ---
@@ -1708,6 +1724,17 @@ document.addEventListener('DOMContentLoaded', async function() {
   updateLLMIndicator();
   updateLLMButtonsState();
 
+  const recordingProfileChip = document.getElementById('recordingProfileChip');
+  if (recordingProfileChip) {
+    recordingProfileChip.addEventListener('click', () => {
+      const nextProfile = AppState.recordingProfile === RECORDING_PROFILES.MEMO
+        ? RECORDING_PROFILES.MEETING
+        : RECORDING_PROFILES.MEMO;
+      setRecordingProfile(nextProfile);
+    });
+  }
+  initRecordingProfile();
+
   initializeMeetingContextUI();
 
   // Panel Meeting Mode (会議モード切替)
@@ -1808,6 +1835,7 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateCosts();
     renderTranscriptChunks();
     renderTimeline();
+    updateRecordingProfileUI();
     updatePanelMeetingModeUI();
     updateUI();
   });
@@ -4210,6 +4238,7 @@ function updateUI() {
     // 録音開始時間をリセット
     AppState.recordingStartTime = null;
   }
+  updateRecordingProfileUI();
   updateStructuringActionVisibility();
 }
 
@@ -4416,6 +4445,8 @@ function switchTab(tabName) {
 
 // Phase 3: メインパネル切り替え（スマホ用）
 function switchMainTab(tabName) {
+  if (AppState.recordingProfile === RECORDING_PROFILES.MEMO && tabName === 'ai') return;
+
   // 会議モード（パネル）中は編集モードに戻してからタブ切替
   if (AppState.isPanelMeetingMode) {
     AppState.isPanelMeetingMode = false;
@@ -4452,6 +4483,7 @@ function switchMainTab(tabName) {
 
 // Phase 5: 会議中モード
 function enterMeetingMode() {
+  if (AppState.recordingProfile === RECORDING_PROFILES.MEMO) return;
   AppState.isMeetingMode = true;
   updateMeetingModeBodyClass(); // PR-3: body class for wider layout
   const overlay = document.getElementById('meetingModeOverlay');
@@ -4588,16 +4620,78 @@ function clearTranscript() {
 }
 
 // =====================================
+// Recording Profile (memo / meeting)
+// =====================================
+function initRecordingProfile() {
+  updateRecordingProfileUI();
+}
+
+function setRecordingProfile(profile) {
+  if (!Object.values(RECORDING_PROFILES).includes(profile) || AppState.isRecording) return false;
+  AppState.recordingProfile = profile;
+  try {
+    localStorage.setItem(RECORDING_PROFILE_STORAGE_KEY, profile);
+  } catch (error) {
+    console.warn('[Storage] Failed to persist recording profile', error);
+  }
+  updateRecordingProfileUI();
+  return true;
+}
+
+function updateRecordingProfileUI() {
+  const profile = AppState.recordingProfile === RECORDING_PROFILES.MEETING
+    ? RECORDING_PROFILES.MEETING
+    : RECORDING_PROFILES.MEMO;
+  const isMemo = profile === RECORDING_PROFILES.MEMO;
+  const chip = document.getElementById('recordingProfileChip');
+  const icon = document.getElementById('recordingProfileIcon');
+  const label = document.getElementById('recordingProfileLabel');
+  const main = document.querySelector('.main-container');
+  const transcriptPanel = document.getElementById('transcriptPanel');
+  const aiPanel = document.getElementById('aiPanel');
+
+  document.documentElement.dataset.recordingProfile = profile;
+  if (chip) {
+    const switchKey = isMemo ? 'app.profile.switchToMeeting' : 'app.profile.switchToMemo';
+    chip.dataset.profile = profile;
+    chip.disabled = AppState.isRecording;
+    chip.title = t(switchKey);
+    chip.setAttribute('aria-label', t(switchKey));
+  }
+  if (icon) icon.textContent = isMemo ? '📝' : '👥';
+  if (label) {
+    const labelKey = isMemo ? 'app.profile.memo' : 'app.profile.meeting';
+    label.setAttribute('data-i18n', labelKey);
+    label.textContent = t(labelKey);
+  }
+
+  if (isMemo) {
+    main?.classList.remove('meeting-mode');
+    transcriptPanel?.classList.add('active');
+    aiPanel?.classList.remove('active');
+    document.querySelectorAll('.main-tab').forEach(tab => {
+      tab.classList.toggle('active', tab.dataset.mainTab === 'transcript');
+    });
+    if (AppState.isMeetingMode) exitMeetingMode();
+  } else {
+    main?.classList.toggle('meeting-mode', AppState.isPanelMeetingMode);
+  }
+}
+
+// =====================================
 // Panel Meeting Mode (会議モード - パネル切替)
 // =====================================
 function initPanelMeetingMode() {
-  if (AppState.isPanelMeetingMode) {
+  if (AppState.recordingProfile === RECORDING_PROFILES.MEETING && AppState.isPanelMeetingMode) {
     document.querySelector('.main-container')?.classList.add('meeting-mode');
+  } else {
+    document.querySelector('.main-container')?.classList.remove('meeting-mode');
   }
   updatePanelMeetingModeUI();
 }
 
 function togglePanelMeetingMode() {
+  if (AppState.recordingProfile === RECORDING_PROFILES.MEMO) return;
   AppState.isPanelMeetingMode = !AppState.isPanelMeetingMode;
   document.querySelector('.main-container')?.classList.toggle('meeting-mode', AppState.isPanelMeetingMode);
   try {
@@ -5917,6 +6011,7 @@ function buildHistoryRecord() {
     title: getMeetingTitleValue() || getDefaultMeetingTitle(now),
     createdAt: now.toISOString(),
     updatedAt: now.toISOString(),
+    profile: AppState.recordingProfile,
     transcript: transcriptText,
     durationSec: Math.round(AppState.costs.transcript.duration || 0),
     summaryPreview,
@@ -7504,6 +7599,7 @@ function initializeMeetingContextUI() {
 }
 
 function openContextModal() {
+  if (AppState.recordingProfile === RECORDING_PROFILES.MEMO) return;
   const modal = document.getElementById('contextModal');
   if (!modal) return;
   const goalInput = document.getElementById('contextGoalInput');
