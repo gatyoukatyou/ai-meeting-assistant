@@ -38,6 +38,7 @@ export default [
         MeetingContextStore: 'readonly',
         ModelRegistryCacheStore: 'readonly',
         LLMClientService: 'readonly',
+        OpenAICompatibleClient: 'readonly',
         MeetingContextService: 'readonly',
         TranscriptionQueueOverflowService: 'readonly',
         RecorderLifecycleService: 'readonly',

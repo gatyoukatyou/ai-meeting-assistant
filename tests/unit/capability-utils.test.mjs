@@ -114,11 +114,11 @@ describe('resolveEffectiveLlmProvider', () => {
     );
   });
 
-  it('falls back to default order when priority has no key', () => {
+  it('does not silently replace an explicitly selected provider with no key', () => {
     const hasApiKey = (provider) => provider === 'openai_llm';
     assert.equal(
       CapabilityUtils.resolveEffectiveLlmProvider('gemini', hasApiKey),
-      'openai_llm'
+      null
     );
   });
 

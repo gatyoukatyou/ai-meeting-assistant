@@ -106,9 +106,9 @@ const ModelRegistry = (function() {
       authHeader: 'x-goog-api-key',
       canListModels: true,
       fixedModels: [
-        { id: 'gemini-2.5-pro', displayName: 'Gemini 2.5 Pro', deprecated: false },
-        { id: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash', deprecated: false },
-        { id: 'gemini-2.0-flash', displayName: 'Gemini 2.0 Flash (2026-03-31 shutdown)', deprecated: true, shutdownDate: '2026-03-31' }
+        { id: 'gemini-3.6-flash', displayName: 'Gemini 3.6 Flash', deprecated: false },
+        { id: 'gemini-3.5-flash-lite', displayName: 'Gemini 3.5 Flash-Lite', deprecated: false },
+        { id: 'gemini-2.5-flash', displayName: 'Gemini 2.5 Flash (legacy setting)', deprecated: true }
       ]
     },
     openai_llm: {
@@ -118,9 +118,9 @@ const ModelRegistry = (function() {
       canListModels: false,
       canListModelsWithProxy: true,
       fixedModels: [
-        { id: 'gpt-4o', displayName: 'GPT-4o (Recommended)', deprecated: false },
-        { id: 'gpt-4o-mini', displayName: 'GPT-4o Mini (Low cost)', deprecated: false },
-        { id: 'gpt-4-turbo', displayName: 'GPT-4 Turbo', deprecated: false }
+        { id: 'gpt-5.6-terra', displayName: 'GPT-5.6 Terra', deprecated: false },
+        { id: 'gpt-5.6-luna', displayName: 'GPT-5.6 Luna', deprecated: false },
+        { id: 'gpt-5.6-sol', displayName: 'GPT-5.6 Sol', deprecated: false }
       ],
       allowCustomModel: true
     },
@@ -133,8 +133,8 @@ const ModelRegistry = (function() {
       },
       canListModels: true,
       fixedModels: [
-        { id: 'claude-sonnet-4-20250514', displayName: 'Claude Sonnet 4', deprecated: false },
-        { id: 'claude-3-5-sonnet-20241022', displayName: 'Claude 3.5 Sonnet', deprecated: false }
+        { id: 'claude-sonnet-5', displayName: 'Claude Sonnet 5', deprecated: false },
+        { id: 'claude-haiku-4-5-20251001', displayName: 'Claude Haiku 4.5', deprecated: false }
       ]
     },
     groq: {
@@ -143,9 +143,21 @@ const ModelRegistry = (function() {
       authPrefix: 'Bearer ',
       canListModels: true,
       fixedModels: [
-        { id: 'llama-3.3-70b-versatile', displayName: 'LLaMA 3.3 70B (Recommended)', deprecated: false },
-        { id: 'llama-3.1-8b-instant', displayName: 'LLaMA 3.1 8B (Low cost)', deprecated: false }
+        { id: 'openai/gpt-oss-120b', displayName: 'GPT-OSS 120B', deprecated: false },
+        { id: 'openai/gpt-oss-20b', displayName: 'GPT-OSS 20B', deprecated: false },
+        { id: 'llama-3.3-70b-versatile', displayName: 'Llama 3.3 70B (shutdown 2026-08-16)', deprecated: true, shutdownDate: '2026-08-16' },
+        { id: 'llama-3.1-8b-instant', displayName: 'Llama 3.1 8B (shutdown 2026-08-16)', deprecated: true, shutdownDate: '2026-08-16' }
       ]
+    },
+    deepseek: {
+      endpoint: 'https://api.deepseek.com/models',
+      authHeader: 'Authorization',
+      authPrefix: 'Bearer ',
+      canListModels: true,
+      fixedModels: [
+        { id: 'deepseek-v4-flash', displayName: 'DeepSeek V4 Flash', deprecated: false }
+      ],
+      allowCustomModel: true
     }
   };
 
@@ -159,7 +171,8 @@ const ModelRegistry = (function() {
     gemini: Object.assign({}, PROVIDER_CONFIG_BASE.gemini, { parseModels: parseGeminiModels }),
     openai_llm: Object.assign({}, PROVIDER_CONFIG_BASE.openai_llm, { parseModels: parseOpenAIModels }),
     claude: Object.assign({}, PROVIDER_CONFIG_BASE.claude, { parseModels: parseClaudeModels }),
-    groq: Object.assign({}, PROVIDER_CONFIG_BASE.groq, { parseModels: parseGroqModels })
+    groq: Object.assign({}, PROVIDER_CONFIG_BASE.groq, { parseModels: parseGroqModels }),
+    deepseek: Object.assign({}, PROVIDER_CONFIG_BASE.deepseek, { parseModels: parseGroqModels })
   };
 
   // =====================================
@@ -655,6 +668,16 @@ const ModelRegistry = (function() {
           body = JSON.stringify({
             model: model,
             max_tokens: 1,
+            messages: [{ role: 'user', content: 'Hi' }]
+          });
+          break;
+
+        case 'deepseek':
+          endpoint = 'https://api.deepseek.com/chat/completions';
+          body = JSON.stringify({
+            model: model,
+            max_tokens: 1,
+            thinking: { type: 'disabled' },
             messages: [{ role: 'user', content: 'Hi' }]
           });
           break;

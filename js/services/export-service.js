@@ -164,7 +164,7 @@ const ExportService = (function () {
     const meetingMemos = c.meetingMemos || { items: [] };
     const costs = c.costs || {
       transcript: { duration: 0, calls: 0, byProvider: { openai: 0, deepgram: 0 }, total: 0 },
-      llm: { inputTokens: 0, outputTokens: 0, calls: 0, byProvider: { gemini: 0, claude: 0, openai: 0, groq: 0 }, total: 0 }
+      llm: { inputTokens: 0, outputTokens: 0, calls: 0, byProvider: { gemini: 0, claude: 0, openai: 0, groq: 0, deepseek: 0 }, total: 0 }
     };
 
     const now = c.now || new Date().toLocaleString(c.locale || 'ja-JP');
@@ -336,7 +336,7 @@ const ExportService = (function () {
       md += `### ${t('export.document.costStt')}\n`;
       md += `- ${t('export.document.costProcessingTime')}: ${formatDuration(costs.transcript.duration)}\n`;
       md += `- ${t('export.document.costApiCalls')}: ${costs.transcript.calls}\n`;
-      md += `- OpenAI Whisper: ${formatCost(costs.transcript.byProvider.openai)}\n`;
+      md += `- OpenAI Transcribe: ${costs.transcript.hasUnknownEstimate ? '見積不能（トークンusage未取得）' : formatCost(costs.transcript.byProvider.openai)}\n`;
       md += `- Deepgram: ${formatCost(costs.transcript.byProvider.deepgram)}\n`;
       md += `- ${t('export.document.costSubtotal')}: ${formatCost(costs.transcript.total)}\n\n`;
       md += `### ${t('export.document.costLlm')}\n`;
@@ -347,6 +347,8 @@ const ExportService = (function () {
       md += `- Claude: ${formatCost(costs.llm.byProvider.claude)}\n`;
       md += `- OpenAI: ${formatCost(costs.llm.byProvider.openai)}\n`;
       md += `- Groq: ${formatCost(costs.llm.byProvider.groq)}\n`;
+      md += `- DeepSeek: ${formatCost(costs.llm.byProvider.deepseek || 0)}\n`;
+      if (costs.llm.hasUnknownEstimate) md += `- Custom model: estimate unavailable\n`;
       md += `- ${t('export.document.costSubtotal')}: ${formatCost(costs.llm.total)}\n\n`;
       md += `### ${t('export.document.costTotal')}\n`;
       md += `**${formatCost(total)}**\n\n`;

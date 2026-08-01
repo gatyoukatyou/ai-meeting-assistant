@@ -5,7 +5,7 @@ const CapabilityUtils = (function () {
   var LLM_PROVIDER_PRIORITY =
     (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getLlmProviderPriority === 'function')
       ? ProviderCatalog.getLlmProviderPriority()
-      : ['claude', 'openai_llm', 'gemini', 'groq'];
+      : ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek'];
 
   /**
    * プロバイダとモデルの能力を判定する
@@ -17,7 +17,9 @@ const CapabilityUtils = (function () {
     return {
       supportsReasoningControl:
         (provider === 'anthropic' && isReasoningCapableModel(model)) ||
-        (provider === 'openai' && isOpenAiReasoningCapableModel(model)),
+        (provider === 'openai' && isOpenAiReasoningCapableModel(model)) ||
+        (provider === 'groq' && /^openai\/gpt-oss-(20b|120b)$/.test(String(model || ''))) ||
+        (provider === 'deepseek' && model === 'deepseek-v4-flash'),
       supportsNativeDocs: provider === 'gemini',
       supportsVisionImages: false // 将来拡張用
     };
@@ -62,8 +64,8 @@ const CapabilityUtils = (function () {
   function resolveEffectiveLlmProvider(priority, hasApiKey) {
     if (typeof hasApiKey !== 'function') return null;
 
-    if (priority && priority !== 'auto' && hasApiKey(priority)) {
-      return priority;
+    if (priority && priority !== 'auto') {
+      return hasApiKey(priority) ? priority : null;
     }
 
     for (var i = 0; i < LLM_PROVIDER_PRIORITY.length; i++) {
@@ -86,6 +88,8 @@ const CapabilityUtils = (function () {
     if (!normalizedModel) return false;
     // Extended thinking対応モデル
     const reasoningModels = [
+      'claude-sonnet-5',
+      'claude-haiku-4-5',
       'claude-sonnet-4',
       'claude-opus-4',
       'claude-3-7-sonnet' // claude-3.7-sonnet系も対応

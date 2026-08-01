@@ -143,18 +143,18 @@ async function runTests() {
         });
       }
 
-      // Test 7: Gemini fixed models include 2.5 series
+      // Test 7: Gemini fixed models include current standard/low-cost presets
       {
         const geminiFixed = ModelRegistry.getFixedModels('gemini');
-        const has25Pro = geminiFixed.some(m => m.id === 'gemini-2.5-pro');
-        const has25Flash = geminiFixed.some(m => m.id === 'gemini-2.5-flash');
+        const has36Flash = geminiFixed.some(m => m.id === 'gemini-3.6-flash');
+        const has35Lite = geminiFixed.some(m => m.id === 'gemini-3.5-flash-lite');
 
         tests.push({
-          name: 'Gemini fixed models include 2.5 series',
-          input: 'gemini-2.5-pro, gemini-2.5-flash',
+          name: 'Gemini fixed models include current presets',
+          input: 'gemini-3.6-flash, gemini-3.5-flash-lite',
           expected: 'both present',
-          actual: `2.5-pro:${has25Pro}, 2.5-flash:${has25Flash}`,
-          passed: has25Pro && has25Flash
+          actual: `3.6-flash:${has36Flash}, 3.5-flash-lite:${has35Lite}`,
+          passed: has36Flash && has35Lite
         });
       }
 

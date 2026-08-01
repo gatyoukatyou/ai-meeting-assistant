@@ -107,7 +107,7 @@ const DiagnosticsService = (function () {
   function getConfiguredLlmProvidersForDiagnostic(providerPriority, hasApiKey) {
     const providers = Array.isArray(providerPriority)
       ? providerPriority
-      : ['claude', 'openai_llm', 'gemini', 'groq'];
+      : ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek'];
     const has = typeof hasApiKey === 'function' ? hasApiKey : function () { return false; };
     return providers.filter(function (provider) { return Boolean(has(provider)); });
   }
@@ -117,7 +117,7 @@ const DiagnosticsService = (function () {
     if (provider === 'deepgram_realtime') {
       return get('deepgram') || 'nova-3-general';
     }
-    return get('openai') || 'whisper-1';
+    return get('openai') || 'gpt-4o-mini-transcribe';
   }
 
   function buildDiagnosticPackMarkdown(pack, t) {
