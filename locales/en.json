@@ -325,6 +325,7 @@
     },
     "validation": {
       "valid": "Valid",
+      "notSaved": "Not saved yet. Select Save at the bottom of this page",
       "invalid": "Invalid (check key)",
       "unknown": "Not verified (checked on use)",
       "browserLimit": "Not verified (browser limitation)",

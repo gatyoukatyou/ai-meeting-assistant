@@ -105,6 +105,13 @@ if (configJs) {
   } else {
     errors.push(`Missing required config.js hooks: ${missingHooks.join(", ")}`);
   }
+
+  const deepSeekInputMapping = /['"]deepseek['"]\s*:\s*['"]deepseekApiKey['"]/;
+  if (deepSeekInputMapping.test(configJs)) {
+    oks.push("Found DeepSeek API key input mapping");
+  } else {
+    errors.push("Missing DeepSeek API key input mapping");
+  }
 }
 
 if (errors.length > 0) {

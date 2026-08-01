@@ -29,6 +29,18 @@ describe('LLMClientService.resolveAvailableLlm', () => {
     });
     assert.equal(result.provider, 'claude');
   });
+
+  it('uses another configured provider when the preferred provider has no API key', () => {
+    const result = LLMClientService.resolveAvailableLlm({
+      priority: 'gemini',
+      hasApiKey: (provider) => provider === 'openai_llm',
+      getEffectiveModel: (_provider, fallback) => fallback,
+      getDefaultModel: (provider) => `${provider}-default`,
+      providerPriority: ['gemini', 'openai_llm', 'claude']
+    });
+    assert.equal(result.provider, 'openai_llm');
+    assert.equal(result.model, 'openai_llm-default');
+  });
 });
 
 describe('LLMClientService.callLLMOnce', () => {

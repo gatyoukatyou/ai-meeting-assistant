@@ -785,7 +785,8 @@ async function validateApiKeyManual(provider) {
     'gemini': 'geminiApiKey',
     'claude': 'claudeApiKey',
     'openai_llm': 'openaiLlmApiKey',
-    'groq': 'groqApiKey'
+    'groq': 'groqApiKey',
+    'deepseek': 'deepseekApiKey'
   };
 
   const inputEl = document.getElementById(inputIdMap[provider]);
@@ -807,7 +808,9 @@ async function validateApiKeyManual(provider) {
 
   switch (result) {
     case 'valid':
-      showSuccess(`${providerName}: ${t('config.validation.valid')}`);
+      showSuccess(
+        `${providerName}: ${t('config.validation.valid')}. ${t('config.validation.notSaved')}`
+      );
       break;
     case 'invalid':
       showError(`${providerName}: ${t('config.validation.invalid')}`);
@@ -829,7 +832,8 @@ function clearApiKey(provider) {
     'gemini': 'geminiApiKey',
     'claude': 'claudeApiKey',
     'openai_llm': 'openaiLlmApiKey',
-    'groq': 'groqApiKey'
+    'groq': 'groqApiKey',
+    'deepseek': 'deepseekApiKey'
   };
 
   const statusIdMap = {
@@ -838,7 +842,8 @@ function clearApiKey(provider) {
     'gemini': 'gemini-status',
     'claude': 'claude-status',
     'openai_llm': 'openai-llm-status',
-    'groq': 'groq-status'
+    'groq': 'groq-status',
+    'deepseek': 'deepseek-status'
   };
 
   const inputEl = document.getElementById(inputIdMap[provider]);
@@ -881,7 +886,8 @@ function getProviderName(provider) {
     'gemini': 'Gemini',
     'claude': 'Claude',
     'openai_llm': 'OpenAI (LLM)',
-    'groq': 'Groq'
+    'groq': 'Groq',
+    'deepseek': 'DeepSeek'
   };
   return names[provider] || provider;
 }

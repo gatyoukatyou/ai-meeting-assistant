@@ -325,6 +325,7 @@
     },
     "validation": {
       "valid": "認証OK",
+      "notSaved": "まだ保存されていません。画面下の「保存」を押してください",
       "invalid": "認証NG（キー確認）",
       "unknown": "未検証（使用時に判定）",
       "browserLimit": "未検証（ブラウザ制限）",

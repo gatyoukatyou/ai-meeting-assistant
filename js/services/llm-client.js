@@ -17,11 +17,12 @@ const LLMClientService = (function () {
       ? opts.getDefaultModel
       : function () { return ''; };
 
-    if (priority !== 'auto') {
-      if (!hasApiKey(priority)) return null;
+    if (priority !== 'auto' && hasApiKey(priority)) {
       return { provider: priority, model: getEffectiveModel(priority, getDefaultModel(priority)) };
     }
 
+    // The preferred provider may not have a key yet. Continue through the
+    // configured provider order so another valid LLM is still usable.
     for (const provider of providerPriority) {
       if (hasApiKey(provider)) {
         return {
