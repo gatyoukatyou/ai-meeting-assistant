@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; manifest-src 'self';">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com https://api.deepseek.com wss://api.deepgram.com https://api.deepgram.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; manifest-src 'self';">
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
@@ -224,7 +224,7 @@
             <div style="flex:1;">
               <span data-i18n="context.nativeDocsLabel">資料そのまま送信</span>
               <span class="toggle-hint" style="font-size:0.75rem; color:var(--text-secondary); display:block;" data-i18n="context.nativeDocsHint">PDFをそのまま送信・精度向上/コスト増の可能性</span>
-              <span class="toggle-hint" style="font-size:0.72rem; color:var(--text-secondary); display:block;" data-i18n="context.nativeDocsApiGuide">必要API: Gemini API（モデル例: gemini-2.5-flash / gemini-2.5-pro）</span>
+              <span class="toggle-hint" style="font-size:0.72rem; color:var(--text-secondary); display:block;" data-i18n="context.nativeDocsApiGuide">必要API: Gemini API（モデル例: gemini-3.6-flash / gemini-3.5-flash-lite）</span>
               <span class="toggle-disabled-reason" id="nativeDocsDisabledReason" style="font-size:0.7rem; color:var(--warning); display:none;"></span>
             </div>
             <label class="switch">
@@ -292,7 +292,7 @@
           <div class="cost-section">
             <div class="cost-section-title">💵 <span data-i18n="app.cost.byProvider">プロバイダー別</span></div>
             <div class="cost-item">
-              <span class="cost-item-label">OpenAI Whisper:</span>
+              <span class="cost-item-label">OpenAI Transcribe:</span>
               <span id="openaiTranscriptCost">¥0</span>
             </div>
             <div class="cost-item">
@@ -451,6 +451,10 @@
               <span class="cost-item-label">Groq:</span>
               <span id="groqCost">¥0</span>
             </div>
+            <div class="cost-item">
+              <span class="cost-item-label">DeepSeek:</span>
+              <span id="deepseekCost">¥0</span>
+            </div>
           </div>
         </div>
         <div class="cost-row cost-total" style="margin-top: 0.5rem;">
@@ -546,7 +550,7 @@
           <div class="welcome-features">
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🎤</span>
-              <span class="welcome-feature-text" data-i18n="modal.welcome.feature1">高精度な音声文字起こし（OpenAI Whisper / Deepgram）</span>
+              <span class="welcome-feature-text" data-i18n="modal.welcome.feature1">高精度な音声文字起こし（OpenAI Transcribe / Deepgram）</span>
             </div>
             <div class="welcome-feature">
               <span class="welcome-feature-icon">🧠</span>
@@ -736,6 +740,7 @@
             <button type="button" class="llm-provider-tab" data-provider="claude">Claude</button>
             <button type="button" class="llm-provider-tab" data-provider="openai_llm">OpenAI</button>
             <button type="button" class="llm-provider-tab" data-provider="groq">Groq</button>
+            <button type="button" class="llm-provider-tab" data-provider="deepseek">DeepSeek</button>
           </div>
         </div>
         <div class="setting-group">
@@ -847,6 +852,7 @@
   <!-- 選択範囲ユーティリティ -->
   <script src="js/lib/selection-utils.js" defer></script>
   <!-- サービス層（DOM非依存ロジック） -->
+  <script src="js/services/openai-compatible-client.js" defer></script>
   <script src="js/services/llm-client.js" defer></script>
   <script src="js/services/meeting-context-service.js" defer></script>
   <script src="js/services/active-meeting-draft-service.js" defer></script>

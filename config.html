@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com wss://api.deepgram.com https://api.deepgram.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com https://api.deepseek.com wss://api.deepgram.com https://api.deepgram.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
   <title>Settings - AI Meeting</title>
   <link rel="stylesheet" href="css/config.css">
 </head>
@@ -65,7 +65,7 @@
         <div class="setting-group" style="margin-bottom: 1rem;">
           <label class="setting-label" data-i18n="config.stt.provider">STT Provider</label>
           <select class="model-select" id="sttProvider" style="width: 100%;">
-            <option value="openai_stt" selected data-i18n="config.stt.openaiWhisper">OpenAI Whisper (Chunked, stable)</option>
+            <option value="openai_stt" selected data-i18n="config.stt.openaiWhisper">OpenAI Transcribe (chunked uploads)</option>
             <option value="deepgram_realtime" data-i18n="config.stt.deepgramRealtime">Deepgram Realtime (WebSocket, fast)</option>
           </select>
           <div class="setting-hint" id="sttProviderHint" data-i18n="config.stt.providerHint">
@@ -83,9 +83,9 @@
             <div class="setting-row">
               <input type="password" class="setting-input" id="openaiApiKey" placeholder="sk-...">
               <select class="model-select" id="openaiModel">
-                <option value="whisper-1" selected data-i18n="config.stt.models.whisper1">whisper-1 (Recommended)</option>
-                <option value="gpt-4o-transcribe" data-i18n="config.stt.models.gpt4oTranscribe">gpt-4o-transcribe</option>
-                <option value="gpt-4o-mini-transcribe" data-i18n="config.stt.models.gpt4oMiniTranscribe">gpt-4o-mini-transcribe</option>
+                <option value="gpt-4o-mini-transcribe" selected data-i18n="config.stt.models.gpt4oMiniTranscribe">gpt-4o-mini-transcribe (Standard)</option>
+                <option value="gpt-4o-transcribe" data-i18n="config.stt.models.gpt4oTranscribe">gpt-4o-transcribe (Accuracy)</option>
+                <option value="whisper-1" data-i18n="config.stt.models.whisper1">whisper-1 (Legacy compatibility)</option>
               </select>
             </div>
             <div class="api-actions">
@@ -109,8 +109,6 @@
               <input type="password" class="setting-input" id="deepgramApiKey" data-i18n-placeholder="config.stt.enterApiKey" placeholder="Enter API key">
               <select class="model-select" id="deepgramModel">
                 <option value="nova-3-general" selected data-i18n="config.stt.models.nova3">nova-3-general (Latest, recommended)</option>
-                <option value="nova-2-general" data-i18n="config.stt.models.nova2">nova-2-general (Stable)</option>
-                <option value="base" data-i18n="config.stt.models.base">base (Low cost)</option>
               </select>
             </div>
             <div class="api-actions">
@@ -127,7 +125,7 @@
         <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-blue); border-radius: 0.5rem; border: 1px solid var(--accent-border-blue);">
           <div style="font-size: 0.85rem; color: var(--text);" data-i18n-html="config.stt.providerNotes">
             💡 <strong>About STT Providers</strong><br>
-            • <strong>OpenAI Whisper</strong>: Stable, pseudo-real-time via chunked uploads<br>
+            • <strong>OpenAI Transcribe</strong>: Pseudo-real-time via chunked uploads; GPT-4o models are token-billed<br>
             • <strong>Deepgram</strong>: True real-time via WebSocket, low latency
           </div>
         </div>
@@ -152,6 +150,7 @@
       <!-- LLM API (Summary & AI Response) -->
       <div class="api-section llm">
         <div class="api-section-title">💬 <span data-i18n="config.llm.title">AI Response & Summary (Optional) - Select LLM</span></div>
+        <div id="modelMigrationNotice" class="setting-hint" hidden style="margin-bottom: 0.75rem; color: var(--warning);" role="status"></div>
 
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label">
@@ -161,9 +160,8 @@
           <div class="setting-row">
             <input type="password" class="setting-input" id="geminiApiKey" placeholder="AIza...">
             <select class="model-select" id="geminiModel">
-              <option value="gemini-2.5-flash" data-i18n="config.llm.models.gemini25Flash">gemini-2.5-flash (Recommended)</option>
-              <option value="gemini-2.5-pro" data-i18n="config.llm.models.gemini25Pro">gemini-2.5-pro</option>
-              <option value="gemini-2.0-flash" style="color: #999;" data-i18n="config.llm.models.gemini20FlashDeprecated">gemini-2.0-flash (2026-03 shutdown)</option>
+              <option value="gemini-3.6-flash">gemini-3.6-flash（標準・高精度）</option>
+              <option value="gemini-3.5-flash-lite">gemini-3.5-flash-lite（低コスト）</option>
             </select>
           </div>
           <div class="setting-row" style="margin-top: 0.5rem;">
@@ -189,8 +187,8 @@
           <div class="setting-row">
             <input type="password" class="setting-input" id="claudeApiKey" placeholder="sk-ant-...">
             <select class="model-select" id="claudeModel">
-              <option value="claude-sonnet-4-20250514">claude-sonnet-4</option>
-              <option value="claude-3-5-sonnet-20241022">claude-3.5-sonnet</option>
+              <option value="claude-sonnet-5">claude-sonnet-5（標準・高品質）</option>
+              <option value="claude-haiku-4-5-20251001">claude-haiku-4-5（低コスト）</option>
             </select>
           </div>
           <div class="setting-row" style="margin-top: 0.5rem;">
@@ -210,15 +208,15 @@
 
         <div class="setting-group" style="margin-bottom: 0.75rem;">
           <label class="setting-label">
-            OpenAI API (ChatGPT)
+            OpenAI API
             <span class="validation-status" id="openai-llm-status" style="display:none;"></span>
           </label>
           <div class="setting-row">
             <input type="password" class="setting-input" id="openaiLlmApiKey" placeholder="sk-...">
             <select class="model-select" id="openaiLlmModel">
-              <option value="gpt-4o" data-i18n="config.llm.models.gpt4o">gpt-4o (Recommended)</option>
-              <option value="gpt-4o-mini" data-i18n="config.llm.models.gpt4oMini">gpt-4o-mini (Low cost)</option>
-              <option value="gpt-4-turbo" data-i18n="config.llm.models.gpt4Turbo">gpt-4-turbo</option>
+              <option value="gpt-5.6-terra">gpt-5.6-terra（標準）</option>
+              <option value="gpt-5.6-luna">gpt-5.6-luna（低コスト）</option>
+              <option value="gpt-5.6-sol">gpt-5.6-sol（高品質・助言）</option>
             </select>
           </div>
           <div class="setting-row" style="margin-top: 0.5rem;">
@@ -244,8 +242,8 @@
           <div class="setting-row">
             <input type="password" class="setting-input" id="groqApiKey" placeholder="gsk_...">
             <select class="model-select" id="groqModel">
-              <option value="llama-3.3-70b-versatile" data-i18n="config.llm.models.llama33">llama-3.3-70b (Recommended)</option>
-              <option value="llama-3.1-8b-instant" data-i18n="config.llm.models.llama31_8b">llama-3.1-8b (Low cost)</option>
+              <option value="openai/gpt-oss-120b">openai/gpt-oss-120b（標準）</option>
+              <option value="openai/gpt-oss-20b">openai/gpt-oss-20b（低コスト・高速）</option>
             </select>
           </div>
           <div class="setting-row" style="margin-top: 0.5rem;">
@@ -263,6 +261,33 @@
           </div>
         </div>
 
+        <div class="setting-group" style="margin-bottom: 0;">
+          <label class="setting-label">
+            DeepSeek API
+            <span class="validation-status" id="deepseek-status" style="display:none;"></span>
+          </label>
+          <div class="setting-row">
+            <input type="password" class="setting-input" id="deepseekApiKey" placeholder="sk-...">
+            <select class="model-select" id="deepseekModel">
+              <option value="deepseek-v4-flash" data-i18n="config.llm.models.deepseekV4Flash">deepseek-v4-flash（標準・低コスト）</option>
+            </select>
+          </div>
+          <div class="setting-row" style="margin-top: 0.5rem;">
+            <input type="text" class="setting-input" id="deepseekCustomModel" data-i18n-placeholder="config.llm.customModelPlaceholder.deepseek" placeholder="上級設定: カスタムモデル" style="font-size: 0.8rem;">
+          </div>
+          <div class="setting-hint custom-model-warning" style="color: var(--warning); font-size: 0.7rem;" data-i18n="config.llm.customModelWarning">
+            ⚠️ Custom model: Not verified; cost may be unavailable
+          </div>
+          <div class="api-actions">
+            <button type="button" class="api-action-btn btn-validate" data-validate="deepseek" data-i18n="config.llm.validate">Validate</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="deepseek" data-i18n="config.llm.clear">Clear</button>
+          </div>
+          <div class="setting-hint" data-i18n-html="config.llm.getFromDeepSeek">
+            <a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">DeepSeek Platform</a> ·
+            <a href="https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html" target="_blank" rel="noopener">Privacy</a>
+          </div>
+        </div>
+
         <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-warning); border-radius: 0.5rem; border: 1px solid var(--accent-border-warning);">
           <div style="font-size: 0.85rem; color: var(--text-warning);" data-i18n-html="config.llm.notConfiguredWarning">
             ⚠️ <strong>If no LLM API key is configured</strong><br>
@@ -273,17 +298,22 @@
 
       <!-- LLM Priority -->
       <div class="setting-group">
-        <label class="setting-label">💬 <span data-i18n="config.llm.priority">LLM Priority</span></label>
+        <label class="setting-label">💬 <span data-i18n="config.llm.priority">通常使用するLLM</span></label>
         <select class="model-select" id="llmPriority" style="width: 100%;">
-          <option value="auto" data-i18n="config.llm.priorityAuto">Auto (use configured APIs in order)</option>
-          <option value="gemini" data-i18n="config.llm.priorityGemini">Prefer Gemini</option>
+          <option value="gemini" data-i18n="config.llm.priorityGemini">Gemini（新規既定）</option>
           <option value="claude" data-i18n="config.llm.priorityClaude">Prefer Claude</option>
-          <option value="openai_llm" data-i18n="config.llm.priorityOpenAI">Prefer OpenAI (ChatGPT)</option>
+          <option value="openai_llm" data-i18n="config.llm.priorityOpenAI">Prefer OpenAI</option>
           <option value="groq" data-i18n="config.llm.priorityGroq">Prefer Groq</option>
+          <option value="deepseek" data-i18n="config.llm.priorityDeepSeek">Prefer DeepSeek</option>
+          <option value="auto" data-i18n="config.llm.priorityAuto">Auto (legacy compatibility)</option>
         </select>
         <div class="setting-hint" data-i18n="config.llm.priorityHint">
-          Auto mode: Uses Claude, OpenAI, Gemini, Groq in order, based on which API keys are configured
+          APIキーがない場合は自動選択せず、設定を案内します。旧Auto設定はGeminiから設定済みAPIを探します。
         </div>
+        <label class="setting-label" style="margin-top:0.75rem;" data-i18n="config.llm.fallbackOrder">一時障害時の予備順</label>
+        <input type="text" class="setting-input" id="llmFallbackOrder" value="gemini,openai_llm,claude,groq,deepseek" aria-describedby="llmFallbackOrderHint">
+        <div class="setting-hint" id="llmFallbackOrderHint" data-i18n="config.llm.fallbackOrderHint">429・一時的な5xx・ネットワーク障害の場合だけ使用します（カンマ区切り）。</div>
+        <div class="setting-hint" data-i18n="config.llm.pricingPrivacyHint">料金は公式単価と1 USD = 150 JPYによる概算です（確認日: 2026-08-01）。会議内容は選択した外部APIへ送信されます。</div>
       </div>
 
       <div class="security-options">

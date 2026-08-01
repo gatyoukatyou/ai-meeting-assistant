@@ -12,7 +12,7 @@ describe('getProviderDisplayName', () => {
   it('returns display name for known STT providers', () => {
     assert.equal(
       ModelUtils.getProviderDisplayName('openai_stt'),
-      'OpenAI Whisper'
+      'OpenAI Transcribe'
     );
     assert.equal(
       ModelUtils.getProviderDisplayName('deepgram_realtime'),
@@ -56,7 +56,7 @@ describe('normalizeGeminiModelId', () => {
 
 describe('getDefaultModel', () => {
   it('returns a default model for each known provider', () => {
-    for (const p of ['gemini', 'claude', 'openai', 'openai_llm', 'groq']) {
+    for (const p of ['gemini', 'claude', 'openai', 'openai_llm', 'groq', 'deepseek']) {
       const result = ModelUtils.getDefaultModel(p);
       assert.equal(typeof result, 'string');
       assert.ok(result.length > 0);
@@ -183,9 +183,11 @@ describe('getFallbackModel', () => {
     assert.notEqual(fb, 'some-old-model');
   });
 
-  it('returns null when fallback equals requested model', () => {
+  it('uses another catalog model when the requested model is the default', () => {
     const defaultModel = ModelUtils.getDefaultModel('gemini');
-    assert.equal(ModelUtils.getFallbackModel('gemini', defaultModel), null);
+    const fallback = ModelUtils.getFallbackModel('gemini', defaultModel);
+    assert.equal(typeof fallback, 'string');
+    assert.notEqual(fallback, defaultModel);
   });
 
   it('returns null for unknown provider', () => {

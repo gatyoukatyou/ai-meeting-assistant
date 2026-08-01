@@ -2,7 +2,7 @@ const safeURL = SanitizeUtils.safeURL;
 const API_KEY_PROVIDER_IDS =
   (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getApiKeyProviderIds === 'function')
     ? ProviderCatalog.getApiKeyProviderIds()
-    : ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'];
+    : ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek', 'openai', 'deepgram'];
 const ALLOWED_STT_PROVIDER_IDS =
   (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getSttProviderIds === 'function')
     ? ProviderCatalog.getSttProviderIds()
@@ -248,6 +248,35 @@ function updatePersistApiKeysControl() {
 // =====================================
 // 設定の読み込み
 // =====================================
+function selectSavedModel(selectEl, savedModel, providerId) {
+  if (!selectEl || !savedModel) return;
+  const exists = Array.from(selectEl.options).some(option => option.value === savedModel);
+  if (!exists) {
+    const option = document.createElement('option');
+    const recommended = ProviderCatalog.getDefaultModel(providerId);
+    option.value = savedModel;
+    option.textContent = `${savedModel}（旧設定を保持・推奨: ${recommended || '要確認'}）`;
+    option.dataset.legacySaved = 'true';
+    selectEl.appendChild(option);
+  }
+  selectEl.value = savedModel;
+}
+
+function renderModelMigrationNotices() {
+  const host = document.getElementById('modelMigrationNotice');
+  if (!host) return;
+  const notices = SecureStorage.getOption('modelMigrationNotices', []);
+  if (!Array.isArray(notices) || notices.length === 0) {
+    host.hidden = true;
+    host.textContent = '';
+    return;
+  }
+  host.hidden = false;
+  host.textContent = notices.map(item =>
+    `${item.provider}: ${item.model} → 推奨 ${item.recommended}（自動変更していません）`
+  ).join(' / ');
+}
+
 function loadSavedSettings() {
   // STTプロバイダーを読み込み（旧設定からの移行も処理）
   let sttProvider = SecureStorage.getOption('sttProvider', 'openai_stt');
@@ -278,14 +307,14 @@ function loadSavedSettings() {
   }
 
   // llmPriorityの旧値マイグレーション: openai → openai_llm
-  let llmPriority = SecureStorage.getOption('llmPriority', 'auto');
+  let llmPriority = SecureStorage.getOption('llmPriority', 'gemini');
   if (llmPriority === 'openai') {
     console.warn('Migrating llmPriority from "openai" to "openai_llm"');
     SecureStorage.setOption('llmPriority', 'openai_llm');
   }
 
   // LLM用APIキーを入力欄に復元
-  const llmProviders = ['gemini', 'claude', 'groq'];
+  const llmProviders = ['gemini', 'claude', 'groq', 'deepseek'];
   llmProviders.forEach(p => {
     const key = SecureStorage.getApiKey(p);
     const model = SecureStorage.getModel(p);
@@ -294,7 +323,7 @@ function loadSavedSettings() {
     const modelEl = document.getElementById(`${p}Model`);
     const customModelEl = document.getElementById(`${p}CustomModel`);
     if (keyEl && key) keyEl.value = key;
-    if (modelEl && model) modelEl.value = model;
+    selectSavedModel(modelEl, model, p);
     if (customModelEl && customModel) customModelEl.value = customModel;
   });
 
@@ -306,7 +335,7 @@ function loadSavedSettings() {
   const openaiLlmModelEl = document.getElementById('openaiLlmModel');
   const openaiLlmCustomModelEl = document.getElementById('openaiLlmCustomModel');
   if (openaiLlmKeyEl && openaiLlmKey) openaiLlmKeyEl.value = openaiLlmKey;
-  if (openaiLlmModelEl && openaiLlmModel) openaiLlmModelEl.value = openaiLlmModel;
+  selectSavedModel(openaiLlmModelEl, openaiLlmModel, 'openai_llm');
   if (openaiLlmCustomModelEl && openaiLlmCustomModel) openaiLlmCustomModelEl.value = openaiLlmCustomModel;
 
   // STT用APIキー
@@ -314,7 +343,7 @@ function loadSavedSettings() {
   const openaiKey = SecureStorage.getApiKey('openai');
   const openaiModel = SecureStorage.getModel('openai');
   if (openaiKey) document.getElementById('openaiApiKey').value = openaiKey;
-  if (openaiModel) document.getElementById('openaiModel').value = openaiModel;
+  selectSavedModel(document.getElementById('openaiModel'), openaiModel, 'openai_stt');
 
   // Deepgram
   const deepgramKey = SecureStorage.getApiKey('deepgram');
@@ -322,7 +351,7 @@ function loadSavedSettings() {
   const deepgramKeyEl = document.getElementById('deepgramApiKey');
   const deepgramModelEl = document.getElementById('deepgramModel');
   if (deepgramKeyEl && deepgramKey) deepgramKeyEl.value = deepgramKey;
-  if (deepgramModelEl && deepgramModel) deepgramModelEl.value = deepgramModel;
+  selectSavedModel(deepgramModelEl, deepgramModel, 'deepgram_realtime');
 
   // ユーザー辞書（STT用固有名詞ヒント）
   const userDictionary = SecureStorage.getOption('sttUserDictionary', '');
@@ -342,13 +371,19 @@ function loadSavedSettings() {
   if (maxRecordingMinutesEl) {
     maxRecordingMinutesEl.value = SecureStorage.getOption('maxRecordingMinutes', 120);
   }
-  document.getElementById('llmPriority').value = SecureStorage.getOption('llmPriority', 'auto');
+  document.getElementById('llmPriority').value = SecureStorage.getOption('llmPriority', 'gemini');
+  const fallbackOrderEl = document.getElementById('llmFallbackOrder');
+  if (fallbackOrderEl) {
+    const fallbackOrder = SecureStorage.getOption('llmFallbackOrder', ProviderCatalog.getLlmProviderPriority());
+    fallbackOrderEl.value = Array.isArray(fallbackOrder) ? fallbackOrder.join(',') : ProviderCatalog.getLlmProviderPriority().join(',');
+  }
 
   // 強化コンテキストオプション
   const enhancedContextEl = document.getElementById('enhancedContext');
   if (enhancedContextEl) {
     enhancedContextEl.checked = SecureStorage.getOption('enhancedContext', false);
   }
+  renderModelMigrationNotices();
 }
 
 function showMigrationNotice() {
@@ -375,7 +410,7 @@ async function saveSettings() {
   SecureStorage.setPersistApiKeys(persistApiKeys);
 
   // LLM用APIキーを保存
-  const llmProviders = ['gemini', 'claude', 'groq'];
+  const llmProviders = ['gemini', 'claude', 'groq', 'deepseek'];
   llmProviders.forEach(p => {
     const keyEl = document.getElementById(`${p}ApiKey`);
     const modelEl = document.getElementById(`${p}Model`);
@@ -425,6 +460,12 @@ async function saveSettings() {
     SecureStorage.setOption('maxRecordingMinutes', Number.isFinite(rawMaxMinutes) && rawMaxMinutes >= 0 ? rawMaxMinutes : 120);
   }
   SecureStorage.setOption('llmPriority', document.getElementById('llmPriority').value);
+  const fallbackOrderEl = document.getElementById('llmFallbackOrder');
+  if (fallbackOrderEl) {
+    const allowed = ProviderCatalog.getLlmProviderIds();
+    const fallbackOrder = fallbackOrderEl.value.split(',').map(value => value.trim()).filter((value, index, all) => allowed.includes(value) && all.indexOf(value) === index);
+    SecureStorage.setOption('llmFallbackOrder', fallbackOrder.length ? fallbackOrder : ProviderCatalog.getLlmProviderPriority());
+  }
 
   // 強化コンテキストオプションを保存
   const enhancedContextEl = document.getElementById('enhancedContext');
@@ -511,7 +552,8 @@ async function validateApiKey(provider, key) {
     'gemini': 'gemini-status',
     'claude': 'claude-status',
     'openai_llm': 'openai-llm-status',
-    'groq': 'groq-status'
+    'groq': 'groq-status',
+    'deepseek': 'deepseek-status'
   };
 
   const statusEl = document.getElementById(statusIdMap[provider]);
@@ -548,6 +590,12 @@ async function validateApiKey(provider, key) {
 
       case 'groq':
         response = await fetch('https://api.groq.com/openai/v1/models', {
+          headers: { 'Authorization': `Bearer ${key}` }
+        });
+        break;
+
+      case 'deepseek':
+        response = await fetch('https://api.deepseek.com/models', {
           headers: { 'Authorization': `Bearer ${key}` }
         });
         break;
@@ -599,6 +647,24 @@ async function validateApiKey(provider, key) {
         statusEl.textContent = '✗ ' + t('config.validation.invalid');
       }
       return 'invalid';
+    } else if (provider === 'deepseek' && response.status === 402) {
+      if (statusEl) {
+        statusEl.className = 'validation-status validation-error';
+        statusEl.textContent = '✗ ' + t('config.validation.balance');
+      }
+      return 'invalid';
+    } else if (provider === 'deepseek' && response.status === 404) {
+      if (statusEl) {
+        statusEl.className = 'validation-status validation-error';
+        statusEl.textContent = '✗ ' + t('config.validation.endpointNotFound');
+      }
+      return 'invalid';
+    } else if (provider === 'deepseek' && response.status === 429) {
+      if (statusEl) {
+        statusEl.className = 'validation-status validation-pending';
+        statusEl.textContent = '⚠ ' + t('config.validation.rateLimit');
+      }
+      return 'unknown';
     } else {
       // その他のエラー（500等）は未検証扱い
       if (statusEl) {
@@ -719,7 +785,8 @@ async function validateApiKeyManual(provider) {
     'gemini': 'geminiApiKey',
     'claude': 'claudeApiKey',
     'openai_llm': 'openaiLlmApiKey',
-    'groq': 'groqApiKey'
+    'groq': 'groqApiKey',
+    'deepseek': 'deepseekApiKey'
   };
 
   const inputEl = document.getElementById(inputIdMap[provider]);
@@ -741,7 +808,9 @@ async function validateApiKeyManual(provider) {
 
   switch (result) {
     case 'valid':
-      showSuccess(`${providerName}: ${t('config.validation.valid')}`);
+      showSuccess(
+        `${providerName}: ${t('config.validation.valid')}. ${t('config.validation.notSaved')}`
+      );
       break;
     case 'invalid':
       showError(`${providerName}: ${t('config.validation.invalid')}`);
@@ -763,7 +832,8 @@ function clearApiKey(provider) {
     'gemini': 'geminiApiKey',
     'claude': 'claudeApiKey',
     'openai_llm': 'openaiLlmApiKey',
-    'groq': 'groqApiKey'
+    'groq': 'groqApiKey',
+    'deepseek': 'deepseekApiKey'
   };
 
   const statusIdMap = {
@@ -772,7 +842,8 @@ function clearApiKey(provider) {
     'gemini': 'gemini-status',
     'claude': 'claude-status',
     'openai_llm': 'openai-llm-status',
-    'groq': 'groq-status'
+    'groq': 'groq-status',
+    'deepseek': 'deepseek-status'
   };
 
   const inputEl = document.getElementById(inputIdMap[provider]);
@@ -802,7 +873,7 @@ function isLLMProvider(provider) {
   if (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.isLlmProvider === 'function') {
     return ProviderCatalog.isLlmProvider(provider);
   }
-  return ['gemini', 'claude', 'openai_llm', 'groq'].includes(provider);
+  return ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek'].includes(provider);
 }
 
 // =====================================
@@ -815,7 +886,8 @@ function getProviderName(provider) {
     'gemini': 'Gemini',
     'claude': 'Claude',
     'openai_llm': 'OpenAI (LLM)',
-    'groq': 'Groq'
+    'groq': 'Groq',
+    'deepseek': 'DeepSeek'
   };
   return names[provider] || provider;
 }

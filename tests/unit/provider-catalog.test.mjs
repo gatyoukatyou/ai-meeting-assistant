@@ -6,9 +6,9 @@ const { ProviderCatalog } = loadScript('js/lib/provider-catalog.js');
 
 describe('ProviderCatalog.getDefaultModel', () => {
   it('returns default models for known providers', () => {
-    assert.equal(ProviderCatalog.getDefaultModel('gemini'), 'gemini-2.5-flash');
-    assert.equal(ProviderCatalog.getDefaultModel('openai_llm'), 'gpt-4o');
-    assert.equal(ProviderCatalog.getDefaultModel('openai_stt'), 'whisper-1');
+    assert.equal(ProviderCatalog.getDefaultModel('gemini'), 'gemini-3.6-flash');
+    assert.equal(ProviderCatalog.getDefaultModel('openai_llm'), 'gpt-5.6-terra');
+    assert.equal(ProviderCatalog.getDefaultModel('openai_stt'), 'gpt-4o-mini-transcribe');
     assert.equal(
       ProviderCatalog.getDefaultModel('deepgram_realtime'),
       'nova-3-general'
@@ -17,6 +17,30 @@ describe('ProviderCatalog.getDefaultModel', () => {
 
   it('returns undefined for unknown provider', () => {
     assert.equal(ProviderCatalog.getDefaultModel('unknown'), undefined);
+  });
+});
+
+describe('ProviderCatalog metadata', () => {
+  it('records verification, official links, reasoning policy, and pricing metadata', () => {
+    assert.equal(ProviderCatalog.VERIFIED_AT, '2026-08-01');
+    for (const providerId of ProviderCatalog.getLlmProviderIds()) {
+      const provider = ProviderCatalog.getProvider(providerId);
+      assert.equal(provider.id, providerId);
+      assert.equal(provider.verifiedAt, '2026-08-01');
+      assert.match(provider.docsUrl, /^https:\/\//);
+      assert.equal(typeof provider.reasoningPolicy, 'object');
+      assert.ok(ProviderCatalog.getModels(providerId).length >= 1);
+    }
+  });
+
+  it('keeps retired Groq presets out of normal choices but available for migration', () => {
+    assert.equal(
+      ProviderCatalog.getModels('groq').some(model => model.id === 'llama-3.3-70b-versatile'),
+      false
+    );
+    const legacy = ProviderCatalog.getModel('groq', 'llama-3.3-70b-versatile');
+    assert.equal(legacy.deprecated, true);
+    assert.equal(legacy.replacementModel, 'openai/gpt-oss-120b');
   });
 });
 
@@ -77,13 +101,14 @@ describe('ProviderCatalog provider lists', () => {
       'claude',
       'openai_llm',
       'groq',
+      'deepseek',
     ]);
   });
 
   it('returns llm providers with legacy IDs when requested', () => {
     assert.deepEqual(
       Array.from(ProviderCatalog.getLlmProviderIds({ includeLegacy: true })),
-      ['gemini', 'claude', 'openai_llm', 'groq', 'openai']
+      ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek', 'openai']
     );
   });
 
@@ -100,6 +125,7 @@ describe('ProviderCatalog provider lists', () => {
       'claude',
       'openai_llm',
       'groq',
+      'deepseek',
       'openai',
       'deepgram',
     ]);
@@ -107,10 +133,11 @@ describe('ProviderCatalog provider lists', () => {
 
   it('returns llm provider priority order', () => {
     assert.deepEqual(Array.from(ProviderCatalog.getLlmProviderPriority()), [
-      'claude',
-      'openai_llm',
       'gemini',
+      'openai_llm',
+      'claude',
       'groq',
+      'deepseek',
     ]);
   });
 });
@@ -123,6 +150,7 @@ describe('ProviderCatalog model-registry config base', () => {
     assert.equal(Boolean(config.openai_llm), true);
     assert.equal(Boolean(config.claude), true);
     assert.equal(Boolean(config.groq), true);
+    assert.equal(Boolean(config.deepseek), true);
   });
 
   it('returns defensive copies', () => {

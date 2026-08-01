@@ -6,7 +6,7 @@ const LLMClientService = (function () {
     const priority = opts.priority || 'auto';
     const providerPriority = Array.isArray(opts.providerPriority)
       ? opts.providerPriority
-      : ['claude', 'openai_llm', 'gemini', 'groq'];
+      : ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek'];
     const hasApiKey = typeof opts.hasApiKey === 'function'
       ? opts.hasApiKey
       : function () { return false; };
@@ -18,12 +18,11 @@ const LLMClientService = (function () {
       : function () { return ''; };
 
     if (priority !== 'auto' && hasApiKey(priority)) {
-      return {
-        provider: priority,
-        model: getEffectiveModel(priority, getDefaultModel(priority))
-      };
+      return { provider: priority, model: getEffectiveModel(priority, getDefaultModel(priority)) };
     }
 
+    // The preferred provider may not have a key yet. Continue through the
+    // configured provider order so another valid LLM is still usable.
     for (const provider of providerPriority) {
       if (hasApiKey(provider)) {
         return {
@@ -36,6 +35,22 @@ const LLMClientService = (function () {
     return null;
   }
 
+  function getGeminiThinkingConfig(model, taskType, reasoningBoost) {
+    const adviceBoost = taskType === 'advice' && reasoningBoost;
+    if (/^gemini-3\./.test(model)) {
+      return { thinkingLevel: adviceBoost ? 'high' : 'minimal' };
+    }
+    if (/^gemini-2\.5-/.test(model)) {
+      return { thinkingBudget: adviceBoost ? 8192 : 0 };
+    }
+    return null;
+  }
+
+  function buildGeminiGenerationConfig(model, taskType, reasoningBoost) {
+    const thinkingConfig = getGeminiThinkingConfig(model, taskType, reasoningBoost);
+    return thinkingConfig ? { thinkingConfig: thinkingConfig } : {};
+  }
+
   // callLLMOnce core logic, kept DOM-free via injected callbacks/dependencies.
   async function callLLMOnce(options) {
     const opts = options || {};
@@ -45,13 +60,14 @@ const LLMClientService = (function () {
     const signal = opts.signal || null;
     const apiKey = opts.apiKey || '';
     const meetingContext = opts.meetingContext || {};
+    const taskType = opts.taskType === 'advice' ? 'advice' : 'summary';
+    const reasoningBoost = Boolean(opts.reasoningBoost);
     const costs = opts.costs;
     const pricingTable = opts.pricing;
 
     const deps = opts.deps || {};
     const callGeminiApi = deps.callGeminiApi;
     const fetchWithRetry = deps.fetchWithRetry;
-    const applyReasoningBoost = deps.applyReasoningBoost;
     const getCapabilities = deps.getCapabilities;
     const showToast = deps.showToast;
     const t = deps.t || function (k) { return k; };
@@ -92,11 +108,14 @@ const LLMClientService = (function () {
         }
 
         try {
-          response = await callGeminiApi(model, apiKey, { contents: [{ parts: geminiParts }] }, signal);
+          response = await callGeminiApi(model, apiKey, {
+            contents: [{ parts: geminiParts }],
+            generationConfig: buildGeminiGenerationConfig(model, taskType, reasoningBoost)
+          }, signal);
           data = await response.json();
           if (!response.ok) {
             const errMsg = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
-            throw new Error(errMsg);
+            throw createProviderError('gemini', response.status, data, errMsg);
           }
         } catch (geminiErr) {
           if (geminiErr.name === 'AbortError') throw geminiErr;
@@ -106,12 +125,13 @@ const LLMClientService = (function () {
               showToast(t('context.nativeDocsFallback') || 'Native Docsに失敗、テキスト抽出にフォールバック', 'warning');
             }
             response = await callGeminiApi(model, apiKey, {
-              contents: [{ parts: [{ text: prompt }] }]
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: buildGeminiGenerationConfig(model, taskType, reasoningBoost)
             }, signal);
             data = await response.json();
             if (!response.ok) {
               const errMsg2 = (data && data.error && data.error.message) ? data.error.message : 'Gemini API error';
-              throw new Error(errMsg2);
+              throw createProviderError('gemini', response.status, data, errMsg2);
             }
           } else {
             throw geminiErr;
@@ -134,8 +154,16 @@ const LLMClientService = (function () {
           max_tokens: 2048,
           messages: [{ role: 'user', content: prompt }]
         };
-        if (typeof applyReasoningBoost === 'function') {
-          claudePayload = applyReasoningBoost('anthropic', model, claudePayload);
+        if (model === 'claude-sonnet-5') {
+          claudePayload.thinking = taskType === 'advice' && reasoningBoost
+            ? { type: 'adaptive' }
+            : { type: 'disabled' };
+          if (taskType === 'advice' && reasoningBoost) {
+            claudePayload.output_config = { effort: 'high' };
+          }
+        } else if (model.indexOf('claude-haiku-4-5') === 0 && taskType === 'advice' && reasoningBoost) {
+          claudePayload.thinking = { type: 'enabled', budget_tokens: 4096 };
+          claudePayload.max_tokens = 8192;
         }
 
         response = await fetchWithRetry('https://api.anthropic.com/v1/messages', {
@@ -152,7 +180,7 @@ const LLMClientService = (function () {
         data = await response.json();
         if (!response.ok) {
           const errMsg = (data && data.error && data.error.message) ? data.error.message : 'Claude API error';
-          throw new Error(errMsg);
+          throw createProviderError('claude', response.status, data, errMsg);
         }
 
         text = '';
@@ -172,58 +200,25 @@ const LLMClientService = (function () {
       }
 
       case 'openai':
-      case 'openai_llm': {
-        let openaiPayload = {
+      case 'openai_llm':
+      case 'groq':
+      case 'deepseek': {
+        if (typeof OpenAICompatibleClient === 'undefined') {
+          throw new Error('OpenAI-compatible client is unavailable');
+        }
+        const result = await OpenAICompatibleClient.call({
+          provider: provider,
           model: model,
-          messages: [{ role: 'user', content: prompt }]
-        };
-        if (typeof applyReasoningBoost === 'function') {
-          openaiPayload = applyReasoningBoost('openai', model, openaiPayload);
-        }
-
-        response = await fetchWithRetry('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + apiKey
-          },
-          body: JSON.stringify(openaiPayload),
-          signal: signal
+          prompt: prompt,
+          apiKey: apiKey,
+          signal: signal,
+          taskType: taskType,
+          reasoningBoost: reasoningBoost,
+          fetchImpl: fetchWithRetry
         });
-        data = await response.json();
-        if (!response.ok) {
-          const errMsg = (data && data.error && data.error.message) ? data.error.message : 'OpenAI API error';
-          throw new Error(errMsg);
-        }
-        text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
-          ? data.choices[0].message.content : '';
-        inputTokens = (data.usage && data.usage.prompt_tokens) ? data.usage.prompt_tokens : Math.ceil(prompt.length / 4);
-        outputTokens = (data.usage && data.usage.completion_tokens) ? data.usage.completion_tokens : Math.ceil(text.length / 4);
-        break;
-      }
-
-      case 'groq': {
-        response = await fetchWithRetry('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': 'Bearer ' + apiKey
-          },
-          body: JSON.stringify({
-            model: model,
-            messages: [{ role: 'user', content: prompt }]
-          }),
-          signal: signal
-        });
-        data = await response.json();
-        if (!response.ok) {
-          const errMsg = (data && data.error && data.error.message) ? data.error.message : 'Groq API error';
-          throw new Error(errMsg);
-        }
-        text = (data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content)
-          ? data.choices[0].message.content : '';
-        inputTokens = (data.usage && data.usage.prompt_tokens) ? data.usage.prompt_tokens : Math.ceil(prompt.length / 4);
-        outputTokens = (data.usage && data.usage.completion_tokens) ? data.usage.completion_tokens : Math.ceil(text.length / 4);
+        text = result.text;
+        inputTokens = result.usage.inputTokens;
+        outputTokens = result.usage.outputTokens;
         break;
       }
 
@@ -232,18 +227,28 @@ const LLMClientService = (function () {
     }
 
     const pricingProvider = pricingTable ? pricingTable[provider] : null;
-    const pricing = (pricingProvider && pricingProvider[model]) ? pricingProvider[model] : { input: 1, output: 3 };
+    const pricing = (pricingProvider && pricingProvider[model]) ? pricingProvider[model] : null;
     const yenPerDollar = pricingTable && typeof pricingTable.yenPerDollar === 'number'
       ? pricingTable.yenPerDollar
       : 150;
-    const cost = ((inputTokens * pricing.input + outputTokens * pricing.output) / 1000000) * yenPerDollar;
+    const cost = pricing && Number.isFinite(pricing.input) && Number.isFinite(pricing.output)
+      ? ((inputTokens * pricing.input + outputTokens * pricing.output) / 1000000) * yenPerDollar
+      : null;
 
-    if (costs && costs.llm && costs.llm.byProvider && Object.prototype.hasOwnProperty.call(costs.llm.byProvider, provider)) {
+    const costProvider = provider === 'openai_llm' ? 'openai' : provider;
+    if (costs && costs.llm && costs.llm.byProvider) {
+      if (!Object.prototype.hasOwnProperty.call(costs.llm.byProvider, costProvider)) {
+        costs.llm.byProvider[costProvider] = 0;
+      }
       costs.llm.inputTokens += inputTokens;
       costs.llm.outputTokens += outputTokens;
       costs.llm.calls += 1;
-      costs.llm.byProvider[provider] += cost;
-      costs.llm.total += cost;
+      if (cost != null) {
+        costs.llm.byProvider[costProvider] += cost;
+        costs.llm.total += cost;
+      } else {
+        costs.llm.hasUnknownEstimate = true;
+      }
     }
 
     if (typeof updateCosts === 'function') updateCosts();
@@ -252,9 +257,19 @@ const LLMClientService = (function () {
     return text;
   }
 
+  function createProviderError(provider, status, data, fallbackMessage) {
+    if (typeof OpenAICompatibleClient !== 'undefined') {
+      return OpenAICompatibleClient.parseErrorBody(provider, data, status);
+    }
+    const error = new Error(fallbackMessage);
+    error.status = status;
+    return error;
+  }
+
   return {
     resolveAvailableLlm,
-    callLLMOnce
+    callLLMOnce,
+    getGeminiThinkingConfig
   };
 })();
 

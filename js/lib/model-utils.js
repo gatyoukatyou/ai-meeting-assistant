@@ -10,7 +10,7 @@ const ModelUtils = (function () {
    */
   function getProviderDisplayName(provider) {
     var names = {
-      openai_stt: 'OpenAI Whisper',
+      openai_stt: 'OpenAI Transcribe',
       deepgram_realtime: 'Deepgram Realtime'
     };
     return names[provider] || provider;
@@ -48,11 +48,12 @@ const ModelUtils = (function () {
       return ProviderCatalog.getDefaultModel(provider);
     }
     var defaults = {
-      gemini: 'gemini-2.5-flash',
-      claude: 'claude-sonnet-4-20250514',
-      openai: 'gpt-4o',
-      openai_llm: 'gpt-4o',
-      groq: 'llama-3.3-70b-versatile'
+      gemini: 'gemini-3.6-flash',
+      claude: 'claude-sonnet-5',
+      openai: 'gpt-5.6-terra',
+      openai_llm: 'gpt-5.6-terra',
+      groq: 'openai/gpt-oss-120b',
+      deepseek: 'deepseek-v4-flash'
     };
     return defaults[provider];
   }
@@ -99,12 +100,19 @@ const ModelUtils = (function () {
    * @returns {boolean}
    */
   function isRateLimitOrServerError(error) {
-    return error.status === 429 || (error.status >= 500 && error.status < 600);
+    return Boolean(
+      error && (
+        error.retryable === true ||
+        error.category === 'network' ||
+        error.status === 429 ||
+        (error.status >= 500 && error.status < 600)
+      )
+    );
   }
 
   // プロバイダーごとの代替モデルリスト（優先順）
   var ALTERNATIVE_MODELS = {
-    groq: ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
+    groq: ['openai/gpt-oss-120b', 'openai/gpt-oss-20b']
   };
 
   /**
@@ -128,11 +136,11 @@ const ModelUtils = (function () {
    */
   function getFallbackModel(provider, requestedModel) {
     var fallbacks = {
-      gemini: 'gemini-2.5-flash',
-      claude: 'claude-sonnet-4-20250514',
-      openai: 'gpt-4o',
-      openai_llm: 'gpt-4o',
-      groq: 'llama-3.3-70b-versatile'
+      gemini: 'gemini-3.5-flash-lite',
+      claude: 'claude-haiku-4-5-20251001',
+      openai: 'gpt-5.6-luna',
+      openai_llm: 'gpt-5.6-luna',
+      groq: 'openai/gpt-oss-20b'
     };
     var fb = fallbacks[provider];
     // フォールバックが同じモデルなら再試行しない

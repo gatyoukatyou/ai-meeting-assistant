@@ -1,5 +1,5 @@
 /**
- * OpenAI Whisper STT Provider (Chunked/HTTP)
+ * OpenAI Transcribe STT Provider (Chunked/HTTP)
  *
  * 擬似リアルタイム文字起こし
  * 音声Blobを一定間隔でHTTP経由で送信
@@ -12,7 +12,7 @@ class OpenAIChunkedProvider {
   constructor(config) {
     this.config = config;
     this.apiKey = config.apiKey || SecureStorage.getApiKey('openai');
-    this.model = config.model || SecureStorage.getModel('openai') || 'whisper-1';
+    this.model = config.model || SecureStorage.getModel('openai') || 'gpt-4o-mini-transcribe';
     this.language = config.language || SecureStorage.getOption('sttLanguage', 'ja') || 'ja';
     // ユーザー辞書（固有名詞のヒント）- 設定画面から登録可能
     // デフォルト辞書 + ユーザー辞書を結合
@@ -183,7 +183,7 @@ class OpenAIChunkedProvider {
     return {
       id: 'openai_stt',
       type: 'chunked',
-      name: 'OpenAI Whisper',
+      name: 'OpenAI Transcribe',
       model: this.model,
       isActive: this.isActive
     };

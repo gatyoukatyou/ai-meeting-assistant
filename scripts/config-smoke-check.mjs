@@ -39,12 +39,15 @@ if (configHtml) {
     "claudeApiKey",
     "openaiLlmApiKey",
     "groqApiKey",
+    "deepseekApiKey",
+    "deepseekModel",
     "persistApiKeys",
     "clearOnClose",
     "persistMeetingContext",
     "costLimit",
     "costAlertEnabled",
     "llmPriority",
+    "llmFallbackOrder",
     "displayTheme",
     "uiStyle",
     "colorTheme",
@@ -101,6 +104,13 @@ if (configJs) {
     oks.push("Found required config.js hooks");
   } else {
     errors.push(`Missing required config.js hooks: ${missingHooks.join(", ")}`);
+  }
+
+  const deepSeekInputMapping = /['"]deepseek['"]\s*:\s*['"]deepseekApiKey['"]/;
+  if (deepSeekInputMapping.test(configJs)) {
+    oks.push("Found DeepSeek API key input mapping");
+  } else {
+    errors.push("Missing DeepSeek API key input mapping");
   }
 }
 

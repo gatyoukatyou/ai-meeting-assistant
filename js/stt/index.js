@@ -15,7 +15,7 @@ const STT_PROVIDER_TYPES = {
 const STT_PROVIDERS = {
   'openai_stt': {
     type: STT_PROVIDER_TYPES.CHUNKED,
-    name: 'OpenAI Whisper',
+    name: 'OpenAI Transcribe',
     module: './providers/openai_chunked.js'
   },
   'deepgram_realtime': {

@@ -181,6 +181,28 @@ describe('SecureStorage persistApiKeys policy', () => {
     assert.equal(exported.options.persistApiKeys, true);
     assert.equal(JSON.stringify(exported).includes('must-not-be-exported'), false);
   });
+
+  it('exports DeepSeek model settings without its API key', () => {
+    const { SecureStorage } = createSecureStorageContext();
+    SecureStorage.setModel('deepseek', 'deepseek-v4-flash');
+    SecureStorage.setApiKey('deepseek', 'deepseek-secret-value');
+
+    const exported = SecureStorage.exportAll();
+    assert.equal(exported.deepseek.model, 'deepseek-v4-flash');
+    assert.equal(JSON.stringify(exported).includes('deepseek-secret-value'), false);
+  });
+
+  it('imports legacy settings explicitly without replacing saved models', () => {
+    const { SecureStorage } = createSecureStorageContext();
+    const imported = SecureStorage.importAll({
+      groq: { model: 'llama-3.3-70b-versatile' },
+      options: { llmPriority: 'openai' }
+    });
+
+    assert.equal(imported, true);
+    assert.equal(SecureStorage.getModel('groq'), 'llama-3.3-70b-versatile');
+    assert.equal(SecureStorage.getOption('llmPriority', ''), 'openai_llm');
+  });
 });
 
 describe('SecureStorage degrades gracefully on storage write failures', () => {

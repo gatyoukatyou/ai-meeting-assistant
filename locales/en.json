@@ -148,6 +148,7 @@
       "minutes": "{n} min",
       "minSec": "{min}m {sec}s",
       "calls": "{n} calls",
+      "estimateUnavailable": "estimate unavailable",
       "warningNear": "Approaching limit (${limit}) at {percent}%",
       "warningExceeded": "Exceeded limit (${limit})!"
     },
@@ -218,7 +219,7 @@
       "title": "Transcription (STT) - Provider Selection",
       "provider": "STT Provider",
       "providerHint": "Select an STT provider. WebSocket-based providers offer better real-time performance.",
-      "openaiWhisper": "🎤 OpenAI Whisper (Chunked, stable)",
+      "openaiWhisper": "🎤 OpenAI Transcribe (chunked uploads)",
       "deepgramRealtime": "⚡ Deepgram Realtime (WebSocket, fast)",
       "model": "Model",
       "apiKey": "API Key",
@@ -229,18 +230,18 @@
       "getFromDeepgram": "Get from Deepgram Console - WebSocket realtime",
       "enterApiKey": "Enter API key",
       "infoTitle": "About STT Providers",
-      "infoOpenAI": "OpenAI Whisper: Stability-focused. Pseudo-realtime via chunked upload",
+      "infoOpenAI": "OpenAI Transcribe: Pseudo-realtime via chunked uploads",
       "infoWebSocket": "Deepgram: True realtime via WebSocket. Low latency",
-      "providerNotes": "💡 <strong>About STT Providers</strong><br>• <strong>OpenAI Whisper</strong>: Stable, pseudo-real-time via chunked uploads<br>• <strong>Deepgram</strong>: True real-time via WebSocket, low latency",
+      "providerNotes": "💡 <strong>About STT Providers</strong><br>• <strong>OpenAI Transcribe</strong>: Chunked uploads; GPT-4o models use token billing<br>• <strong>Deepgram</strong>: True realtime via WebSocket; Nova-3 is the meeting default",
       "userDictionary": "📖 User Dictionary (Proper noun hints)",
       "userDictPlaceholder": "e.g., OpenAI, ChatGPT, Anthropic, Tesla",
       "userDictHint": "Enter proper nouns to improve recognition, separated by commas.",
       "userDictHintDetail": "Adding phonetic readings improves accuracy (e.g., Anthropic anthropic)",
       "models": {
-        "whisper1": "whisper-1 (Recommended)",
-        "gpt4oTranscribe": "gpt-4o-transcribe",
-        "gpt4oMiniTranscribe": "gpt-4o-mini-transcribe",
-        "nova3": "nova-3-general (Latest, recommended)",
+        "whisper1": "whisper-1 (Legacy compatibility)",
+        "gpt4oTranscribe": "gpt-4o-transcribe (Accuracy)",
+        "gpt4oMiniTranscribe": "gpt-4o-mini-transcribe (Standard)",
+        "nova3": "nova-3-general (Meeting realtime standard)",
         "nova2": "nova-2-general (Stable)",
         "base": "base (Low cost)"
       }
@@ -249,18 +250,23 @@
       "title": "AI Response & Summary (Optional) - Select LLM",
       "validate": "Validate",
       "clear": "Clear",
-      "priority": "LLM Priority",
-      "priorityAuto": "Auto-select (use configured APIs in order)",
-      "priorityGemini": "Prefer Gemini",
+      "priority": "Primary LLM provider",
+      "priorityAuto": "Auto-select (legacy compatibility)",
+      "priorityGemini": "Gemini (new default)",
       "priorityClaude": "Prefer Claude",
-      "priorityOpenAI": "Prefer OpenAI (ChatGPT)",
+      "priorityOpenAI": "Prefer OpenAI",
       "priorityGroq": "Prefer Groq",
-      "priorityHint": "Auto-select order: Claude → OpenAI → Gemini → Groq (uses first available)",
+      "priorityDeepSeek": "Prefer DeepSeek",
+      "fallbackOrder": "Backup order for temporary failures",
+      "fallbackOrderHint": "Used only for 429, temporary 5xx, or network failures (comma-separated)",
+      "pricingPrivacyHint": "Costs are estimates using official rates and 1 USD = 150 JPY (checked 2026-08-01). Meeting content is sent to the selected external API.",
+      "priorityHint": "A missing key for the selected primary opens setup guidance. Legacy Auto checks configured providers starting with Gemini.",
       "notConfiguredWarning": "If no LLM API key is set, AI features like summary, opinion, and minutes will not be available. Please configure at least one above.",
       "getFromGemini": "Get from Google AI Studio (for summary/AI responses)",
       "getFromClaude": "Get from Anthropic Console",
       "getFromOpenAILLM": "Get from OpenAI Platform (separate key from STT recommended)",
       "getFromGroq": "Get from Groq Console (fast, low cost)",
+      "getFromDeepSeek": "<a href=\"https://platform.deepseek.com/api_keys\" target=\"_blank\" rel=\"noopener\">DeepSeek Platform</a> · <a href=\"https://cdn.deepseek.com/policies/en-US/deepseek-privacy-policy.html\" target=\"_blank\" rel=\"noopener\">Privacy</a>",
       "models": {
         "gemini25Flash": "gemini-2.5-flash (Recommended)",
         "gemini25Pro": "gemini-2.5-pro",
@@ -274,14 +280,16 @@
         "gpt4oMini": "gpt-4o-mini (Low cost)",
         "gpt4Turbo": "gpt-4-turbo",
         "llama33": "llama-3.3-70b (Recommended)",
-        "llama31_8b": "llama-3.1-8b (Low cost)"
+        "llama31_8b": "llama-3.1-8b (Low cost)",
+        "deepseekV4Flash": "deepseek-v4-flash (Standard, low cost)"
       },
-      "customModelWarning": "⚠️ Custom model: Not verified, may not work due to API changes",
+      "customModelWarning": "⚠️ Custom model: Not verified; a cost estimate may be unavailable",
       "customModelPlaceholder": {
         "gemini": "Custom model (e.g. gemini-2.5-pro)",
         "claude": "Custom model (e.g. claude-opus-4-20250514)",
         "openai": "Custom model (e.g. gpt-4o-2024-08-06)",
-        "groq": "Custom model (e.g. llama-3.3-70b-versatile)"
+        "groq": "Custom model (e.g. openai/gpt-oss-120b)",
+        "deepseek": "Advanced: custom model"
       }
     },
     "options": {
@@ -317,14 +325,18 @@
     },
     "validation": {
       "valid": "Valid",
+      "notSaved": "Not saved yet. Select Save at the bottom of this page",
       "invalid": "Invalid (check key)",
       "unknown": "Not verified (checked on use)",
       "browserLimit": "Not verified (browser limitation)",
-      "checking": "Checking..."
+      "checking": "Checking...",
+      "balance": "Check the account balance or plan",
+      "endpointNotFound": "The API endpoint or model list was not found",
+      "rateLimit": "Rate limited; check again later"
     },
     "messages": {
       "saved": "Settings saved. Return to the main screen to start using the app.",
-      "migrated": "Old settings migrated. STT provider set to OpenAI Whisper.",
+      "migrated": "Old settings migrated. STT provider set to OpenAI Transcribe.",
       "exported": "Settings exported. API keys are not included.",
       "imported": "Settings imported successfully.",
       "cleared": "Settings deleted.",
@@ -389,8 +401,10 @@
       "notConfigured": "LLM API key not set. Please register an API key in settings."
     },
     "model": {
-      "deprecated": "Model deprecated. Auto-switched: {from} → {to}",
-      "migrated": "Deprecated model settings were auto-updated",
+      "deprecated": "Legacy model {from} is unavailable. Review migration to {to} in settings",
+      "migrated": "Legacy model settings were preserved; review the recommended migration",
+      "migrationRequired": "{count} unavailable legacy model setting(s) need review",
+      "providerFallback": "{from} has a temporary failure; trying backup provider {to}",
       "fallback": "{from} is unavailable, falling back to {to}",
       "fallbackRetry": "Error with selected model. Retrying with {fallback} (settings unchanged)",
       "unavailable": "Unavailable",
@@ -417,6 +431,15 @@
     "api": {
       "callFailed": "API call failed ({attempt}/{maxAttempts})",
       "generic": "An error occurred: {message}",
+      "network": "Could not connect because of a network or CORS restriction",
+      "authentication": "API key authentication failed; check the settings",
+      "billing": "Check the account balance or plan requirements",
+      "region": "The service is unavailable due to a region or plan restriction",
+      "model": "The model does not exist, is retired, or is unavailable",
+      "inputLimit": "The input exceeds the model limit",
+      "invalidRequest": "The model name or request settings are invalid",
+      "rateLimit": "The rate limit was reached; try again later",
+      "temporaryServer": "The API is temporarily unavailable",
       "timeout": "Request timed out (30 seconds)",
       "notConfigured": "LLM API key not configured.\nPlease enter an API key in settings."
     },
@@ -586,7 +609,7 @@
     "welcome": {
       "title": "Welcome to AI Meeting Assistant",
       "description": "AI participates in your meetings in real-time, providing transcription, summaries, opinions, and ideas.",
-      "feature1": "High-precision voice transcription (OpenAI Whisper / Deepgram)",
+      "feature1": "High-precision voice transcription (OpenAI Transcribe / Deepgram)",
       "feature2": "Support for multiple AI models",
       "feature3": "API keys are session-only and cleared on close",
       "feature4": "Real-time display of estimated usage costs",
@@ -679,7 +702,7 @@
     "reasoningBoostDisabled": "Not available for this provider/model",
     "nativeDocsLabel": "Native Docs",
     "nativeDocsHint": "Send PDFs directly - may improve accuracy/increase cost",
-    "nativeDocsApiGuide": "Required API: Gemini API (model examples: gemini-2.5-flash / gemini-2.5-pro / gemini-2.0-flash)",
+    "nativeDocsApiGuide": "Required API: Gemini API (model examples: gemini-3.6-flash / gemini-3.5-flash-lite)",
     "nativeDocsDisabled": "Only available with Gemini + PDF attached",
     "nativeDocsNeedsGeminiKey": "Gemini API key (LLM settings) is required",
     "nativeDocsNeedsGeminiPriority": "Set LLM priority to Gemini (or keep auto so Gemini is selected)",

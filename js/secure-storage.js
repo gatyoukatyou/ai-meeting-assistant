@@ -9,7 +9,7 @@ const SecureStorage = {
   _providers:
     (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getApiKeyProviderIds === 'function')
       ? ProviderCatalog.getApiKeyProviderIds()
-      : ['gemini', 'claude', 'openai_llm', 'groq', 'openai', 'deepgram'],
+      : ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek', 'openai', 'deepgram'],
 
   // Web Storageのwrite系呼び出しはQuotaExceededError等で例外を投げることがある
   // （Safariプライベートモード、ストレージ容量超過など）。失敗してもアプリの
@@ -132,6 +132,7 @@ const SecureStorage = {
       claude: { model: this.getModel('claude'), customModel: this.getCustomModel('claude') },
       openai_llm: { model: this.getModel('openai_llm'), customModel: this.getCustomModel('openai_llm') },
       groq: { model: this.getModel('groq'), customModel: this.getCustomModel('groq') },
+      deepseek: { model: this.getModel('deepseek'), customModel: this.getCustomModel('deepseek') },
       // STT用設定（APIキーは含めない）
       openai: { model: this.getModel('openai') },
       deepgram: { model: this.getModel('deepgram') },
@@ -141,7 +142,8 @@ const SecureStorage = {
         costAlertEnabled: this.getOption('costAlertEnabled', true),
         costLimit: this.getOption('costLimit', 100),
         maxRecordingMinutes: this.getOption('maxRecordingMinutes', 120),
-        llmPriority: this.getOption('llmPriority', 'auto'),
+        llmPriority: this.getOption('llmPriority', 'gemini'),
+        llmFallbackOrder: this.getOption('llmFallbackOrder', ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek']),
         sttProvider: this.getOption('sttProvider', 'openai_stt'),
         sttUserDictionary: this.getOption('sttUserDictionary', ''),
         sttLanguage: this.getOption('sttLanguage', 'ja'),
@@ -163,6 +165,7 @@ const SecureStorage = {
       if (data.claude && data.claude.key) keyProviders.push('claude');
       if (data.openai_llm && data.openai_llm.key) keyProviders.push('openai_llm');
       if (data.groq && data.groq.key) keyProviders.push('groq');
+      if (data.deepseek && data.deepseek.key) keyProviders.push('deepseek');
       if (data.openai && data.openai.key) keyProviders.push('openai');
       if (data.deepgram && data.deepgram.key) keyProviders.push('deepgram');
       if (keyProviders.length) {
@@ -178,6 +181,8 @@ const SecureStorage = {
       if (data.openai_llm && data.openai_llm.customModel) this.setCustomModel('openai_llm', data.openai_llm.customModel);
       if (data.groq && data.groq.model) this.setModel('groq', data.groq.model);
       if (data.groq && data.groq.customModel) this.setCustomModel('groq', data.groq.customModel);
+      if (data.deepseek && data.deepseek.model) this.setModel('deepseek', data.deepseek.model);
+      if (data.deepseek && data.deepseek.customModel) this.setCustomModel('deepseek', data.deepseek.customModel);
       // STT用設定
       if (data.openai && data.openai.model) this.setModel('openai', data.openai.model);
       if (data.deepgram && data.deepgram.model) this.setModel('deepgram', data.deepgram.model);
@@ -194,6 +199,7 @@ const SecureStorage = {
         var llmPriority = data.options.llmPriority || 'auto';
         if (llmPriority === 'openai') llmPriority = 'openai_llm';
         this.setOption('llmPriority', llmPriority);
+        if (Array.isArray(data.options.llmFallbackOrder)) this.setOption('llmFallbackOrder', data.options.llmFallbackOrder);
         if (data.options.sttProvider) this.setOption('sttProvider', data.options.sttProvider);
         if (data.options.sttUserDictionary) this.setOption('sttUserDictionary', data.options.sttUserDictionary);
         if (data.options.sttLanguage) this.setOption('sttLanguage', data.options.sttLanguage);
@@ -223,6 +229,7 @@ const SecureStorage = {
     localStorage.removeItem('_opt_costLimit');
     localStorage.removeItem('_opt_maxRecordingMinutes');
     localStorage.removeItem('_opt_llmPriority');
+    localStorage.removeItem('_opt_llmFallbackOrder');
     localStorage.removeItem('_opt_sttProvider');
     localStorage.removeItem('_opt_sttUserDictionary');
     localStorage.removeItem('_opt_sttLanguage');

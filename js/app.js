@@ -316,10 +316,7 @@ var getProviderDisplayName = ModelUtils.getProviderDisplayName;
 var normalizeGeminiModelId = ModelUtils.normalizeGeminiModelId;
 var getDefaultModel = ModelUtils.getDefaultModel;
 var isModelNotFoundOrDeprecatedError = ModelUtils.isModelNotFoundOrDeprecatedError;
-var isModelDeprecatedError = ModelUtils.isModelDeprecatedError;
 var isRateLimitOrServerError = ModelUtils.isRateLimitOrServerError;
-var getAlternativeModels = ModelUtils.getAlternativeModels;
-var getFallbackModel = ModelUtils.getFallbackModel;
 
 // --- Text utilities (delegated to js/lib/text-utils.js) ---
 var fixBrokenNumbers = TextUtils.fixBrokenNumbers;
@@ -446,13 +443,6 @@ const ALLOWED_STT_PROVIDERS = new Set(
 // streaming系プロバイダー
 const STREAMING_PROVIDERS = new Set([
   'deepgram_realtime'
-]);
-
-// OpenAI STT用モデル
-const ALLOWED_STT_MODELS = new Set([
-  'whisper-1',
-  'gpt-4o-transcribe',
-  'gpt-4o-mini-transcribe',
 ]);
 
 // STTプロバイダーインスタンス
@@ -631,7 +621,7 @@ let costs = {
     duration: 0,      // 処理した音声の秒数
     calls: 0,         // API呼び出し回数
     byProvider: {
-      openai: 0,      // OpenAI Whisper (chunked)
+      openai: 0,      // OpenAI Transcribe (chunked)
       deepgram: 0     // Deepgram Realtime (WebSocket)
     }
   },
@@ -644,63 +634,28 @@ let costs = {
       gemini: 0,
       claude: 0,
       openai: 0,
-      groq: 0
+      groq: 0,
+      deepseek: 0
     }
   }
 };
 
-// 料金レート（最終更新: 2026年2月、1ドル=150円換算）
-// 出典: 各プロバイダの公式価格ページ
-const PRICING = {
+// 料金レート（公式情報確認: 2026-08-01、表示換算: 1 USD = 150 JPY）
+// 実際の請求額ではなく概算。不明な自由入力モデルには単価を補完しない。
+const PRICING = Object.assign({
   // 文字起こしAPI（STT専用）
   transcription: {
     openai: {
-      // Whisper - $0.006/minute
-      perMinute: 0.006 * 150  // ¥0.9/分
+      perMinute: 0.006 * 150
     },
     deepgram: {
-      // Deepgram Nova-3 - $0.0043/minute (pay-as-you-go)
-      perMinute: 0.0043 * 150  // ~¥0.65/分
+      perMinute: 0.0048 * 150
     }
   },
-  // LLM料金（$/1M tokens）
-  gemini: {
-    'gemini-2.5-pro': { input: 1.25, output: 5.0 },
-    'gemini-2.5-flash': { input: 0.15, output: 0.6 },
-    'gemini-2.0-flash-exp': { input: 0.075, output: 0.3 },  // deprecated
-    'gemini-2.0-flash': { input: 0.075, output: 0.3 },      // deprecated
-    'gemini-1.5-pro': { input: 1.25, output: 5.0 },
-    'gemini-1.5-flash': { input: 0.075, output: 0.3 },
-    // -latest エイリアス（具体バージョンと同じ価格）
-    'gemini-1.5-pro-latest': { input: 1.25, output: 5.0 },
-    'gemini-1.5-flash-latest': { input: 0.075, output: 0.3 },
-    'gemini-2.5-pro-latest': { input: 1.25, output: 5.0 },
-    'gemini-2.5-flash-latest': { input: 0.15, output: 0.6 }
-  },
-  claude: {
-    'claude-sonnet-4-20250514': { input: 3, output: 15 },
-    'claude-3-5-sonnet-20241022': { input: 3, output: 15 },
-    // バージョン付きエイリアス
-    'claude-3-5-sonnet-latest': { input: 3, output: 15 }
-  },
-  openai: {
-    'gpt-4o': { input: 2.5, output: 10 },
-    'gpt-4o-mini': { input: 0.15, output: 0.6 },
-    'gpt-4-turbo': { input: 10, output: 30 },
-    // バージョン付きモデル
-    'gpt-4-turbo-2024-04-09': { input: 10, output: 30 },
-    'gpt-4-turbo-preview': { input: 10, output: 30 },
-    'gpt-4o-2024-05-13': { input: 2.5, output: 10 },
-    'gpt-4o-2024-08-06': { input: 2.5, output: 10 },
-    'gpt-4o-2024-11-20': { input: 2.5, output: 10 },
-    'gpt-4o-mini-2024-07-18': { input: 0.15, output: 0.6 }
-  },
-  groq: {
-    'llama-3.3-70b-versatile': { input: 0.59, output: 0.79 },
-    'llama-3.1-8b-instant': { input: 0.05, output: 0.08 }
-  },
   yenPerDollar: 150
-};
+}, (typeof ProviderCatalog !== 'undefined' && ProviderCatalog.getPricingTable)
+  ? ProviderCatalog.getPricingTable()
+  : {});
 
 // AI回答の履歴
 let aiResponses = {
@@ -887,8 +842,8 @@ function checkBrowserCompatibility() {
 // 非推奨モデルのマイグレーション
 // =====================================
 async function migrateDeprecatedModels() {
-  var migrated = false;
-  var providers = ['groq', 'gemini', 'claude', 'openai', 'openai_llm'];
+  var notices = [];
+  var providers = ['groq', 'gemini', 'claude', 'openai', 'openai_llm', 'deepseek'];
 
   for (var i = 0; i < providers.length; i++) {
     var provider = providers[i];
@@ -913,19 +868,18 @@ async function migrateDeprecatedModels() {
     }
 
     if (needsMigration) {
-      var newModel = getDefaultModel(provider);
-      console.warn('[Migration] Model', reason, ':', provider, savedModel, '->', newModel);
-      await SecureStorage.setModel(provider, newModel);
-      migrated = true;
+      var recommended = getDefaultModel(provider);
+      notices.push({ provider: provider, model: savedModel, recommended: recommended, reason: reason });
+      console.warn('[Migration required] Saved model kept unchanged:', provider, savedModel, 'recommended:', recommended);
     }
   }
 
-  if (migrated) {
-    // 少し遅延してトースト表示（DOMが完全に準備されてから）
+  SecureStorage.setOption('modelMigrationNotices', notices);
+  if (notices.length) {
     setTimeout(function() {
       showToast(
-        t('toast.model.migrated') || '廃止されたモデル設定を自動更新しました',
-        'info'
+        t('toast.model.migrationRequired', { count: notices.length }) || '利用できない旧モデルがあります。設定画面で推奨モデルを確認してください。',
+        'warning'
       );
     }, 1000);
   }
@@ -947,7 +901,7 @@ function isShutdownDatePassed(dateStr) {
 
 // 非推奨モデルリスト（API側で廃止されたモデル）- 起動時チェック用
 var DEPRECATED_MODELS = {
-  groq: ['llama-3.1-70b-versatile'],
+  groq: ['llama-3.1-70b-versatile', 'llama-3.3-70b-versatile', 'llama-3.1-8b-instant'],
   gemini: [
     // gemini-1.5-* は 2025年に廃止
     'gemini-1.5-pro',
@@ -967,6 +921,9 @@ var DEPRECATED_MODELS = {
 // https://ai.google.dev/gemini-api/docs/deprecations
 // https://ai.google.dev/gemini-api/docs/changelog
 var MODEL_SHUTDOWN_DATES = {
+  // Groq developer/free tier: GPT-OSSへ移行
+  'llama-3.3-70b-versatile': '2026-08-16',
+  'llama-3.1-8b-instant': '2026-08-16',
   // Gemini 1.5系: shutdown済み (Release notes 2025-09-29)
   // 公式に明記: gemini-1.5-pro, gemini-1.5-flash, gemini-1.5-flash-8b
   'gemini-1.5-pro': '2025-09-29',
@@ -1110,7 +1067,7 @@ document.addEventListener('DOMContentLoaded', async function() {
   sessionStorage.setItem('_session_active', 'true');
 
   // 旧設定マイグレーション: llmPriority openai → openai_llm
-  var currentLlmPriority = SecureStorage.getOption('llmPriority', 'auto');
+  var currentLlmPriority = SecureStorage.getOption('llmPriority', 'gemini');
   if (currentLlmPriority === 'openai') {
     console.warn('[Migration] llmPriority: openai → openai_llm');
     SecureStorage.setOption('llmPriority', 'openai_llm');
@@ -1968,7 +1925,7 @@ async function validateSTTProviderForRecording(provider) {
 }
 
 // =====================================
-// Chunked系録音（OpenAI Whisper）
+// Chunked系録音（OpenAI Transcribe）
 // =====================================
 async function startChunkedRecording(provider) {
   console.log('[Chunked] Starting recording for provider:', provider);
@@ -1997,10 +1954,10 @@ async function startChunkedRecording(provider) {
   }
   console.log('[Chunked] Selected mimeType:', AppState.selectedMimeType);
 
-  // OpenAI Whisperプロバイダーを作成
+  // OpenAI Transcribeプロバイダーを作成
   AppState.currentSTTProvider = new OpenAIChunkedProvider({
     apiKey: SecureStorage.getApiKey('openai'),
-    model: SecureStorage.getModel('openai') || 'whisper-1',
+    model: SecureStorage.getModel('openai') || 'gpt-4o-mini-transcribe',
     language: SecureStorage.getOption('sttLanguage', 'ja')
   });
 
@@ -3204,17 +3161,25 @@ async function processQueue() {
           // handleTranscriptResultはprovider.emitTranscript経由で呼ばれる
           // ここでは重複呼び出しを避けるため、直接呼び出さない
 
-          // コスト計算（Whisperは分単位課金）
+          // whisper-1 is per-minute. GPT-4o Transcribe models are token-billed;
+          // this endpoint response does not expose enough usage to estimate safely.
           const estimatedSeconds = Math.max(audioBlob.size / 4000, 1);
           const estimatedMinutes = estimatedSeconds / 60;
-          const audioCost = estimatedMinutes * PRICING.transcription.openai.perMinute;
+          const sttModel = providerSnapshot.model || 'gpt-4o-mini-transcribe';
+          const audioCost = sttModel === 'whisper-1'
+            ? estimatedMinutes * PRICING.transcription.openai.perMinute
+            : null;
 
           AppState.costs.transcript.duration += estimatedSeconds;
           AppState.costs.transcript.calls += 1;
-          AppState.costs.transcript.byProvider.openai += audioCost;
-          AppState.costs.transcript.total += audioCost;
+          if (audioCost == null) {
+            AppState.costs.transcript.hasUnknownEstimate = true;
+          } else {
+            AppState.costs.transcript.byProvider.openai += audioCost;
+            AppState.costs.transcript.total += audioCost;
+          }
 
-          console.log(`[STT Cost] id=${blobId}, duration=${estimatedSeconds.toFixed(1)}s, cost=¥${audioCost.toFixed(2)}, total=¥${AppState.costs.transcript.total.toFixed(2)}`);
+          console.log(`[STT Cost] id=${blobId}, duration=${estimatedSeconds.toFixed(1)}s, estimate=${audioCost == null ? 'unavailable (token billing)' : 'available'}`);
 
           updateCosts();
           checkCostAlert();
@@ -3224,13 +3189,7 @@ async function processQueue() {
             AppState.lastTranscriptTail = text.trim().slice(-200);
           }
         } else {
-          // フォールバック: 直接Whisper APIを呼び出し
-          console.warn(`[Fallback] id=${blobId}, No provider available, using transcribeWithWhisper`);
-          const text = await transcribeWithWhisper(audioBlob);
-          if (text && text.trim()) {
-            handleTranscriptResult(text, true);
-            AppState.lastTranscriptTail = text.trim().slice(-200);
-          }
+          throw new Error('OpenAI Transcribe provider is unavailable');
         }
       } catch (err) {
         console.error(`[Transcription Error] id=${blobId}:`, err);
@@ -3306,7 +3265,7 @@ function resolveQueueDrain() {
 // =====================================
 // Gemini generateContent APIは音声文字起こし（STT）には使用しない。
 // 理由: MediaRecorderのtimeslice使用時、2回目以降のチャンクにヘッダーがなく400エラーが発生する。
-// STTには専用API（OpenAI Whisper, Deepgram等）を使用すること。
+// STTには専用API（OpenAI Transcribe, Deepgram等）を使用すること。
 // Gemini APIはLLMタスク（要約、Q&A等）専用として残す。
 
 // ユーザー辞書（固有名詞のヒント）- 設定画面から登録可能
@@ -3325,105 +3284,6 @@ function loadUserDictionary() {
   }
   AppState.whisperUserDictionary = parts.join(', ');
   DebugLogger.log('[STT]', 'User dictionary loaded', { length: AppState.whisperUserDictionary.length });
-}
-
-async function transcribeWithWhisper(audioBlob) {
-  console.log('=== transcribeWithWhisper ===');
-  const openaiKey = SecureStorage.getApiKey('openai');
-
-  // STTモデルの取得と検証
-  let sttModel = SecureStorage.getModel('openai') || 'whisper-1';
-  console.log('Requested STT model:', sttModel);
-
-  // 許可リストチェック
-  if (!ALLOWED_STT_MODELS.has(sttModel)) {
-    console.warn(`⚠️ Model "${sttModel}" is NOT in ALLOWED_STT_MODELS. Falling back to "whisper-1".`);
-    sttModel = 'whisper-1';
-  } else {
-    console.log(`✓ Model "${sttModel}" is allowed for STT.`);
-  }
-
-  console.log('Final STT model:', sttModel);
-  console.log('Audio blob size:', audioBlob.size, 'bytes');
-  console.log('Audio blob type:', audioBlob.type);
-
-  // promptを構築（前チャンクの末尾 + ユーザー辞書）
-  const promptParts = [];
-  if (AppState.lastTranscriptTail) {
-    promptParts.push(AppState.lastTranscriptTail);
-  }
-  if (AppState.whisperUserDictionary) {
-    promptParts.push(AppState.whisperUserDictionary);
-  }
-  const prompt = promptParts.join(' ');
-
-  // FormDataでファイルを送信
-  const formData = new FormData();
-  formData.append('file', audioBlob, 'audio.webm');
-  formData.append('model', sttModel);
-
-  // 言語設定を取得（auto/ja/en）
-  // auto の場合は language パラメータを送信しない（Whisperに自動判定させる）
-  const sttLanguage = SecureStorage.getOption('sttLanguage', 'ja');
-  if (sttLanguage && sttLanguage !== 'auto') {
-    formData.append('language', sttLanguage);
-    console.log('STT language:', sttLanguage);
-  } else {
-    console.log('STT language: auto (no language parameter sent)');
-  }
-
-  // promptパラメータを追加（空でない場合のみ）
-  // auto/en モードでは日本語の前チャンクを含めない（言語混入防止）
-  var effectivePrompt = prompt || '';
-
-  // 安全策: 変数未定義時のReferenceError防止
-  var lastTail = (typeof AppState.lastTranscriptTail !== 'undefined' && AppState.lastTranscriptTail) ? AppState.lastTranscriptTail : '';
-  var userDict = (typeof AppState.whisperUserDictionary !== 'undefined' && AppState.whisperUserDictionary) ? AppState.whisperUserDictionary : '';
-
-  if (sttLanguage !== 'ja' && lastTail) {
-    // 日本語文字が含まれている場合は前チャンクを除外
-    var hasJapanese = /[\u3040-\u309F\u30A0-\u30FF\u4E00-\u9FFF]/.test(lastTail);
-    if (hasJapanese) {
-      effectivePrompt = userDict;
-      console.log('Skipping lastTranscriptTail (contains Japanese) for non-Japanese mode');
-    }
-  }
-  if (effectivePrompt) {
-    formData.append('prompt', effectivePrompt);
-    DebugLogger.log('[STT]', 'Using Whisper prompt', { length: effectivePrompt.length });
-  }
-
-  const response = await fetchWithRetry('https://api.openai.com/v1/audio/transcriptions', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${openaiKey}`
-    },
-    body: formData
-  });
-
-  if (!response.ok) {
-    const errorBody = await response.text();
-    console.error('Whisper API error response:', errorBody);
-    throw new Error(`Whisper API error: ${response.status} - ${errorBody}`);
-  }
-
-  const data = await response.json();
-  const text = data.text || '';
-
-  // コスト計算（Whisperは分単位課金）
-  const estimatedSeconds = Math.max(audioBlob.size / 4000, 1);
-  const estimatedMinutes = estimatedSeconds / 60;
-  const audioCost = estimatedMinutes * PRICING.transcription.openai.perMinute;
-
-  AppState.costs.transcript.duration += estimatedSeconds;
-  AppState.costs.transcript.calls += 1;
-  AppState.costs.transcript.byProvider.openai += audioCost;
-  AppState.costs.transcript.total += audioCost;
-
-  updateCosts();
-  checkCostAlert();
-
-  return text.trim();
 }
 
 function blobToBase64(blob) {
@@ -3571,11 +3431,11 @@ function getAvailableLlm() {
     };
   }
 
-  const priority = SecureStorage.getOption('llmPriority', 'auto');
+  const priority = SecureStorage.getOption('llmPriority', 'gemini');
   if (llmClientService && typeof llmClientService.resolveAvailableLlm === 'function') {
     return llmClientService.resolveAvailableLlm({
       priority: priority,
-      providerPriority: ['claude', 'openai_llm', 'gemini', 'groq'],
+      providerPriority: ProviderCatalog.getLlmProviderPriority(),
       hasApiKey: function (provider) {
         return Boolean(SecureStorage.getApiKey(provider));
       },
@@ -3792,7 +3652,8 @@ async function askAI(type) {
   const abortController = new AbortController();
 
   try {
-    const llmPromise = callLLM(provider, prompt, abortController.signal);
+    const taskType = (type === 'summary' || type === 'minutes') ? 'summary' : 'advice';
+    const llmPromise = callLLM(provider, prompt, abortController.signal, taskType);
     const timeoutPromise = new Promise((_, reject) => {
       timeoutId = setTimeout(() => {
         abortController.abort(); // リクエストを実際にキャンセル (#50)
@@ -3847,9 +3708,23 @@ async function askAI(type) {
     });
 
     console.error('AI呼び出しエラー:', err);
+    const categoryMessages = {
+      network: t('error.api.network'),
+      authentication: t('error.api.authentication'),
+      billing: t('error.api.billing'),
+      region: t('error.api.region'),
+      model: t('error.api.model'),
+      input_limit: t('error.api.inputLimit'),
+      invalid_request: t('error.api.invalidRequest'),
+      rate_limit: t('error.api.rateLimit'),
+      temporary_server: t('error.api.temporaryServer')
+    };
+    const providerMessage = err.category && categoryMessages[err.category]
+      ? categoryMessages[err.category]
+      : err.message;
     const errorMsg = isTimeout
       ? `⏱️ ${t('toast.qa.timeout')}`
-      : t('error.api.generic', { message: err.message });
+      : t('error.api.generic', { message: providerMessage });
 
     if (type === 'custom') {
       // answerElを直接使用（既に参照を保持している）
@@ -3912,141 +3787,66 @@ function disableAIButtons(disabled) {
   });
 }
 
-// LLM呼び出し（フォールバック付き）
-// signal: AbortSignal for cancellation (#50)
-async function callLLM(provider, prompt, signal = null) {
-  // カスタムモデル > プリセット > デフォルトの優先順位
+function getConfiguredFallbackProviders(primaryProvider) {
+  var catalogOrder = (typeof ProviderCatalog !== 'undefined' && ProviderCatalog.getLlmProviderPriority)
+    ? ProviderCatalog.getLlmProviderPriority()
+    : ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek'];
+  var savedOrder = SecureStorage.getOption('llmFallbackOrder', catalogOrder);
+  var order = Array.isArray(savedOrder) ? savedOrder : catalogOrder;
+  return order.filter(function (candidate, index) {
+    return candidate !== primaryProvider && order.indexOf(candidate) === index &&
+      Boolean(SecureStorage.getApiKey(candidate));
+  });
+}
+
+function isRetryableLlmError(error) {
+  if (typeof OpenAICompatibleClient !== 'undefined' && OpenAICompatibleClient.isRetryableError(error)) return true;
+  if (isRateLimitOrServerError(error)) return true;
+  return Boolean(error && (error.name === 'TypeError' || /network|cors|failed to fetch/i.test(error.message || '')));
+}
+
+// Only rate limits, temporary 5xx responses, and network failures may switch
+// providers. Authentication, model, input, billing, and region errors surface.
+async function callLLM(provider, prompt, signal = null, taskType = 'summary') {
   var model = SecureStorage.getEffectiveModel(provider, getDefaultModel(provider));
-  var apiKey = SecureStorage.getApiKey(provider);
-
-  // Check model health from ModelRegistry (if available)
-  if (window.ModelRegistry) {
-    var health = ModelRegistry.getModelHealth(provider, model);
-
-    // If model is marked dead, skip directly to fallback
-    if (health && health.status === 'dead') {
-      console.log('[LLM] Model marked as dead, getting fallback:', model);
-      var fallbackModel = await ModelRegistry.getFallbackModel(provider, model, apiKey);
-      if (fallbackModel) {
-        showToast(
-          t('toast.model.fallback', { from: model, to: fallbackModel.id }) ||
-            model + ' は利用不可、' + fallbackModel.id + ' にフォールバック',
-          'warning'
-        );
-        model = fallbackModel.id;
-      }
-    }
-
-    // If model is flaky and still in cooldown, try fallback
-    if (health && health.status === 'flaky' && health.retryAfter && Date.now() < health.retryAfter) {
-      console.log('[LLM] Model in flaky cooldown, getting fallback:', model);
-      var fallbackModel2 = await ModelRegistry.getFallbackModel(provider, model, apiKey);
-      if (fallbackModel2) {
-        model = fallbackModel2.id;
-      }
-    }
-  }
-
   try {
-    var result = await callLLMOnce(provider, model, prompt, signal);
-
-    // Mark model as working on success
-    if (window.ModelRegistry) {
-      ModelRegistry.setModelHealth(provider, model, 'working');
-    }
-
+    var result = await callLLMOnce(provider, model, prompt, signal, taskType);
+    if (window.ModelRegistry) ModelRegistry.setModelHealth(provider, model, 'working');
     return result;
-  } catch (e) {
-    // AbortErrorの場合はフォールバックせず即座に投げる (#50)
-    if (e.name === 'AbortError') throw e;
-
-    // Classify error and update health
+  } catch (error) {
+    if (error.name === 'AbortError') throw error;
     if (window.ModelRegistry) {
-      if (isModelNotFoundOrDeprecatedError(e)) {
-        ModelRegistry.setModelHealth(provider, model, 'dead', e.message);
-      } else if (isRateLimitOrServerError(e)) {
-        ModelRegistry.setModelHealth(provider, model, 'flaky', e.message);
+      if (isModelNotFoundOrDeprecatedError(error)) {
+        ModelRegistry.setModelHealth(provider, model, 'dead', error.message);
+      } else if (isRetryableLlmError(error)) {
+        ModelRegistry.setModelHealth(provider, model, 'flaky', error.message);
       }
     }
+    if (!isRetryableLlmError(error)) throw error;
 
-    // モデル廃止エラーの場合は強制的に代替モデルを試す
-    if (isModelDeprecatedError(e)) {
-      console.warn('[LLM] Model deprecated detected:', model, e.message);
-      var alternatives = getAlternativeModels(provider, model);
-
-      // 代替候補がない場合は通常フォールバックへ
-      if (!alternatives || alternatives.length === 0) {
-        console.warn('[LLM] Deprecated-like error but no alternatives for provider:', provider);
-      } else {
-        for (var i = 0; i < alternatives.length; i++) {
-          var alt = alternatives[i];
-          try {
-            var altResult = await callLLMOnce(provider, alt, prompt, signal);
-            // 成功したら設定を自動更新
-            await autoUpdateSavedModel(provider, alt);
-            showToast(
-              t('toast.model.deprecated', {from: model, to: alt}) || 'モデルが廃止されたため自動変更しました: ' + model + ' → ' + alt,
-              'warning'
-            );
-            if (window.ModelRegistry) {
-              ModelRegistry.setModelHealth(provider, alt, 'working');
-            }
-            return altResult;
-          } catch (altError) {
-            // AbortErrorの場合はフォールバックせず即座に投げる (#50)
-            if (altError.name === 'AbortError') throw altError;
-            console.warn('[LLM] Alternative model also failed:', alt, altError.message);
-            continue;
-          }
-        }
-        // 代替モデルが全滅しても、通常フォールバックを試す
-        console.warn('[LLM] All alternatives failed. Will try standard fallback next.');
+    var fallbackProviders = getConfiguredFallbackProviders(provider);
+    for (var i = 0; i < fallbackProviders.length; i += 1) {
+      var fallbackProvider = fallbackProviders[i];
+      var fallbackModel = SecureStorage.getEffectiveModel(fallbackProvider, getDefaultModel(fallbackProvider));
+      showToast(
+        t('toast.model.providerFallback', { from: provider, to: fallbackProvider }) ||
+          provider + ' の一時障害のため ' + fallbackProvider + ' を試します',
+        'warning'
+      );
+      try {
+        return await callLLMOnce(fallbackProvider, fallbackModel, prompt, signal, taskType);
+      } catch (fallbackError) {
+        if (fallbackError.name === 'AbortError') throw fallbackError;
+        if (!isRetryableLlmError(fallbackError)) throw fallbackError;
       }
     }
-
-    // 通常のフォールバック処理
-    var fb = getFallbackModel(provider, model);
-    if (!fb) {
-      // フォールバック不可（同じモデル or 未定義）→ そのまま投げる
-      throw e;
-    }
-
-    // フォールバック通知
-    showToast(
-      t('toast.model.fallbackRetry', { fallback: fb }) ||
-        '選択モデルでエラー。今回は ' + fb + ' に切替して再試行します（設定は変更しません）',
-      'warning'
-    );
-    console.warn('[LLM] fallback', { provider: provider, from: model, to: fb, error: e.message });
-
-    // 1回だけ再試行
-    try {
-      var fbResult = await callLLMOnce(provider, fb, prompt, signal);
-      if (window.ModelRegistry) {
-        ModelRegistry.setModelHealth(provider, fb, 'working');
-      }
-      return fbResult;
-    } catch (fbError) {
-      // AbortErrorの場合はフォールバックせず即座に投げる (#50)
-      if (fbError.name === 'AbortError') throw fbError;
-      // フォールバックも失敗：元のエラー情報を保持してデバッグしやすくする
-      console.error('[LLM] Both original and fallback failed', {
-        provider: provider,
-        originalModel: model,
-        originalError: e.message,
-        fallbackModel: fb,
-        fallbackError: fbError.message
-      });
-      // ユーザーには両方のエラー情報を含むメッセージを返す
-      var combinedMsg = 'Model ' + model + ' failed: ' + e.message + ' / Fallback ' + fb + ' also failed: ' + fbError.message;
-      throw new Error(combinedMsg);
-    }
+    throw error;
   }
 }
 
 // LLM呼び出し（1回のみ、フォールバックなし）
 // signal: AbortSignal for cancellation (#50)
-async function callLLMOnce(provider, model, prompt, signal = null) {
+async function callLLMOnce(provider, model, prompt, signal = null, taskType = 'summary') {
   if (!llmClientService || typeof llmClientService.callLLMOnce !== 'function') {
     throw new Error('LLM client service is unavailable');
   }
@@ -4057,12 +3857,13 @@ async function callLLMOnce(provider, model, prompt, signal = null) {
     signal: signal,
     apiKey: SecureStorage.getApiKey(provider),
     meetingContext: AppState.meetingContext,
+    taskType: taskType,
+    reasoningBoost: taskType === 'advice' && AppState.meetingContext.reasoningBoostEnabled,
     costs: AppState.costs,
     pricing: PRICING,
     deps: {
       callGeminiApi: callGeminiApi,
       fetchWithRetry: fetchWithRetry,
-      applyReasoningBoost: applyReasoningBoost,
       getCapabilities: getCapabilities,
       showToast: showToast,
       t: t,
@@ -4070,29 +3871,6 @@ async function callLLMOnce(provider, model, prompt, signal = null) {
       checkCostAlert: checkCostAlert
     }
   });
-}
-
-// プロバイダー名から設定画面のselect IDへのマッピング
-const MODEL_SELECT_ID = {
-  groq: 'groqModel',
-  gemini: 'geminiModel',
-  claude: 'claudeModel',
-  openai: 'openaiModel',
-  openai_llm: 'openaiLlmModel'
-};
-
-// 保存済みモデルを自動更新
-async function autoUpdateSavedModel(provider, newModel) {
-  try {
-    await SecureStorage.setModel(provider, newModel);
-    // 設定画面のドロップダウンも更新（表示中の場合）
-    var selectId = MODEL_SELECT_ID[provider] || (provider + 'Model');
-    var select = document.getElementById(selectId);
-    if (select) select.value = newModel;
-    console.log('[Model] Auto-updated saved model:', provider, '->', newModel);
-  } catch (e) {
-    console.error('[Model] Failed to auto-update:', e);
-  }
 }
 
 // =====================================
@@ -4279,7 +4057,9 @@ function updateCosts() {
   document.getElementById('transcriptCostTotal').textContent = formatCost(AppState.costs.transcript.total);
   document.getElementById('transcriptDuration').textContent = formatDuration(AppState.costs.transcript.duration);
   document.getElementById('transcriptCalls').textContent = t('app.cost.calls', { n: AppState.costs.transcript.calls });
-  document.getElementById('openaiTranscriptCost').textContent = formatCost(AppState.costs.transcript.byProvider.openai);
+  document.getElementById('openaiTranscriptCost').textContent = AppState.costs.transcript.hasUnknownEstimate
+    ? t('app.cost.estimateUnavailable')
+    : formatCost(AppState.costs.transcript.byProvider.openai);
   document.getElementById('deepgramTranscriptCost').textContent = formatCost(AppState.costs.transcript.byProvider.deepgram);
 
   // 文字起こしコストバッジ
@@ -4287,7 +4067,9 @@ function updateCosts() {
   updateCostBadge(transcriptBadge, AppState.costs.transcript.total);
 
   // LLMコスト
-  document.getElementById('llmCostTotal').textContent = formatCost(AppState.costs.llm.total);
+  document.getElementById('llmCostTotal').textContent = AppState.costs.llm.hasUnknownEstimate
+    ? formatCost(AppState.costs.llm.total) + ' + ' + t('app.cost.estimateUnavailable')
+    : formatCost(AppState.costs.llm.total);
   document.getElementById('llmInputTokens').textContent = formatNumber(AppState.costs.llm.inputTokens);
   document.getElementById('llmOutputTokens').textContent = formatNumber(AppState.costs.llm.outputTokens);
   document.getElementById('llmCalls').textContent = t('app.cost.calls', { n: AppState.costs.llm.calls });
@@ -4297,6 +4079,7 @@ function updateCosts() {
   document.getElementById('claudeCost').textContent = formatCost(AppState.costs.llm.byProvider.claude);
   document.getElementById('openaiCost').textContent = formatCost(AppState.costs.llm.byProvider.openai);
   document.getElementById('groqCost').textContent = formatCost(AppState.costs.llm.byProvider.groq);
+  document.getElementById('deepseekCost').textContent = formatCost(AppState.costs.llm.byProvider.deepseek || 0);
 
   // LLMコストバッジ
   const llmBadge = document.getElementById('llmCostBadge');
@@ -5163,26 +4946,25 @@ const LLM_PROVIDERS_FALLBACK = {
   gemini: {
     name: 'Gemini',
     models: [
-      { value: 'gemini-2.5-flash', label: 'gemini-2.5-flash (推奨)' },
-      { value: 'gemini-2.5-pro', label: 'gemini-2.5-pro' },
-      { value: 'gemini-2.0-flash', label: 'gemini-2.0-flash (2026-03終了予定)', deprecated: true }
+      { value: 'gemini-3.6-flash', label: 'gemini-3.6-flash（標準・高精度）' },
+      { value: 'gemini-3.5-flash-lite', label: 'gemini-3.5-flash-lite（低コスト）' }
     ],
     hint: '<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">Google AI Studio</a>でAPIキーを取得'
   },
   claude: {
     name: 'Claude',
     models: [
-      { value: 'claude-sonnet-4-20250514', label: 'claude-sonnet-4' },
-      { value: 'claude-3-5-sonnet-20241022', label: 'claude-3.5-sonnet' }
+      { value: 'claude-sonnet-5', label: 'claude-sonnet-5（標準・高品質）' },
+      { value: 'claude-haiku-4-5-20251001', label: 'claude-haiku-4-5（低コスト）' }
     ],
     hint: '<a href="https://console.anthropic.com/" target="_blank" rel="noopener">Anthropic Console</a>でAPIキーを取得'
   },
   openai_llm: {
     name: 'OpenAI',
     models: [
-      { value: 'gpt-4o', label: 'gpt-4o (推奨)' },
-      { value: 'gpt-4o-mini', label: 'gpt-4o-mini (低コスト)' },
-      { value: 'gpt-4-turbo', label: 'gpt-4-turbo' }
+      { value: 'gpt-5.6-terra', label: 'gpt-5.6-terra（標準）' },
+      { value: 'gpt-5.6-luna', label: 'gpt-5.6-luna（低コスト）' },
+      { value: 'gpt-5.6-sol', label: 'gpt-5.6-sol（高品質・助言）' }
     ],
     hint: '<a href="https://platform.openai.com/api-keys" target="_blank" rel="noopener">OpenAI Platform</a>でAPIキーを取得',
     allowCustomModel: true
@@ -5190,10 +4972,18 @@ const LLM_PROVIDERS_FALLBACK = {
   groq: {
     name: 'Groq',
     models: [
-      { value: 'llama-3.3-70b-versatile', label: 'llama-3.3-70b (推奨)' },
-      { value: 'llama-3.1-8b-instant', label: 'llama-3.1-8b (低コスト)' }
+      { value: 'openai/gpt-oss-120b', label: 'openai/gpt-oss-120b（標準）' },
+      { value: 'openai/gpt-oss-20b', label: 'openai/gpt-oss-20b（低コスト・高速）' }
     ],
     hint: '<a href="https://console.groq.com/keys" target="_blank" rel="noopener">Groq Console</a>でAPIキーを取得'
+  },
+  deepseek: {
+    name: 'DeepSeek',
+    models: [
+      { value: 'deepseek-v4-flash', label: 'deepseek-v4-flash（標準・低コスト）' }
+    ],
+    hint: '<a href="https://platform.deepseek.com/api_keys" target="_blank" rel="noopener">DeepSeek Platform</a>でAPIキーを取得',
+    allowCustomModel: true
   }
 };
 
@@ -5568,7 +5358,7 @@ function generateExportMarkdown(options = null) {
     md += `### ${t('export.document.costStt')}\n`;
     md += `- ${t('export.document.costProcessingTime')}: ${formatDuration(AppState.costs.transcript.duration)}\n`;
     md += `- ${t('export.document.costApiCalls')}: ${AppState.costs.transcript.calls}\n`;
-    md += `- OpenAI Whisper: ${formatCost(AppState.costs.transcript.byProvider.openai)}\n`;
+    md += `- OpenAI Transcribe: ${AppState.costs.transcript.hasUnknownEstimate ? '見積不能（トークンusage未取得）' : formatCost(AppState.costs.transcript.byProvider.openai)}\n`;
     md += `- Deepgram: ${formatCost(AppState.costs.transcript.byProvider.deepgram)}\n`;
     md += `- ${t('export.document.costSubtotal')}: ${formatCost(AppState.costs.transcript.total)}\n\n`;
     md += `### ${t('export.document.costLlm')}\n`;
@@ -5579,6 +5369,8 @@ function generateExportMarkdown(options = null) {
     md += `- Claude: ${formatCost(AppState.costs.llm.byProvider.claude)}\n`;
     md += `- OpenAI: ${formatCost(AppState.costs.llm.byProvider.openai)}\n`;
     md += `- Groq: ${formatCost(AppState.costs.llm.byProvider.groq)}\n`;
+    md += `- DeepSeek: ${formatCost(AppState.costs.llm.byProvider.deepseek || 0)}\n`;
+    if (AppState.costs.llm.hasUnknownEstimate) md += `- 自由入力モデル: 見積不能\n`;
     md += `- ${t('export.document.costSubtotal')}: ${formatCost(AppState.costs.llm.total)}\n\n`;
     md += `### ${t('export.document.costTotal')}\n`;
     md += `**${formatCost(total)}**\n\n`;
@@ -5741,15 +5533,16 @@ function getActiveMeetingDraftSettings() {
   const transcriptIntervalEl = document.getElementById('transcriptInterval');
   return {
     sttProvider: AppState.activeProviderId || (transcriptProviderEl ? transcriptProviderEl.value : SecureStorage.getOption('sttProvider', 'openai_stt')),
-    sttModel: SecureStorage.getModel('openai') || 'whisper-1',
+    sttModel: SecureStorage.getModel('openai') || 'gpt-4o-mini-transcribe',
     deepgramModel: SecureStorage.getModel('deepgram') || 'nova-3-general',
     sttLanguage: SecureStorage.getOption('sttLanguage', 'ja'),
     transcriptInterval: transcriptIntervalEl ? transcriptIntervalEl.value : '',
-    llmPriority: SecureStorage.getOption('llmPriority', 'auto'),
+    llmPriority: SecureStorage.getOption('llmPriority', 'gemini'),
     geminiModel: SecureStorage.getModel('gemini') || '',
     claudeModel: SecureStorage.getModel('claude') || '',
     openaiLlmModel: SecureStorage.getModel('openai_llm') || '',
-    groqModel: SecureStorage.getModel('groq') || ''
+    groqModel: SecureStorage.getModel('groq') || '',
+    deepseekModel: SecureStorage.getModel('deepseek') || ''
   };
 }
 
@@ -6116,14 +5909,16 @@ async function generateStructuredProposal(record, additionalInstruction = '') {
   }
 
   const prompt = getStructuringPrompt(record.transcript, additionalInstruction);
-  const firstResponse = await callLLM(llm.provider, prompt);
+  const firstResponse = await callLLM(llm.provider, prompt, null, 'summary');
   try {
     return StructuringService.parseResponse(firstResponse);
   } catch (firstError) {
     console.warn('[Structuring] Invalid JSON response; retrying once', firstError);
     const retryResponse = await callLLM(
       llm.provider,
-      `${prompt}\n\n${t('ai.prompt.structuringRetry')}`
+      `${prompt}\n\n${t('ai.prompt.structuringRetry')}`,
+      null,
+      'summary'
     );
     return StructuringService.parseResponse(retryResponse);
   }
@@ -7241,7 +7036,7 @@ function collectRecentDiagnosticErrorCodes(contextSummary) {
 function getConfiguredLlmProvidersForDiagnostic() {
   if (diagnosticsService && typeof diagnosticsService.getConfiguredLlmProvidersForDiagnostic === 'function') {
     return diagnosticsService.getConfiguredLlmProvidersForDiagnostic(
-      ['claude', 'openai_llm', 'gemini', 'groq'],
+      ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek'],
       function (provider) {
         return Boolean(SecureStorage.getApiKey(provider));
       }
@@ -7317,7 +7112,7 @@ async function buildDiagnosticPackData() {
       sttProviderLabel: getProviderDisplayName(sttProvider),
       sttModel: getSelectedSttModelForDiagnostic(sttProvider),
       sttLanguage: SecureStorage.getOption('sttLanguage', 'ja'),
-      llmPriority: SecureStorage.getOption('llmPriority', 'auto'),
+      llmPriority: SecureStorage.getOption('llmPriority', 'gemini'),
       llmActiveProvider: llm ? llm.provider : null,
       llmActiveModel: llm ? llm.model : null,
       llmConfiguredProviders: getConfiguredLlmProvidersForDiagnostic()
@@ -7402,7 +7197,7 @@ function getEffectiveLlmProvider() {
     return 'gemini';
   }
 
-  const priority = SecureStorage.getOption('llmPriority', 'auto');
+  const priority = SecureStorage.getOption('llmPriority', 'gemini');
   return resolveEffectiveLlmProvider(priority, function(provider) {
     return Boolean(SecureStorage.getApiKey(provider));
   });
@@ -7425,52 +7220,6 @@ function getCurrentCapabilities() {
   const capabilityProvider = normalizeCapabilityProvider(actualProvider);
   const model = SecureStorage.getEffectiveModel(actualProvider, getDefaultModel(actualProvider));
   return getCapabilities(capabilityProvider, model);
-}
-
-/**
- * 対応プロバイダの推論強化パラメータを適用
- * @param {string} provider - プロバイダー名
- * @param {string} model - モデル名
- * @param {Object} payload - APIリクエストペイロード
- * @returns {Object} 修正されたペイロード
- */
-function applyReasoningBoost(provider, model, payload) {
-  // トグルがOFFなら何もしない
-  if (!AppState.meetingContext.reasoningBoostEnabled) {
-    return payload;
-  }
-
-  const capabilityProvider = normalizeCapabilityProvider(provider);
-  const caps = getCapabilities(capabilityProvider, model);
-  if (!caps.supportsReasoningControl) {
-    return payload;
-  }
-
-  try {
-    if (capabilityProvider === 'anthropic') {
-      // Anthropic Extended thinking
-      payload.thinking = {
-        type: 'enabled',
-        budget_tokens: 10000  // 10kトークンまで思考に使用
-      };
-
-      // Extended thinking使用時はmax_tokensを増やす必要がある場合がある
-      // budget_tokens + 通常出力 < max_tokens である必要があるので調整
-      if (payload.max_tokens < 12048) {
-        payload.max_tokens = 16000;  // 思考 + 出力に十分な量
-      }
-    } else if (capabilityProvider === 'openai') {
-      // OpenAI reasoning対応モデルでは reasoning_effort を付与
-      payload.reasoning_effort = 'medium';
-    }
-
-    console.log('[LLM] Reasoning boost applied for:', capabilityProvider, model);
-  } catch (e) {
-    console.warn('[LLM] Failed to apply reasoning boost:', e);
-    // 失敗時はそのままのペイロードを返す
-  }
-
-  return payload;
 }
 
 // =====================================
@@ -8135,15 +7884,17 @@ function updateLLMIndicator() {
       gemini: 'Gemini',
       claude: 'Claude',
       openai: 'OpenAI',
-      openai_llm: 'ChatGPT',
-      groq: 'Groq'
+      openai_llm: 'OpenAI',
+      groq: 'Groq',
+      deepseek: 'DeepSeek'
     };
     const providerEmoji = {
       gemini: '✨',
       claude: '🧠',
       openai: '🚀',
       openai_llm: '🚀',
-      groq: '⚡'
+      groq: '⚡',
+      deepseek: '🔍'
     };
     indicator.textContent = `${providerEmoji[llm.provider] || '🤖'} ${providerNames[llm.provider] || llm.provider}`;
     indicator.classList.remove('no-api');
