@@ -26,6 +26,139 @@
   --focus-ring:0 0 0 3px rgba(79,70,229,.35);
 }
 
+/* ===== Realtime voice smoke test (local-only) ===== */
+.realtime-voice-test {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 2px solid var(--border);
+  border-radius: 0.75rem;
+  background: var(--surface-muted);
+}
+
+.realtime-voice-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.realtime-voice-title {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.realtime-voice-model,
+.realtime-voice-description,
+.realtime-voice-safety-note,
+.realtime-pricing-note,
+.realtime-response-empty {
+  margin: 0.35rem 0 0;
+  color: var(--text-secondary);
+  font-size: 0.78rem;
+}
+
+.realtime-voice-safety-note {
+  color: var(--text);
+}
+
+.realtime-state-badge {
+  flex: 0 0 auto;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  background: var(--card-bg);
+}
+
+.realtime-state-badge[data-state="connecting"],
+.realtime-state-badge[data-state="responding"] {
+  color: #92400e;
+  background: #fef3c7;
+}
+
+.realtime-state-badge[data-state="connected"] {
+  color: #166534;
+  background: #dcfce7;
+}
+
+.realtime-state-badge[data-state="ended"] {
+  color: var(--text-secondary);
+  background: var(--card-bg);
+}
+
+.realtime-state-badge[data-state="error"] {
+  color: #991b1b;
+  background: #fee2e2;
+}
+
+.realtime-voice-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+.realtime-audio-output {
+  display: block;
+  width: min(100%, 22rem);
+  margin-top: 0.75rem;
+}
+
+.realtime-voice-error {
+  margin: 0.75rem 0 0;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #fca5a5;
+  border-radius: 0.5rem;
+  color: #991b1b;
+  background: #fef2f2;
+  font-size: 0.8rem;
+}
+
+.realtime-usage,
+.realtime-response-log {
+  margin-top: 0.9rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+}
+
+.realtime-usage-title,
+.realtime-response-log-title {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.realtime-usage-grid {
+  display: grid;
+  grid-template-columns: minmax(8rem, 1fr) auto;
+  gap: 0.3rem 0.75rem;
+  margin-top: 0.45rem;
+  font-size: 0.78rem;
+}
+
+.realtime-usage-grid strong {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.realtime-response-item {
+  margin-top: 0.55rem;
+  padding: 0.6rem;
+  border-left: 3px solid var(--primary);
+  border-radius: 0.35rem;
+  background: var(--card-bg);
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-size: 0.82rem;
+}
+
+.realtime-response-item time {
+  display: block;
+  margin-bottom: 0.2rem;
+  color: var(--text-secondary);
+  font-size: 0.7rem;
+}
+
 /* ===== History notebook ===== */
 .modal.history-modal {
   max-width: 900px;

@@ -59,6 +59,7 @@ async function main() {
     await runNpmScript('test:history-export');
     await runNpmScript('test:recording-profiles');
     await runNpmScript('test:recorder');
+    await runNpmScript('test:realtime-ui');
   } finally {
     if (!server.reused) {
       await server.stop();

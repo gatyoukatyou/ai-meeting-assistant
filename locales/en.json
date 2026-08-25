@@ -98,6 +98,45 @@
         "timeline": "Timeline"
       }
     },
+    "realtime": {
+      "title": "Realtime voice test",
+      "model": "Model: gpt-realtime-2.1",
+      "description": "Connect to the OpenAI Realtime API through a local server for a 30–60 second Japanese voice test. The standard API key is never sent to the browser.",
+      "headphones": "Use headphones. Input transcription events are not saved in this test, so AI audio is not added twice as the user's speech.",
+      "start": "Start voice test",
+      "stop": "End",
+      "recordingBlocked": "Stop the regular recording before starting the Realtime voice test.",
+      "timelineLabel": "Realtime voice",
+      "state": {
+        "idle": "Not connected",
+        "connecting": "Connecting",
+        "connected": "Connected",
+        "responding": "Responding",
+        "ended": "Ended",
+        "error": "Error"
+      },
+      "usageTitle": "Usage for this test",
+      "responses": "Response count",
+      "totalTokens": "Total tokens",
+      "inputTokens": "Input tokens",
+      "outputTokens": "Output tokens",
+      "estimate": "Estimate",
+      "pricingNote": "Estimate uses the official {model} rates published on {date}; actual charges may differ.",
+      "responseTitle": "AI responses",
+      "noResponse": "No AI response yet.",
+      "errors": {
+        "unsupported": "This browser does not support the Realtime voice test. Use a Chrome-based desktop browser.",
+        "missingApiKey": "OPENAI_API_KEY is not configured on the local server. Do not paste the key into the screen or logs.",
+        "authentication": "OpenAI API key authentication failed. Reconfigure it without sharing the key value.",
+        "rateLimit": "A local or OpenAI rate limit was reached. Wait and try again.",
+        "network": "The local server or OpenAI Realtime API could not be reached.",
+        "server": "OpenAI Realtime API reported a temporary server problem.",
+        "localOnly": "The Realtime voice test is available only from a local connection.",
+        "tokenResponse": "A short-lived client secret could not be obtained.",
+        "localServer": "The local Realtime server request failed.",
+        "connection": "The Realtime voice connection ended."
+      }
+    },
     "timeline": {
       "filterAll": "All",
       "filterMemo": "Memo",
@@ -511,6 +550,7 @@
       "memos": "Memos",
       "todos": "TODOs",
       "qa": "Q&A",
+      "realtime": "Realtime voice",
       "transcript": "Transcript",
       "aiWorkOrder": "AI Work Order",
       "cost": "Cost Details"

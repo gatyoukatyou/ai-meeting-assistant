@@ -2,7 +2,7 @@ const ActiveMeetingDraftService = (function () {
   'use strict';
 
   const SCHEMA_VERSION = 1;
-  const EMPTY_AI_RESPONSES = { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [] };
+  const EMPTY_AI_RESPONSES = { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [], realtime: [] };
 
   const FORBIDDEN_KEY_PATTERN = /api.?key|apikey|authorization|auth.?token|(^|[_-])token($|[_-])|bearer|secret|password|credential/i;
 
@@ -35,7 +35,8 @@ const ActiveMeetingDraftService = (function () {
       idea: Array.isArray(source.idea) ? source.idea : [],
       consult: Array.isArray(source.consult) ? source.consult : [],
       minutes: typeof source.minutes === 'string' ? source.minutes : '',
-      custom: Array.isArray(source.custom) ? source.custom : []
+      custom: Array.isArray(source.custom) ? source.custom : [],
+      realtime: Array.isArray(source.realtime) ? source.realtime : []
     };
   }
 
@@ -51,7 +52,8 @@ const ActiveMeetingDraftService = (function () {
       ai.idea.length > 0 ||
       ai.consult.length > 0 ||
       ai.minutes.trim() ||
-      ai.custom.length > 0
+      ai.custom.length > 0 ||
+      ai.realtime.length > 0
     ) {
       return true;
     }
@@ -83,6 +85,7 @@ const ActiveMeetingDraftService = (function () {
       meetingStartMarkerId: source.meetingStartMarkerId || null,
       chunkIdCounter: Number.isFinite(source.chunkIdCounter) ? source.chunkIdCounter : 0,
       aiResponses: normalizeAiResponses(deepCopy(source.aiResponses || EMPTY_AI_RESPONSES)),
+      realtimeUsage: deepCopy(source.realtimeUsage || null),
       costs: deepCopy(source.costs || null),
       meetingMemos: {
         items: deepCopy((source.meetingMemos && source.meetingMemos.items) || [])
@@ -108,6 +111,7 @@ const ActiveMeetingDraftService = (function () {
       meetingStartMarkerId: draft.meetingStartMarkerId || null,
       chunkIdCounter: Number.isFinite(draft.chunkIdCounter) ? draft.chunkIdCounter : 0,
       aiResponses: draft.aiResponses || EMPTY_AI_RESPONSES,
+      realtimeUsage: draft.realtimeUsage || null,
       costs: draft.costs || null,
       meetingMemos: draft.meetingMemos || { items: [] },
       memoIdCounter: Number.isFinite(draft.memoIdCounter) ? draft.memoIdCounter : 0,
