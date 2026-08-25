@@ -1,4 +1,9 @@
 
+# 秘匿情報（APIキー・トークン）。作業ツリーに置いてもコミットされないようにする
+.env
+.env.*
+!.env.example
+
 .serena/
 .DS_Store
 node_modules/
