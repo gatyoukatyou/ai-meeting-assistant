@@ -1,6 +1,6 @@
 # ai-meeting-assistant Claude Code Configuration
 
-<!-- aion-ops bootstrap v2026-07-02 | 正本: gatyoukatyou/aion-ops | このブロックは編集せず雛形から再配布する -->
+<!-- aion-ops bootstrap v2026-08-26 | 正本: gatyoukatyou/aion-ops | このブロックは編集せず雛形から再配布する -->
 
 ## 共通運用ルール（正本 = aion-ops）
 
@@ -18,11 +18,12 @@
 
 ### 最初に読む正本（順に）
 
-1. `aion-ops/docs/operations/minimal-operating-rules.md` — まず守る6項目（最上位サマリ）
-2. `aion-ops/docs/operations/todoist-operation-rules.md` — Todoist運用（ボード・ラベル・ライフサイクル・権限境界）
-3. `aion-ops/docs/operations/github-workflow.md` — GitHub運用
-4. `aion-ops/agents/kuro-claude.md` — KUROの役割・境界
-5. `aion-ops/templates/handoff-brief-template.md` — 節目ごとのhandoff書式（HUMAN判断待ちを最上段に置く）
+1. `aion-ops/docs/operations/ai-collaboration-rules.md` — **AIエージェント共通ルール（作業内容を問わず常に適用）。** 愛称の定義・AI間メッセージ書式（`To:` `By:` `Type:` `Ref:`）・リファクタリング依頼時のルール（3案提示、完成形での提示）
+2. `aion-ops/docs/operations/minimal-operating-rules.md` — まず守る6項目（最上位サマリ）
+3. `aion-ops/docs/operations/todoist-operation-rules.md` — Todoist運用（ボード・ラベル・ライフサイクル・権限境界）
+4. `aion-ops/docs/operations/github-workflow.md` — GitHub運用
+5. `aion-ops/agents/kuro-claude.md` — KUROの役割・境界
+6. `aion-ops/templates/handoff-brief-template.md` — 節目ごとのhandoff書式（HUMAN判断待ちを最上段に置く）
 
 ### GitHub / Todoist の更新について
 
