@@ -250,6 +250,7 @@
       "title": "AI Response & Summary (Optional) - Select LLM",
       "validate": "Validate",
       "clear": "Clear",
+      "testConnection": "Test Connection",
       "priority": "Primary LLM provider",
       "priorityAuto": "Auto-select (legacy compatibility)",
       "priorityGemini": "Gemini (new default)",
@@ -257,6 +258,7 @@
       "priorityOpenAI": "Prefer OpenAI",
       "priorityGroq": "Prefer Groq",
       "priorityDeepSeek": "Prefer DeepSeek",
+      "priorityLocalLlm": "Prefer Local LLM (Ollama/LM Studio)",
       "fallbackOrder": "Backup order for temporary failures",
       "fallbackOrderHint": "Used only for 429, temporary 5xx, or network failures (comma-separated)",
       "pricingPrivacyHint": "Costs are estimates using official rates and 1 USD = 150 JPY (checked 2026-08-01). Meeting content is sent to the selected external API.",
@@ -284,6 +286,11 @@
         "deepseekV4Flash": "deepseek-v4-flash (Standard, low cost)"
       },
       "customModelWarning": "⚠️ Custom model: Not verified; a cost estimate may be unavailable",
+      "localLlmBaseUrlUnset": "Not configured",
+      "localLlmModelUnset": "Fetch the model list first",
+      "localLlmHint": "No API key required. Supports only the localhost endpoint of an Ollama/LM Studio server running on this machine (e.g. Mac mini) — cost is always ¥0.",
+      "localLlmConnectionFailed": "Could not connect. Please check that Ollama/LM Studio is running.",
+      "modelsFound": "models found",
       "customModelPlaceholder": {
         "gemini": "Custom model (e.g. gemini-2.5-pro)",
         "claude": "Custom model (e.g. claude-opus-4-20250514)",

@@ -133,6 +133,12 @@ const SecureStorage = {
       openai_llm: { model: this.getModel('openai_llm'), customModel: this.getCustomModel('openai_llm') },
       groq: { model: this.getModel('groq'), customModel: this.getCustomModel('groq') },
       deepseek: { model: this.getModel('deepseek'), customModel: this.getCustomModel('deepseek') },
+      // Local LLM（Ollama/LM Studio）: APIキーなし。ベースURLもここに含む（機微情報ではない）
+      local_llm: {
+        model: this.getModel('local_llm'),
+        customModel: this.getCustomModel('local_llm'),
+        baseUrl: this.getOption('localLlmBaseUrl', '')
+      },
       // STT用設定（APIキーは含めない）
       openai: { model: this.getModel('openai') },
       deepgram: { model: this.getModel('deepgram') },
@@ -143,7 +149,7 @@ const SecureStorage = {
         costLimit: this.getOption('costLimit', 100),
         maxRecordingMinutes: this.getOption('maxRecordingMinutes', 120),
         llmPriority: this.getOption('llmPriority', 'gemini'),
-        llmFallbackOrder: this.getOption('llmFallbackOrder', ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek']),
+        llmFallbackOrder: this.getOption('llmFallbackOrder', ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek', 'local_llm']),
         sttProvider: this.getOption('sttProvider', 'openai_stt'),
         sttUserDictionary: this.getOption('sttUserDictionary', ''),
         sttLanguage: this.getOption('sttLanguage', 'ja'),
@@ -183,6 +189,15 @@ const SecureStorage = {
       if (data.groq && data.groq.customModel) this.setCustomModel('groq', data.groq.customModel);
       if (data.deepseek && data.deepseek.model) this.setModel('deepseek', data.deepseek.model);
       if (data.deepseek && data.deepseek.customModel) this.setCustomModel('deepseek', data.deepseek.customModel);
+      if (data.local_llm && data.local_llm.model) this.setModel('local_llm', data.local_llm.model);
+      if (data.local_llm && data.local_llm.customModel) this.setCustomModel('local_llm', data.local_llm.customModel);
+      if (data.local_llm && typeof data.local_llm.baseUrl === 'string') {
+        // localhostのみ許可（CSP connect-srcと同じ制約。他ホストは黙って捨てる）
+        var allowedLocalLlmBaseUrls = ['', 'http://localhost:11434/v1', 'http://localhost:1234/v1'];
+        if (allowedLocalLlmBaseUrls.indexOf(data.local_llm.baseUrl) !== -1) {
+          this.setOption('localLlmBaseUrl', data.local_llm.baseUrl);
+        }
+      }
       // STT用設定
       if (data.openai && data.openai.model) this.setModel('openai', data.openai.model);
       if (data.deepgram && data.deepgram.model) this.setModel('deepgram', data.deepgram.model);
@@ -234,6 +249,10 @@ const SecureStorage = {
     localStorage.removeItem('_opt_sttUserDictionary');
     localStorage.removeItem('_opt_sttLanguage');
     localStorage.removeItem('_opt_persistMeetingContext');
+    // Local LLM is keyless, so it's excluded from _providers above.
+    localStorage.removeItem('_m_local_llm');
+    localStorage.removeItem('_mc_local_llm');
+    localStorage.removeItem('_opt_localLlmBaseUrl');
   },
 
   // APIキーのみ削除 - clears from BOTH storages

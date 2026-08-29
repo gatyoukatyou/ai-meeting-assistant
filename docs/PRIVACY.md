@@ -45,6 +45,10 @@ APIキーは既定でユーザーのブラウザのsessionStorage（タブ/セ�
 - [Groq のプライバシーポリシー](https://groq.com/privacy-policy/)
 - [Deepgram のプライバシーポリシー](https://deepgram.com/privacy)
 
+「Local LLM（Ollama / LM Studio）」を選択した場合は例外です。APIキーの代わりに、ユーザー自身が起動した
+`http://localhost:*` または `http://127.0.0.1:*` 上のサーバーとのみ通信します（コンテンツセキュリティポリシーで
+それ以外の宛先への通信をブロックしています）。会議内容はブラウザを実行している端末の外へ送信されません。
+
 ---
 
 ## English
@@ -87,3 +91,8 @@ Please refer to each provider's privacy policy for details on their data handlin
 - [Anthropic (Claude) Privacy Policy](https://www.anthropic.com/privacy)
 - [Groq Privacy Policy](https://groq.com/privacy-policy/)
 - [Deepgram Privacy Policy](https://deepgram.com/privacy)
+
+The "Local LLM (Ollama / LM Studio)" option is an exception: instead of an API key, it
+only communicates with a server the user has started themselves at `http://localhost:*`
+or `http://127.0.0.1:*` (the Content Security Policy blocks any other destination).
+Meeting content never leaves the machine running the browser.
