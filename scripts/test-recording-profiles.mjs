@@ -20,6 +20,7 @@ async function getProfileUi(page) {
     chipProfile: document.getElementById('recordingProfileChip')?.dataset.profile,
     chipLabel: document.getElementById('recordingProfileLabel')?.textContent,
     aiVisible: getComputedStyle(document.getElementById('aiPanel')).display !== 'none',
+    aiMainTabVisible: getComputedStyle(document.querySelector('.main-tab[data-main-tab="ai"]')).display !== 'none',
     contextVisible: getComputedStyle(document.getElementById('openContextModalBtn')).display !== 'none',
     meetingModeVisible: getComputedStyle(document.getElementById('meetingModeChip')).display !== 'none',
     transcriptVisible: getComputedStyle(document.getElementById('transcriptPanel')).display !== 'none',
@@ -59,7 +60,8 @@ async function runProfileFlow(page) {
   const memoUi = await getProfileUi(page);
   assert(memoUi.profile === 'memo', `default profile should be memo, got ${memoUi.profile}`);
   assert(memoUi.chipProfile === 'memo' && memoUi.chipLabel === 'メモ', 'memo chip state is incorrect');
-  assert(!memoUi.aiVisible, 'AI panel should be hidden in memo profile');
+  assert(memoUi.aiVisible, 'AI panel should be available in memo profile');
+  assert(memoUi.aiMainTabVisible, 'AI main tab should be available in memo profile');
   assert(!memoUi.contextVisible, 'meeting context entry should be hidden in memo profile');
   assert(!memoUi.meetingModeVisible, 'meeting mode chip should be hidden in memo profile');
   assert(memoUi.transcriptVisible && memoUi.statusVisible, 'memo transcript or status is hidden');
@@ -146,10 +148,15 @@ async function runProfileFlow(page) {
     recorderLifecycle.transition(RecorderLifecycleService.EVENTS.PREPARE);
     recorderLifecycle.transition(RecorderLifecycleService.EVENTS.START);
     updateUI();
+    switchMainTab('ai');
     const recording = {
       visible: getComputedStyle(document.getElementById('statusBadge')).display !== 'none',
       active: document.getElementById('statusBadge').classList.contains('status-recording'),
-      profileDisabled: document.getElementById('recordingProfileChip').disabled
+      profileDisabled: document.getElementById('recordingProfileChip').disabled,
+      aiPanelActive: document.getElementById('aiPanel').classList.contains('active'),
+      memoDisabled: document.getElementById('submitMemoInTabBtn').disabled,
+      qaDisabled: document.getElementById('qaSubmitInTabBtn').disabled,
+      minutesDisabled: document.getElementById('tabMinutesBtn').disabled
     };
     recorderLifecycle.transition(RecorderLifecycleService.EVENTS.SUSPEND);
     updateUI();
@@ -163,6 +170,10 @@ async function runProfileFlow(page) {
   });
   assert(badgeStates.recording.visible && badgeStates.recording.active, 'memo recording badge is not active');
   assert(badgeStates.recording.profileDisabled, 'profile switch should be disabled while recording');
+  assert(badgeStates.recording.aiPanelActive, 'AI panel should remain reachable while recording');
+  assert(!badgeStates.recording.memoDisabled, 'memo submit should remain enabled while recording');
+  assert(!badgeStates.recording.qaDisabled, 'Q&A submit should remain enabled while recording');
+  assert(badgeStates.recording.minutesDisabled, 'minutes should remain disabled while recording');
   assert(badgeStates.suspended, 'memo suspended badge is not active');
   assert(badgeStates.processingText.includes('処理中'), 'memo processing state is not visible');
 }

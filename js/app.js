@@ -4228,8 +4228,6 @@ function switchTab(tabName) {
 
 // Phase 3: メインパネル切り替え（スマホ用）
 function switchMainTab(tabName) {
-  if (AppState.recordingProfile === RECORDING_PROFILES.MEMO && tabName === 'ai') return;
-
   // 会議モード（パネル）中は編集モードに戻してからタブ切替
   if (AppState.isPanelMeetingMode) {
     AppState.isPanelMeetingMode = false;
@@ -4450,11 +4448,12 @@ function updateRecordingProfileUI() {
 
   if (isMemo) {
     main?.classList.remove('meeting-mode');
-    transcriptPanel?.classList.add('active');
-    aiPanel?.classList.remove('active');
-    document.querySelectorAll('.main-tab').forEach(tab => {
-      tab.classList.toggle('active', tab.dataset.mainTab === 'transcript');
-    });
+    // メモプロファイルでも、録音中のメモ追加とQ&Aは常に利用できる。
+    // モバイルでは現在選択中のパネルを維持し、未選択時だけ文字起こしを既定にする。
+    if (!transcriptPanel?.classList.contains('active') && !aiPanel?.classList.contains('active')) {
+      transcriptPanel?.classList.add('active');
+      document.querySelector('.main-tab[data-main-tab="transcript"]')?.classList.add('active');
+    }
     if (AppState.isMeetingMode) exitMeetingMode();
   } else {
     main?.classList.toggle('meeting-mode', AppState.isPanelMeetingMode);
