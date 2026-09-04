@@ -71,5 +71,13 @@ made. Before release:
 4. Keep Gemini as the baseline, but select production defaults from measured results rather
    than a presumed quality ranking.
 
+## Preset verification cadence
+
+Model and pricing presets in `js/lib/provider-catalog.js` are re-verified against the
+official sources above at least every 90 days (`VERIFIED_AT`, currently 2026-08-01).
+`tests/unit/provider-catalog.test.mjs` fails once the verification is older than 90 days;
+when it does, re-check every preset and price against the provider docs, update stale
+entries, and bump `VERIFIED_AT` (also update this document and the README preset examples).
+
 Do not put real API keys, raw confidential meeting data, or provider responses containing
 sensitive content in repository fixtures.

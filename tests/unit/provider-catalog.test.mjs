@@ -176,6 +176,25 @@ describe('ProviderCatalog local_llm (keyless)', () => {
   });
 });
 
+describe('ProviderCatalog preset freshness', () => {
+  it('has been verified within the last 90 days', () => {
+    const verifiedAt = new Date(`${ProviderCatalog.VERIFIED_AT}T00:00:00Z`);
+    assert.ok(
+      !Number.isNaN(verifiedAt.getTime()),
+      `VERIFIED_AT is not a valid date: ${ProviderCatalog.VERIFIED_AT}`
+    );
+    const days = (Date.now() - verifiedAt.getTime()) / 86_400_000;
+    assert.ok(
+      days <= 90,
+      `Provider/preset verification is ${Math.floor(days)} days old ` +
+        `(VERIFIED_AT=${ProviderCatalog.VERIFIED_AT}). ` +
+        'Re-verify the presets in js/lib/provider-catalog.js against the official ' +
+        'docs listed in docs/API_MODEL_SUPPORT.md, update any stale entries, ' +
+        'and bump VERIFIED_AT.'
+    );
+  });
+});
+
 describe('ProviderCatalog model-registry config base', () => {
   it('exposes base config for each llm provider', () => {
     const config = ProviderCatalog.getModelRegistryProviderConfigBase();
