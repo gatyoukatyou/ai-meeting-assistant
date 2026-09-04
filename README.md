@@ -2,7 +2,7 @@
 
 🇯🇵 日本語 | [🇺🇸 English](README.en.md)
 
-[![Version](https://img.shields.io/badge/version-v1.4.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.4.0)
+[![Version](https://img.shields.io/badge/version-v1.5.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.5.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 会議中にAIがリアルタイムで参加し、文字起こし・要約・相談・議事録・メモを行うWebアプリです。
@@ -18,13 +18,14 @@
 - 📝 **メモ & TODO** - 選択テキストを引用したメモを残し、TODO化/ピン留め可能
 - 🗂️ **タイムライン** - AI回答・Q&A・メモ/TODOを時系列に整理（検索/フィルタ対応）
 - 🤖 **好きなAIを選べる** - 複数のAIプロバイダーから選択可能（BYOK: Bring Your Own Key）
+- 🏠 **ローカルLLM対応** - Ollama / LM Studio と連携。APIキー不要・コスト¥0（同一PCのlocalhost接続のみ）
 - ⚡ **録音中のLLM変更** - 録音を中断せずにAIプロバイダー/モデルを切り替え可能
 - 💰 **コスト目安がわかる** - 推定コストを表示（実請求額は各プロバイダーの課金仕様により前後します）
 - 📥 **記録を保存できる** - 会議の内容とAIの回答、メモ/TODOをMarkdownでエクスポート
 - 🧠 **会議コンテキスト強化** - 目的/参加者/引き継ぎ/参考資料を事前設定
 - 📎 **資料添付 & 拡張機能** - TXT/MD/PDF/DOCX/CSVに対応、Native Docs/Thinking強化で精度アップ
 - 🔒 **APIキー保存ポリシー** - 既定はセッション限定。デスクトップアプリ時のみ任意で記憶を有効化可能（非推奨）
-- 🎨 **テーマ/スタイル切替** - ライト/ダーク + 6アクセント + Brutalism/Paper
+- 🎨 **テーマ/スタイル切替** - ライト/ダーク + 9アクセント + Brutalism/Paper/Clean/CLI（新規既定: Clean）
 - 🗂️ **会議履歴** - 過去の会議記録を自動保存（最大5件）、復元やMDインポートが可能
 - 🎯 **会議モード** - 集中表示と編集モードを切り替えられます
 
@@ -62,7 +63,8 @@
 - 文字起こし用のAPIキー（下記のどれか1つが必要）
   - OpenAI API **または** Deepgram API
 - AI回答用のAPIキー（任意。より賢い回答が欲しい場合）
-  - Gemini / Claude / OpenAI / Groq から選べます
+  - Gemini / Claude / OpenAI / Groq / DeepSeek から選べます
+  - ローカルLLM（Ollama / LM Studio）ならAPIキー不要です
 
 ## 対応プロバイダー
 
@@ -72,18 +74,20 @@
 | OpenAI (Whisper/Transcribe) | チャンク送信 | 安定、疑似リアルタイム |
 | Deepgram (Nova) | WebSocket | 真のリアルタイム、低遅延 |
 
-**OpenAI STTモデル**: whisper-1 / gpt-4o-transcribe / gpt-4o-mini-transcribe  
-**Deepgramモデル**: nova-3-general / nova-2-general / base
+**OpenAI STTモデル**: gpt-4o-mini-transcribe（標準） / gpt-4o-transcribe（高精度） / whisper-1（レガシー）  
+**Deepgramモデル**: nova-3-general
 
 ### AI回答（LLM）
 | プロバイダー | モデル |
 |-------------|--------|
-| Google Gemini | gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash（2026-03終了予定） |
-| Anthropic Claude | claude-sonnet-4-20250514, claude-3-5-sonnet-20241022 |
-| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo |
-| Groq | llama-3.3-70b-versatile, llama-3.1-8b-instant |
+| Google Gemini | gemini-3.6-flash, gemini-3.5-flash-lite, gemini-2.5-flash |
+| Anthropic Claude | claude-sonnet-5, claude-haiku-4-5-20251001 |
+| OpenAI | gpt-5.6-terra, gpt-5.6-luna, gpt-5.6-sol |
+| Groq | openai/gpt-oss-120b, openai/gpt-oss-20b |
+| DeepSeek | deepseek-v4-flash |
+| ローカルLLM（Ollama / LM Studio） | モデル一覧を `GET {baseUrl}/models` から自動取得（APIキー不要・コスト¥0） |
 
-※ いずれもプリセットの例です。カスタムモデル名の入力も可能です。
+※ いずれもプリセットの例です。カスタムモデル名の入力も可能です。モデル対応の詳細は [API / モデル対応表](docs/API_MODEL_SUPPORT.md) を参照してください。
 
 ## 使い方
 
@@ -228,7 +232,7 @@ A: いいえ。あなたのブラウザで処理され、AIサービスに送ら
 A: 機能は全く同じです。オンライン版（GitHub Pages）は簡単に使えるので推奨しています。ローカル版は手元で動作確認・改変したい開発者向けです（APIを呼び出すため、どちらもインターネット接続は必須です）。
 
 **Q: インターネット接続は必要ですか？**
-A: はい。文字起こし（OpenAI Whisper / Deepgram）とAI回答（Gemini / Claude / OpenAI / Groq）のためにインターネット接続が必要です。このアプリはBYOK（Bring Your Own Key）方式で、各AIサービスのAPI料金は従量課金で自己負担となります。完全オフラインでは動作しません。
+A: 文字起こし（OpenAI Whisper / Deepgram）にはインターネット接続が必要です。AI回答はクラウドLLM（Gemini / Claude / OpenAI / Groq / DeepSeek）のほか、同一PCで動作するローカルLLM（Ollama / LM Studio）ならインターネットなしで利用できます。このアプリはBYOK（Bring Your Own Key）方式で、各AIサービスのAPI料金は従量課金で自己負担となります（ローカルLLMは¥0）。
 
 **Q: APIキーって何ですか？**
 A: AIサービスを使うための「パスワード」のようなものです。各サービスのサイトで無料で作れます。
@@ -288,16 +292,14 @@ MIT License - 自由に使ってOKです
 
 ## バージョン
 
-**v1.3.0** - タイムライン & 会議モード（2026-01-30）
+**v1.5.0** - clean テーマ刷新 & 既定テーマ切替（2026-08-11）
 
-- メモ/TODOタイムラインと検索・ピン留め
-- 「相談」タブ追加（意見+アイデアを統合）
-- 会議モード/編集モードの切替
-- 会議コンテキスト拡張（参加者/引き継ぎ・前提）
-- 添付資料がPDF/DOCX/CSVに対応、Native Docs/Thinking強化トグル追加
-- APIキーはセッション内のみ保持（永続保存なし）
+- clean テーマを再設計（ライト/ダーク対応、アクセントカラー9色がボタン等に反映）
+- 新規ユーザーの既定テーマが Clean に（既存の保存値は上書きされません）
+- clean / CLI をメインページのスタイル切替に追加
+- モバイル下部タブの配色整理（非アクティブは控えめ、アクティブのみアクセント表示）
 
-- [最新リリース](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.3.0)
+- [最新リリース](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.5.0)
 - [変更履歴](docs/CHANGELOG.md)
 
 ## 困ったときは

@@ -2,7 +2,7 @@
 
 [🇯🇵 日本語](README.md) | 🇺🇸 English
 
-[![Version](https://img.shields.io/badge/version-v1.4.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.4.0)
+[![Version](https://img.shields.io/badge/version-v1.5.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.5.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A lightweight, browser-based meeting assistant that records audio, transcribes speech, and generates summaries, consult responses, minutes, and memos using AI.
@@ -18,13 +18,14 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - 📝 **Memos & TODOs** – Add quoted memos, convert to TODOs, pin important items
 - 🗂️ **Timeline** – AI responses, Q&A, memos/TODOs in a searchable timeline
 - 🤖 **Multiple AI providers** – Choose from multiple AI providers (BYOK: Bring Your Own Key)
+- 🏠 **Local LLM support** – Works with Ollama / LM Studio. No API key required, cost shown as ¥0 (localhost on the same machine only)
 - ⚡ **Switch LLM while recording** – Change AI provider/model without stopping transcription
 - 💰 **Cost estimates** – View estimated costs (actual charges may vary by provider)
 - 📥 **Export to Markdown** – Save meeting content, AI responses, memos/TODOs
 - 🧠 **Richer meeting context** – Goals, participants, handoff notes, references
 - 📎 **Attachments & enhancements** – TXT/MD/PDF/DOCX/CSV + Native Docs/Thinking Boost
 - 🔒 **API key storage policy** – Session-only by default. Optional device persistence is available only in desktop app mode (not recommended)
-- 🎨 **Theme/style switcher** – Light/Dark + 6 accents + Brutalism/Paper
+- 🎨 **Theme/style switcher** – Light/Dark + 9 accents + Brutalism/Paper/Clean/CLI (default for new users: Clean)
 - 🗂️ **Meeting history** – Auto-save (up to 5), restore and MD import
 - 🎯 **Meeting mode** – Toggle focus view vs. edit mode
 
@@ -61,7 +62,8 @@ See [Security Details](docs/SECURITY.md) for more information.
 - A microphone
 - At least one STT API key for transcription:
   - OpenAI API **or** Deepgram API
-- Optional: LLM API key for AI responses (Gemini / Claude / OpenAI / Groq)
+- Optional: LLM API key for AI responses (Gemini / Claude / OpenAI / Groq / DeepSeek)
+  - No API key is needed when using a local LLM (Ollama / LM Studio)
 
 ## Supported Providers
 
@@ -71,18 +73,20 @@ See [Security Details](docs/SECURITY.md) for more information.
 | OpenAI (Whisper/Transcribe) | Chunk-based | Stable, pseudo-realtime |
 | Deepgram (Nova) | WebSocket | True realtime, low latency |
 
-**OpenAI STT models**: whisper-1 / gpt-4o-transcribe / gpt-4o-mini-transcribe  
-**Deepgram models**: nova-3-general / nova-2-general / base
+**OpenAI STT models**: gpt-4o-mini-transcribe (standard) / gpt-4o-transcribe (accuracy) / whisper-1 (legacy)  
+**Deepgram models**: nova-3-general
 
 ### Large Language Models (LLM)
 | Provider | Models |
 |----------|--------|
-| Google Gemini | gemini-2.5-flash, gemini-2.5-pro, gemini-2.0-flash (2026-03 shutdown) |
-| Anthropic Claude | claude-sonnet-4-20250514, claude-3-5-sonnet-20241022 |
-| OpenAI | gpt-4o, gpt-4o-mini, gpt-4-turbo |
-| Groq | llama-3.3-70b-versatile, llama-3.1-8b-instant |
+| Google Gemini | gemini-3.6-flash, gemini-3.5-flash-lite, gemini-2.5-flash |
+| Anthropic Claude | claude-sonnet-5, claude-haiku-4-5-20251001 |
+| OpenAI | gpt-5.6-terra, gpt-5.6-luna, gpt-5.6-sol |
+| Groq | openai/gpt-oss-120b, openai/gpt-oss-20b |
+| DeepSeek | deepseek-v4-flash |
+| Local LLM (Ollama / LM Studio) | Model list fetched live from `GET {baseUrl}/models` (no API key, cost shown as ¥0) |
 
-Note: These are preset examples. Custom model names are supported.
+Note: These are preset examples. Custom model names are supported. See [API / model support](docs/API_MODEL_SUPPORT.md) for details.
 
 ## Quick Start
 
@@ -217,7 +221,7 @@ This app is **free to use**, but the AI services have their own usage-based pric
 ## FAQ
 
 **Q: Is internet required?**
-A: Yes. Transcription (OpenAI Whisper / Deepgram) and AI features (Gemini / Claude / OpenAI / Groq) require internet connections. This app uses BYOK (Bring Your Own Key) model – you bring your own API keys and pay each provider directly based on usage. The local version also requires internet (only the UI runs locally). Offline mode is not supported.
+A: Transcription (OpenAI Whisper / Deepgram) requires an internet connection. For AI responses you can use cloud LLMs (Gemini / Claude / OpenAI / Groq / DeepSeek) or a local LLM (Ollama / LM Studio) running on the same machine, which works without internet. This app uses BYOK (Bring Your Own Key) model – you bring your own API keys and pay each provider directly based on usage (local LLM costs ¥0).
 
 **Q: What if I don't set up LLM keys?**
 A: Transcription will still work. AI features (summary, consult, minutes, Q&A) will be unavailable.
@@ -277,16 +281,14 @@ MIT License – Free to use and modify
 
 ## Version
 
-**v1.3.0** – Timeline & Meeting Mode (2026-01-30)
+**v1.5.0** – Clean theme refresh & new default theme (2026-08-11)
 
-- Memo/TODO timeline with search and pinning
-- New **Consult** tab (combines opinions + ideas)
-- Meeting/Edit mode toggle for focus view
-- Meeting context expansion (participants, handoff notes)
-- Attachments support PDF/DOCX/CSV + Native Docs/Thinking Boost toggles
-- API keys are session-only (not persisted)
+- Redesigned clean theme (light/dark support, 9 accent colors applied to buttons and more)
+- Clean is now the default theme for new users (existing saved preferences are preserved)
+- Added clean / CLI to the main page style switcher
+- Tidied mobile bottom tab colors (subtle inactive tabs, accent-colored active tab)
 
-- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.3.0)
+- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.5.0)
 - [Change Log](docs/CHANGELOG.md)
 
 ## Support
