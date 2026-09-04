@@ -90,19 +90,20 @@
       --text-purple: #B89CE0;
     }
 
-    /* ===== Clean Theme ===== */
+    /* ===== Clean Theme (synced with css/index.css clean spec) ===== */
     html[data-style="clean"] {
-      --bg: #fafafa;
+      --bg: #f7f8fa;
       --card-bg: #ffffff;
-      --text: #171717;
-      --text-secondary: #525252;
-      --primary: #3b82f6;
-      --primary-hover: #2563eb;
-      --border: #e5e5e5;
-      --accent-blue: #eff6ff;
+      --text: #17191d;
+      --text-secondary: #5c6370;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --border: #e5e7eb;
+      --shadow: 0 1px 2px rgba(16,24,40,.06);
+      --accent-blue: #f3f4f6;
       --accent-green: #f0fdf4;
-      --accent-border-blue: #bfdbfe;
-      --accent-border-green: #bbf7d0;
+      --accent-border-blue: #e5e7eb;
+      --accent-border-green: #d1fae5;
       --accent-warning: #fefce8;
       --accent-border-warning: #fde047;
       --text-warning: #a16207;
@@ -111,21 +112,30 @@
       --text-purple: #7c3aed;
     }
     html[data-style="clean"][data-display-theme="dark"] {
-      --bg: #0a0a0a;
-      --card-bg: #171717;
-      --text: #fafafa;
-      --text-secondary: #a3a3a3;
-      --border: #262626;
-      --accent-blue: #172554;
-      --accent-green: #14532d;
-      --accent-border-blue: #1e3a8a;
-      --accent-border-green: #166534;
+      --bg: #0d0f13;
+      --card-bg: #15181e;
+      --text: #e7e9ee;
+      --text-secondary: #98a0ab;
+      --border: rgba(255,255,255,.09);
+      --border-light: #1e232b;
+      --shadow: 0 1px 2px rgba(0,0,0,.35);
+      --accent-blue: #17202c;
+      --accent-green: #122019;
+      --accent-border-blue: #253248;
+      --accent-border-green: #1d3a2a;
       --accent-warning: #422006;
       --accent-border-warning: #854d0e;
       --text-warning: #fbbf24;
       --accent-purple: #3b0764;
       --accent-border-purple: #581c87;
       --text-purple: #c4b5fd;
+    }
+    /* Clean: header shadow mirrors index.css --shadow-hard */
+    html[data-style="clean"] .header {
+      box-shadow: 0 1px 2px rgba(16,24,40,.06);
+    }
+    html[data-style="clean"][data-display-theme="dark"] .header {
+      box-shadow: 0 1px 2px rgba(0,0,0,.35);
     }
 
     /* ===== CLI Theme ===== */
