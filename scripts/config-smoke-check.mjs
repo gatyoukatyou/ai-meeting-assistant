@@ -74,6 +74,9 @@ if (configHtml) {
   const requiredScripts = [
     "js/i18n.js",
     "js/theme.js",
+    "js/lib/provider-catalog.js",
+    "js/stores/model-registry-cache-store.js",
+    "js/model-registry.js",
     "js/secure-storage.js",
     "js/config.js",
   ];
