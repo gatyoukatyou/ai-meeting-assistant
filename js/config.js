@@ -204,6 +204,12 @@ async function testLocalLlmConnection() {
   const modelEl = document.getElementById('localLlmModel');
   const baseUrl = baseUrlEl ? baseUrlEl.value.trim() : '';
 
+  // アプリの提供元がloopbackでない場合（GitHub Pages等）は、Ollama/LM Studio側の
+  // CORS設定（OLLAMA_ORIGINS等）でブロックされる可能性があるため案内を追加する
+  const nonLoopbackOriginHint = (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1')
+    ? ' ' + (t('config.llm.localLlmCorsHint') || '')
+    : '';
+
   if (statusEl) {
     statusEl.style.display = 'inline-flex';
     statusEl.className = 'validation-status validation-pending';
@@ -246,7 +252,7 @@ async function testLocalLlmConnection() {
         statusEl.className = 'validation-status validation-error';
         statusEl.textContent = '✗ ' + t('config.validation.invalid');
       }
-      showError(t('config.llm.localLlmConnectionFailed') || '接続できませんでした。Ollama/LM Studioが起動しているか確認してください。');
+      showError((t('config.llm.localLlmConnectionFailed') || '接続できませんでした。Ollama/LM Studioが起動しているか確認してください。') + nonLoopbackOriginHint);
     }
   } catch (e) {
     console.warn('[Config] Local LLM connection test failed:', e.message);
@@ -254,7 +260,7 @@ async function testLocalLlmConnection() {
       statusEl.className = 'validation-status validation-error';
       statusEl.textContent = '✗ ' + t('config.validation.invalid');
     }
-    showError(t('config.llm.localLlmConnectionFailed') || '接続できませんでした。Ollama/LM Studioが起動しているか確認してください。');
+    showError((t('config.llm.localLlmConnectionFailed') || '接続できませんでした。Ollama/LM Studioが起動しているか確認してください。') + nonLoopbackOriginHint);
   }
 }
 
@@ -278,7 +284,7 @@ function clearLocalLlmSettings() {
     statusEl.textContent = '';
   }
 
-  showSuccess(`${getProviderName('local_llm')} のLocal LLM設定をクリアしました`);
+  showSuccess(t('config.llm.localLlmCleared') || 'Local LLM設定をクリアしました');
 }
 
 // =====================================
@@ -546,7 +552,11 @@ async function saveSettings() {
   const localLlmBaseUrlEl = document.getElementById('localLlmBaseUrl');
   const localLlmModelEl = document.getElementById('localLlmModel');
   const localLlmCustomModelEl = document.getElementById('localLlmCustomModel');
-  const ALLOWED_LOCAL_LLM_BASE_URLS = new Set(['', 'http://localhost:11434/v1', 'http://localhost:1234/v1']);
+  const ALLOWED_LOCAL_LLM_BASE_URLS = new Set([
+    '',
+    'http://localhost:11434/v1', 'http://127.0.0.1:11434/v1',
+    'http://localhost:1234/v1', 'http://127.0.0.1:1234/v1'
+  ]);
   if (localLlmBaseUrlEl) {
     const baseUrl = localLlmBaseUrlEl.value.trim();
     SecureStorage.setOption('localLlmBaseUrl', ALLOWED_LOCAL_LLM_BASE_URLS.has(baseUrl) ? baseUrl : '');

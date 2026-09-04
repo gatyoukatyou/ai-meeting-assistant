@@ -22,6 +22,12 @@ as the browser. LAN access from another device (e.g. an iPhone reaching the Mac 
 out of scope for Phase 1 and tracked as Phase 2 (Tailscale/TLS, CORS, auth) in
 [Issue #208](https://github.com/gatyoukatyou/ai-meeting-assistant/issues/208).
 
+CORS prerequisite: when the app itself is served from a non-local origin (e.g. GitHub
+Pages), the browser sends that origin to the local server, and Ollama's default
+`OLLAMA_ORIGINS` (localhost origins only) rejects the request. Either serve the app
+locally (e.g. `npx http-server`) or start Ollama with `OLLAMA_ORIGINS` configured.
+LM Studio requires enabling CORS in its local server settings.
+
 Groq's `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` remain recognizable only
 so saved settings can be shown with a migration recommendation. Groq announced an
 August 16, 2026 shutdown for developer/free tiers. DeepSeek's retired

@@ -157,9 +157,14 @@ describe('ProviderCatalog local_llm (keyless)', () => {
     assert.equal(ProviderCatalog.providerRequiresApiKey('groq'), true);
   });
 
-  it('exposes localhost-only base URL presets', () => {
+  it('exposes loopback-only base URL presets (localhost and 127.0.0.1)', () => {
     const presets = ProviderCatalog.getBaseUrlPresets('local_llm');
-    assert.ok(presets.length >= 2);
+    assert.deepEqual(Array.from(presets, p => p.baseUrl), [
+      'http://localhost:11434/v1',
+      'http://127.0.0.1:11434/v1',
+      'http://localhost:1234/v1',
+      'http://127.0.0.1:1234/v1'
+    ]);
     for (const preset of presets) {
       assert.match(preset.baseUrl, /^http:\/\/(localhost|127\.0\.0\.1):/);
     }

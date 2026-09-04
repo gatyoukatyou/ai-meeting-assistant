@@ -193,7 +193,11 @@ const SecureStorage = {
       if (data.local_llm && data.local_llm.customModel) this.setCustomModel('local_llm', data.local_llm.customModel);
       if (data.local_llm && typeof data.local_llm.baseUrl === 'string') {
         // localhostのみ許可（CSP connect-srcと同じ制約。他ホストは黙って捨てる）
-        var allowedLocalLlmBaseUrls = ['', 'http://localhost:11434/v1', 'http://localhost:1234/v1'];
+        var allowedLocalLlmBaseUrls = [
+          '',
+          'http://localhost:11434/v1', 'http://127.0.0.1:11434/v1',
+          'http://localhost:1234/v1', 'http://127.0.0.1:1234/v1'
+        ];
         if (allowedLocalLlmBaseUrls.indexOf(data.local_llm.baseUrl) !== -1) {
           this.setOption('localLlmBaseUrl', data.local_llm.baseUrl);
         }

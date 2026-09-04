@@ -360,10 +360,23 @@ const ModelRegistry = (function() {
     }
 
     try {
-      var response = await fetch(endpoint, {
-        method: 'GET',
-        headers: headers
-      });
+      // 接続テストが長時間ハングしないようタイムアウトを設ける（app.js #50 のパターンに準拠）
+      var MODEL_LIST_TIMEOUT_MS = 10000;
+      var abortController = (typeof AbortController === 'function') ? new AbortController() : null;
+      var timeoutId = abortController
+        ? setTimeout(function () { abortController.abort(); }, MODEL_LIST_TIMEOUT_MS)
+        : null;
+
+      var response;
+      try {
+        response = await fetch(endpoint, {
+          method: 'GET',
+          headers: headers,
+          signal: abortController ? abortController.signal : undefined
+        });
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         console.warn('[ModelRegistry] API returned', response.status, 'for', provider);

@@ -15,7 +15,9 @@ const ProviderCatalog = (function () {
     .concat(['openai', 'deepgram']);
   var LOCAL_LLM_BASE_URL_PRESETS = [
     { id: 'ollama', label: 'Ollama (localhost:11434)', baseUrl: 'http://localhost:11434/v1' },
-    { id: 'lmstudio', label: 'LM Studio (localhost:1234)', baseUrl: 'http://localhost:1234/v1' }
+    { id: 'ollama-loopback-ip', label: 'Ollama (127.0.0.1:11434)', baseUrl: 'http://127.0.0.1:11434/v1' },
+    { id: 'lmstudio', label: 'LM Studio (localhost:1234)', baseUrl: 'http://localhost:1234/v1' },
+    { id: 'lmstudio-loopback-ip', label: 'LM Studio (127.0.0.1:1234)', baseUrl: 'http://127.0.0.1:1234/v1' }
   ];
 
   function model(id, displayName, tier, pricing, extra) {

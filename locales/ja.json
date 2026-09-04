@@ -290,6 +290,8 @@
       "localLlmModelUnset": "モデル一覧を取得してください",
       "localLlmHint": "APIキー不要。Mac mini等で起動中のOllama／LM Studioのlocalhostエンドポイントのみ対応（費用は常に0円）。",
       "localLlmConnectionFailed": "接続できませんでした。Ollama/LM Studioが起動しているか確認してください。",
+      "localLlmCorsHint": "GitHub Pages等から利用している場合、Ollama側のOLLAMA_ORIGINS設定（例: OLLAMA_ORIGINS=*）が必要です。またはアプリをローカル配信（npx http-server等）から開いてください。",
+      "localLlmCleared": "Local LLM設定をクリアしました",
       "modelsFound": "個のモデルが見つかりました",
       "customModelPlaceholder": {
         "gemini": "カスタムモデル（例: gemini-2.5-pro）",
