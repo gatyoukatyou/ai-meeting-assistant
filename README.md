@@ -80,7 +80,7 @@
 ### AI回答（LLM）
 | プロバイダー | モデル |
 |-------------|--------|
-| Google Gemini | gemini-3.6-flash, gemini-3.5-flash-lite |
+| Google Gemini | gemini-3.6-flash, gemini-3.5-flash-lite, gemini-2.5-flash |
 | Anthropic Claude | claude-sonnet-5, claude-haiku-4-5-20251001 |
 | OpenAI | gpt-5.6-terra, gpt-5.6-luna, gpt-5.6-sol |
 | Groq | openai/gpt-oss-120b, openai/gpt-oss-20b |
