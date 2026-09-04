@@ -1481,94 +1481,186 @@ body.modal-open{
 html[data-style="clean"] {
   /* Shape & shadow */
   --border-width: 1px;
-  --radius: 6px;
-  --btn-radius: 6px;
-  --shadow: none;
-  --shadow-hard: 0 1px 3px rgba(0,0,0,0.08);
-  --shadow-hard-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-modal: 0 4px 12px rgba(0,0,0,0.15);
+  --radius: 10px;
+  --btn-radius: 8px;
   --border-color: #e5e7eb;
-  --overlay-bg: rgba(0,0,0,0.62);
-  --modal-bg: #ffffff;
-  --modal-text: #1f2937;
 
-  /* Light mode colors (Notion-like) */
-  --bg: #ffffff;
+  /* Accent fallback (theme.js のインライン値が実行時優先される) */
+  --primary: #6366f1;
+  --primary-hover: #4f46e5;
+
+  /* Light mode colors (refined) */
+  --bg: #f7f8fa;
   --card-bg: #ffffff;
-  --text: #111827;
-  --text-secondary: #6b7280;
-  --primary: #111827;
-  --primary-hover: #374151;
-  --accent: #6b7280;
+  --modal-bg: #ffffff;
+  --modal-text: #17191d;
+  --text: #17191d;
+  --text-secondary: #5c6370;
   --border: var(--border-color);
-  --pattern-dot: transparent;
-  --pattern-image: none;
-  --surface-muted: #f9fafb;
+  --shadow-hard: 0 1px 2px rgba(16,24,40,.06);
+  --shadow-hard-sm: 0 1px 2px rgba(16,24,40,.05);
+  --shadow-modal: 0 16px 48px rgba(16,24,40,.18);
+  --surface-muted: #f3f4f6;
   --ai-response-bg: #f9fafb;
+  --btn-hover-bg: #f3f4f6;
+  --btn-hover-translate: 0px;
+  --btn-hover-shadow: none;
+  --pattern-image: none;
+  --overlay-bg: rgba(15,17,21,.5);
+  --modal-header-bg: var(--card-bg);
+  --modal-header-fg: var(--text);
+  --modal-close-color: var(--text-secondary);
+  --toast-bg: var(--card-bg);
+  --tab-strip-bg: transparent;
+  --tab-active-bg: var(--card-bg);
+  --focus-ring: 0 0 0 3px color-mix(in srgb, var(--primary) 35%, transparent);
+  --font-body: var(--font-sans);
+  --textarea-font: var(--font-sans);
+  --meeting-mode-bg: linear-gradient(135deg, #0f172a 0%, #1f2937 100%);
   --cost-bg: #fef3c7;
-  --cost-text: #111827;
+  --cost-text: #17191d;
   --accent-blue: #f3f4f6;
   --accent-green: #f0fdf4;
   --accent-border-blue: #e5e7eb;
   --accent-border-green: #d1fae5;
-  --tab-strip-bg: transparent;
-  --tab-active-bg: var(--card-bg);
-  --btn-hover-bg: #f3f4f6;
-  --btn-hover-translate: 0px;
-  --btn-hover-shadow: none;
-  --toast-bg: var(--card-bg);
-  --meeting-mode-bg: linear-gradient(135deg, #111827 0%, #1f2937 100%);
-  --modal-header-bg: #111827;
-  --modal-close-color: #fff;
-  --font-body: var(--font-sans);
-  --textarea-font: var(--font-sans);
 }
 
 html[data-style="clean"] .btn {
   box-shadow: none;
   border-width: 1px;
+  font-weight: 600;
 }
 
 html[data-style="clean"] .btn-primary {
-  background: #111827;
-  border-color: #111827;
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 html[data-style="clean"] .btn-primary:hover {
-  background: #374151;
-  border-color: #374151;
+  background: var(--primary-hover);
+  border-color: var(--primary-hover);
 }
 
 html[data-style="clean"] .panel {
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+  box-shadow: var(--shadow-hard);
   border-width: 1px;
 }
 
 html[data-style="clean"] .card {
-  box-shadow: none;
+  box-shadow: var(--shadow-hard-sm);
   border-width: 1px;
 }
 
-/* Dark mode clean */
+html[data-style="clean"] input,
+html[data-style="clean"] select,
+html[data-style="clean"] textarea {
+  box-shadow: none;
+}
+
+html[data-style="clean"] .header-brand h1 {
+  transform: none;
+  border: none;
+  box-shadow: none;
+  background: transparent;
+  color: var(--text);
+  padding: 0;
+  text-transform: none;
+  letter-spacing: 0;
+  font-weight: 700;
+}
+
+html[data-style="clean"] .panel-title {
+  text-transform: none;
+  font-weight: 600;
+}
+
+html[data-style="clean"] .panel-header {
+  font-weight: 600;
+}
+
+html[data-style="clean"] .header-row-1,
+html[data-style="clean"] .memo-input-section,
+html[data-style="clean"] .timeline-controls,
+html[data-style="clean"] .custom-question,
+html[data-style="clean"] .cost-popover .cost-section-title {
+  border-top-style: solid;
+  border-bottom-style: solid;
+}
+
+html[data-style="clean"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html[data-style="clean"] ::-webkit-scrollbar-track {
+  background: transparent;
+  border-left: none;
+}
+
+html[data-style="clean"] ::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--text-secondary) 35%, transparent);
+  border: none;
+  border-radius: 4px;
+}
+
+html[data-style="clean"] ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--text-secondary) 50%, transparent);
+}
+
+html[data-style="clean"] .cost-badge,
+html[data-style="clean"] .chip-cost-badge {
+  background: var(--surface-muted);
+  color: var(--text-secondary);
+  border-color: var(--border-color);
+  font-weight: 600;
+}
+
+/* Dark mode clean (primary) */
 html[data-style="clean"][data-display-theme="dark"] {
-  --bg:#111827;
-  --card-bg:#1F2937;
-  --modal-bg:#1F2937;
-  --modal-text:#F9FAFB;
-  --text:#F9FAFB;
-  --text-secondary:#9CA3AF;
-  --border-color:#374151;
-  --surface-muted:#1F2937;
-  --ai-response-bg:#1F2937;
-  --cost-bg:color-mix(in srgb, var(--warning) 70%, #111827 30%);
-  --cost-text:#F9FAFB;
-  --accent-blue:#1E3A5F;
-  --accent-green:#14532D;
-  --accent-border-blue:#1E40AF;
-  --accent-border-green:#166534;
-  --overlay-bg:rgba(0,0,0,0.7);
-  --meeting-mode-bg:linear-gradient(135deg, #0f172a 0%, #111827 100%);
-  --focus-ring:0 0 0 3px rgba(129,140,248,.45);
+  --bg:#0d0f13;
+  --card-bg:#15181e;
+  --modal-bg:#15181e;
+  --modal-text:#e7e9ee;
+  --text:#e7e9ee;
+  --text-secondary:#98a0ab;
+  --border-color:rgba(255,255,255,.09);
+  --surface-muted:#1b1f26;
+  --ai-response-bg:#181c22;
+  --shadow-hard:0 1px 2px rgba(0,0,0,.35);
+  --shadow-hard-sm:0 1px 2px rgba(0,0,0,.3);
+  --shadow-modal:0 16px 48px rgba(0,0,0,.55);
+  --btn-hover-bg:#1e232b;
+  --overlay-bg:rgba(0,0,0,.62);
+  --modal-header-bg:var(--card-bg);
+  --modal-header-fg:var(--text);
+  --modal-close-color:var(--text-secondary);
+  --toast-bg:#1b1f26;
+  --meeting-mode-bg:linear-gradient(135deg, #0a0c10 0%, #10141a 100%);
+  --focus-ring:0 0 0 3px color-mix(in srgb, var(--primary) 45%, transparent);
+  --accent-blue:#17202c;
+  --accent-border-blue:#253248;
+  --accent-green:#122019;
+  --accent-border-green:#1d3a2a;
+  --cost-bg:color-mix(in srgb, var(--warning) 22%, #15181e 78%);
+  --cost-text:var(--text);
+}
+
+/* Clean: Mobile bottom tabs (inactive subtle / active primary) */
+@media (max-width: 767px) {
+  html[data-style="clean"] .main-tab {
+    background: var(--surface-muted);
+    color: var(--text-secondary);
+    border: none;
+    box-shadow: none;
+  }
+  html[data-style="clean"] .main-tab:active {
+    transform: scale(0.97);
+  }
+  html[data-style="clean"] .main-tab.active {
+    background: var(--primary);
+    color: var(--on-primary);
+    box-shadow: none;
+  }
 }
 
 /* ===== CLI Theme (Terminal/Hacker - Chic Emerald) ===== */
