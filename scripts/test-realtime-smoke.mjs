@@ -6,7 +6,7 @@ import { ensureLocalStaticServer, getLocalServerConfig } from './local-static-se
 const PORT = Number(process.env.REALTIME_UI_PORT || process.env.PORT || 8091);
 
 async function main() {
-  const server = await ensureLocalStaticServer({ port: PORT });
+  const server = await ensureLocalStaticServer({ port: PORT, marker: 'id="realtimeStartBtn"' });
   const { baseUrl } = getLocalServerConfig({ port: PORT });
   const browser = await chromium.launch({ headless: true });
 
