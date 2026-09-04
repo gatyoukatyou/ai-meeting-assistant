@@ -84,6 +84,7 @@ test('exports Realtime AI responses and usage without adding the standard key', 
 
   assert.match(markdown, /Realtime音声/);
   assert.match(markdown, /Realtime回答/);
+  assert.match(markdown, /応答回数: 1/);
   assert.match(markdown, /合計トークン: 42/);
   assert.match(markdown, /約¥1\.50/);
   assert.doesNotMatch(markdown, /OPENAI_API_KEY|sk-[A-Za-z0-9]/);

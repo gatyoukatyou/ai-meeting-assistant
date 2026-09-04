@@ -139,10 +139,16 @@ const RealtimeUsageService = (function () {
 
   function withEstimate(usage) {
     const normalized = normalizeUsage(usage);
-    return {
+    const result = {
       ...normalized,
       estimate: estimateCost(normalized)
     };
+    // 応答回数はexport（コスト詳細）にも表示されるため落とさない
+    const responseCount = Number(usage && usage.responseCount);
+    if (Number.isFinite(responseCount) && responseCount >= 0) {
+      result.responseCount = responseCount;
+    }
+    return result;
   }
 
   function createEmptyUsage() {
@@ -157,7 +163,14 @@ const RealtimeUsageService = (function () {
       merged[field] = left[field] + right[field];
     });
     merged.hasTokenDetails = left.hasTokenDetails || right.hasTokenDetails;
-    return withEstimate(merged);
+    const result = withEstimate(merged);
+    const responseCount =
+      (Number(previous && previous.responseCount) || 0) +
+      (Number(next && next.responseCount) || 0);
+    if (responseCount > 0) {
+      result.responseCount = responseCount;
+    }
+    return result;
   }
 
   function formatTokens(value) {

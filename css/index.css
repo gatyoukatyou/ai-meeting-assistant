@@ -33,6 +33,9 @@
   border: 2px solid var(--border);
   border-radius: 0.75rem;
   background: var(--surface-muted);
+  /* 通常の文字起こし表示を圧迫しないよう、高さ上限+内部スクロールに抑える */
+  max-height: 55%;
+  overflow-y: auto;
 }
 
 .realtime-voice-header {
@@ -80,6 +83,24 @@
 .realtime-state-badge[data-state="connected"] {
   color: #166534;
   background: #dcfce7;
+}
+
+/* 接続中・応答中は遷移が見えるように点滅させる（動きの抑制設定は尊重） */
+@media (prefers-reduced-motion: no-preference) {
+  .realtime-state-badge[data-state="connecting"],
+  .realtime-state-badge[data-state="responding"] {
+    animation: realtime-state-pulse 1.2s ease-in-out infinite;
+  }
+}
+
+@keyframes realtime-state-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
 }
 
 .realtime-state-badge[data-state="ended"] {

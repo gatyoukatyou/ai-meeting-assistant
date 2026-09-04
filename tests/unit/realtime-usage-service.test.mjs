@@ -73,3 +73,31 @@ test('adds usage from multiple response.done events without retaining raw events
   assert.equal(merged.outputAudioTokens, 4);
   assert.equal('event' in merged, false);
 });
+
+test('keeps the response count through withEstimate and addUsage', () => {
+  const withCount = RealtimeUsageService.withEstimate({
+    total_tokens: 20,
+    input_tokens: 12,
+    output_tokens: 8,
+    input_token_details: { audio_tokens: 12 },
+    output_token_details: { audio_tokens: 8 },
+    responseCount: 1
+  });
+  assert.equal(withCount.responseCount, 1);
+
+  const merged = RealtimeUsageService.addUsage(withCount, {
+    total_tokens: 5,
+    input_tokens: 3,
+    output_tokens: 2,
+    input_token_details: { audio_tokens: 3 },
+    output_token_details: { audio_tokens: 2 },
+    responseCount: 1
+  });
+  assert.equal(merged.totalTokens, 25);
+  assert.equal(merged.responseCount, 2);
+});
+
+test('drops a non-numeric response count instead of keeping garbage', () => {
+  const usage = RealtimeUsageService.withEstimate({ responseCount: 'many' });
+  assert.equal('responseCount' in usage, false);
+});
