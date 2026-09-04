@@ -185,6 +185,106 @@ function setupApiKeyButtons() {
       btn.addEventListener('click', () => clearApiKey(provider));
     });
   });
+
+  // Local LLM（キー不要のため上のループ対象外。専用の接続テスト・クリアを設定）
+  document.querySelectorAll('[data-validate="local_llm"]').forEach(btn => {
+    btn.addEventListener('click', testLocalLlmConnection);
+  });
+  document.querySelectorAll('[data-clear="local_llm"]').forEach(btn => {
+    btn.addEventListener('click', clearLocalLlmSettings);
+  });
+}
+
+// =====================================
+// Local LLM（Ollama / LM Studio）接続テスト・クリア
+// =====================================
+async function testLocalLlmConnection() {
+  const statusEl = document.getElementById('local-llm-status');
+  const baseUrlEl = document.getElementById('localLlmBaseUrl');
+  const modelEl = document.getElementById('localLlmModel');
+  const baseUrl = baseUrlEl ? baseUrlEl.value.trim() : '';
+
+  // アプリの提供元がloopbackでない場合（GitHub Pages等）は、Ollama/LM Studio側の
+  // CORS設定（OLLAMA_ORIGINS等）でブロックされる可能性があるため案内を追加する
+  const nonLoopbackOriginHint = (location.hostname !== 'localhost' && location.hostname !== '127.0.0.1')
+    ? ' ' + (t('config.llm.localLlmCorsHint') || '')
+    : '';
+
+  if (statusEl) {
+    statusEl.style.display = 'inline-flex';
+    statusEl.className = 'validation-status validation-pending';
+    statusEl.textContent = t('config.validation.checking');
+  }
+
+  if (!baseUrl) {
+    if (statusEl) {
+      statusEl.className = 'validation-status validation-error';
+      statusEl.textContent = '✗ ' + t('config.validation.invalid');
+    }
+    showError(t('config.llm.localLlmBaseUrlUnset') || '未設定');
+    return;
+  }
+
+  try {
+    if (!window.ModelRegistry) throw new Error('ModelRegistry unavailable');
+    const models = await ModelRegistry.getModels('local_llm', '', { forceRefresh: true, baseUrl: baseUrl });
+
+    if (models && models.length > 0) {
+      if (modelEl) {
+        const previousValue = modelEl.value;
+        modelEl.innerHTML = '';
+        models.forEach(m => {
+          const opt = document.createElement('option');
+          opt.value = m.id;
+          opt.textContent = m.displayName || m.id;
+          modelEl.appendChild(opt);
+        });
+        const stillPresent = models.some(m => m.id === previousValue);
+        if (stillPresent) modelEl.value = previousValue;
+      }
+      if (statusEl) {
+        statusEl.className = 'validation-status validation-success';
+        statusEl.textContent = '✓ ' + t('config.validation.valid');
+      }
+      showSuccess(`Local LLM: ${models.length} ${t('config.llm.modelsFound') || 'models found'}`);
+    } else {
+      if (statusEl) {
+        statusEl.className = 'validation-status validation-error';
+        statusEl.textContent = '✗ ' + t('config.validation.invalid');
+      }
+      showError((t('config.llm.localLlmConnectionFailed') || '接続できませんでした。Ollama/LM Studioが起動しているか確認してください。') + nonLoopbackOriginHint);
+    }
+  } catch (e) {
+    console.warn('[Config] Local LLM connection test failed:', e.message);
+    if (statusEl) {
+      statusEl.className = 'validation-status validation-error';
+      statusEl.textContent = '✗ ' + t('config.validation.invalid');
+    }
+    showError((t('config.llm.localLlmConnectionFailed') || '接続できませんでした。Ollama/LM Studioが起動しているか確認してください。') + nonLoopbackOriginHint);
+  }
+}
+
+function clearLocalLlmSettings() {
+  const baseUrlEl = document.getElementById('localLlmBaseUrl');
+  const modelEl = document.getElementById('localLlmModel');
+  const customModelEl = document.getElementById('localLlmCustomModel');
+  const statusEl = document.getElementById('local-llm-status');
+
+  if (baseUrlEl) baseUrlEl.value = '';
+  if (modelEl) modelEl.innerHTML = '<option value="">' + (t('config.llm.localLlmModelUnset') || 'モデル一覧を取得してください') + '</option>';
+  if (customModelEl) customModelEl.value = '';
+
+  SecureStorage.setOption('localLlmBaseUrl', '');
+  SecureStorage.setModel('local_llm', '');
+  SecureStorage.setCustomModel('local_llm', '');
+
+  if (statusEl) {
+    statusEl.style.display = 'none';
+    statusEl.className = 'validation-status';
+    statusEl.textContent = '';
+  }
+
+  showSuccess(t('config.llm.localLlmCleared') || 'Local LLM設定をクリアしました');
 }
 
 // =====================================
@@ -338,6 +438,26 @@ function loadSavedSettings() {
   selectSavedModel(openaiLlmModelEl, openaiLlmModel, 'openai_llm');
   if (openaiLlmCustomModelEl && openaiLlmCustomModel) openaiLlmCustomModelEl.value = openaiLlmCustomModel;
 
+  // Local LLM（Ollama / LM Studio）- キー不要、ベースURLを選択式で保存
+  const localLlmBaseUrl = SecureStorage.getOption('localLlmBaseUrl', '');
+  const localLlmModel = SecureStorage.getModel('local_llm');
+  const localLlmCustomModel = SecureStorage.getCustomModel('local_llm');
+  const localLlmBaseUrlEl = document.getElementById('localLlmBaseUrl');
+  const localLlmModelEl = document.getElementById('localLlmModel');
+  const localLlmCustomModelEl = document.getElementById('localLlmCustomModel');
+  if (localLlmBaseUrlEl) localLlmBaseUrlEl.value = localLlmBaseUrl;
+  if (localLlmModelEl && localLlmModel) {
+    const hasOption = Array.from(localLlmModelEl.options).some(o => o.value === localLlmModel);
+    if (!hasOption) {
+      const opt = document.createElement('option');
+      opt.value = localLlmModel;
+      opt.textContent = localLlmModel;
+      localLlmModelEl.appendChild(opt);
+    }
+    localLlmModelEl.value = localLlmModel;
+  }
+  if (localLlmCustomModelEl && localLlmCustomModel) localLlmCustomModelEl.value = localLlmCustomModel;
+
   // STT用APIキー
   // OpenAI
   const openaiKey = SecureStorage.getApiKey('openai');
@@ -427,6 +547,22 @@ async function saveSettings() {
   if (openaiLlmKeyEl) SecureStorage.setApiKey('openai_llm', openaiLlmKeyEl.value.trim());
   if (openaiLlmModelEl) SecureStorage.setModel('openai_llm', openaiLlmModelEl.value);
   if (openaiLlmCustomModelEl) SecureStorage.setCustomModel('openai_llm', openaiLlmCustomModelEl.value.trim());
+
+  // Local LLM（Ollama / LM Studio）- APIキーなし、ベースURLのみ許可プリセットから保存
+  const localLlmBaseUrlEl = document.getElementById('localLlmBaseUrl');
+  const localLlmModelEl = document.getElementById('localLlmModel');
+  const localLlmCustomModelEl = document.getElementById('localLlmCustomModel');
+  const ALLOWED_LOCAL_LLM_BASE_URLS = new Set([
+    '',
+    'http://localhost:11434/v1', 'http://127.0.0.1:11434/v1',
+    'http://localhost:1234/v1', 'http://127.0.0.1:1234/v1'
+  ]);
+  if (localLlmBaseUrlEl) {
+    const baseUrl = localLlmBaseUrlEl.value.trim();
+    SecureStorage.setOption('localLlmBaseUrl', ALLOWED_LOCAL_LLM_BASE_URLS.has(baseUrl) ? baseUrl : '');
+  }
+  if (localLlmModelEl) SecureStorage.setModel('local_llm', localLlmModelEl.value);
+  if (localLlmCustomModelEl) SecureStorage.setCustomModel('local_llm', localLlmCustomModelEl.value.trim());
 
   // STT用APIキーを保存
   // OpenAI
@@ -873,7 +1009,7 @@ function isLLMProvider(provider) {
   if (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.isLlmProvider === 'function') {
     return ProviderCatalog.isLlmProvider(provider);
   }
-  return ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek'].includes(provider);
+  return ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek', 'local_llm'].includes(provider);
 }
 
 // =====================================
@@ -887,7 +1023,8 @@ function getProviderName(provider) {
     'claude': 'Claude',
     'openai_llm': 'OpenAI (LLM)',
     'groq': 'Groq',
-    'deepseek': 'DeepSeek'
+    'deepseek': 'DeepSeek',
+    'local_llm': 'Local LLM'
   };
   return names[provider] || provider;
 }

@@ -100,6 +100,19 @@ const ModelRegistry = (function() {
     });
   }
 
+  // Ollama / LM Studio return arbitrary model names (no "gpt-" prefix), so
+  // this intentionally does not filter like parseOpenAIModels does.
+  function parseLocalLlmModels(data) {
+    if (!data || !data.data) return [];
+    return data.data.map(function(m) {
+      return {
+        id: m.id,
+        displayName: m.id,
+        deprecated: false
+      };
+    });
+  }
+
   const FALLBACK_PROVIDER_CONFIG_BASE = {
     gemini: {
       endpoint: 'https://generativelanguage.googleapis.com/v1beta/models',
@@ -158,6 +171,17 @@ const ModelRegistry = (function() {
         { id: 'deepseek-v4-flash', displayName: 'DeepSeek V4 Flash', deprecated: false }
       ],
       allowCustomModel: true
+    },
+    local_llm: {
+      // No fixed endpoint: base URL is user-configured (localhost only, see
+      // PROVIDER_CATALOG local_llm.baseUrlPresets). Callers must pass
+      // options.baseUrl to getModels()/fetchModels().
+      endpoint: null,
+      authHeader: null,
+      canListModels: true,
+      requiresApiKey: false,
+      fixedModels: [],
+      allowCustomModel: true
     }
   };
 
@@ -172,7 +196,8 @@ const ModelRegistry = (function() {
     openai_llm: Object.assign({}, PROVIDER_CONFIG_BASE.openai_llm, { parseModels: parseOpenAIModels }),
     claude: Object.assign({}, PROVIDER_CONFIG_BASE.claude, { parseModels: parseClaudeModels }),
     groq: Object.assign({}, PROVIDER_CONFIG_BASE.groq, { parseModels: parseGroqModels }),
-    deepseek: Object.assign({}, PROVIDER_CONFIG_BASE.deepseek, { parseModels: parseGroqModels })
+    deepseek: Object.assign({}, PROVIDER_CONFIG_BASE.deepseek, { parseModels: parseGroqModels }),
+    local_llm: Object.assign({}, PROVIDER_CONFIG_BASE.local_llm, { parseModels: parseLocalLlmModels })
   };
 
   // =====================================
@@ -285,7 +310,8 @@ const ModelRegistry = (function() {
    * Fetch models from provider API
    * For Gemini: Try v1 first, fallback to v1beta with header auth only
    */
-  async function fetchModels(provider, apiKey) {
+  async function fetchModels(provider, apiKey, options) {
+    options = options || {};
     var config = PROVIDER_CONFIG[provider];
     if (!config) {
       console.warn('[ModelRegistry] Unknown provider:', provider);
@@ -297,7 +323,7 @@ const ModelRegistry = (function() {
       return null;
     }
 
-    if (!apiKey) {
+    if (config.requiresApiKey !== false && !apiKey) {
       console.warn('[ModelRegistry] No API key for', provider);
       return null;
     }
@@ -307,12 +333,21 @@ const ModelRegistry = (function() {
       return await fetchGeminiModels(apiKey, config);
     }
 
+    var endpoint = config.endpoint;
+    if (config.requiresApiKey === false) {
+      if (!options.baseUrl) {
+        console.warn('[ModelRegistry] No base URL configured for', provider);
+        return null;
+      }
+      endpoint = options.baseUrl.replace(/\/$/, '') + '/models';
+    }
+
     var headers = {
       'Content-Type': 'application/json'
     };
 
     // Add auth header
-    if (config.authHeader) {
+    if (config.authHeader && apiKey) {
       var authValue = (config.authPrefix || '') + apiKey;
       headers[config.authHeader] = authValue;
     }
@@ -325,10 +360,23 @@ const ModelRegistry = (function() {
     }
 
     try {
-      var response = await fetch(config.endpoint, {
-        method: 'GET',
-        headers: headers
-      });
+      // 接続テストが長時間ハングしないようタイムアウトを設ける（app.js #50 のパターンに準拠）
+      var MODEL_LIST_TIMEOUT_MS = 10000;
+      var abortController = (typeof AbortController === 'function') ? new AbortController() : null;
+      var timeoutId = abortController
+        ? setTimeout(function () { abortController.abort(); }, MODEL_LIST_TIMEOUT_MS)
+        : null;
+
+      var response;
+      try {
+        response = await fetch(endpoint, {
+          method: 'GET',
+          headers: headers,
+          signal: abortController ? abortController.signal : undefined
+        });
+      } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         console.warn('[ModelRegistry] API returned', response.status, 'for', provider);
@@ -391,9 +439,13 @@ const ModelRegistry = (function() {
     options = options || {};
     var forceRefresh = options.forceRefresh || false;
     var showPreview = options.showPreview || false;
+    var baseUrl = options.baseUrl || '';
 
     var cache = loadCache();
-    var cacheKey = getCacheKey(provider, apiKey);
+    // Keyless local providers have no apiKey to key the cache by; use the
+    // base URL instead so switching between Ollama/LM Studio doesn't return
+    // the other server's stale model list.
+    var cacheKey = getCacheKey(provider, provider === 'local_llm' ? baseUrl : apiKey);
     var cached = cache.providers[cacheKey];
 
     // Check if cache is valid
@@ -406,7 +458,7 @@ const ModelRegistry = (function() {
     }
 
     // Try to fetch fresh models
-    var models = await fetchModels(provider, apiKey);
+    var models = await fetchModels(provider, apiKey, { baseUrl: baseUrl });
 
     if (models && models.length > 0) {
       // Update cache

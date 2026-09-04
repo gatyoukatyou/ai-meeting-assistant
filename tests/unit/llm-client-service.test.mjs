@@ -136,4 +136,54 @@ describe('LLMClientService.callLLMOnce', () => {
     assert.equal(costs.llm.total, 0);
     assert.equal(costs.llm.hasUnknownEstimate, true);
   });
+
+  it('calls local_llm at the user-configured base URL without an Authorization header', async () => {
+    const fetchCalls = [];
+    const fetchWithRetry = async (url, options) => {
+      fetchCalls.push({ url, options });
+      return {
+        ok: true,
+        json: async () => ({
+          choices: [{ message: { content: 'local ok' } }],
+          usage: { prompt_tokens: 3, completion_tokens: 2 }
+        })
+      };
+    };
+
+    const text = await LLMClientService.callLLMOnce({
+      provider: 'local_llm',
+      model: 'qwen3.5:9b',
+      prompt: 'hello',
+      apiKey: '',
+      apiBaseUrl: 'http://localhost:11434/v1',
+      deps: { fetchWithRetry }
+    });
+
+    assert.equal(text, 'local ok');
+    assert.equal(fetchCalls[0].url, 'http://localhost:11434/v1/chat/completions');
+    assert.equal('Authorization' in fetchCalls[0].options.headers, false);
+  });
+
+  it('always reports zero cost for local_llm, never an unknown estimate', async () => {
+    const costs = {
+      llm: { inputTokens: 0, outputTokens: 0, calls: 0, byProvider: {}, total: 0 }
+    };
+    const fetchWithRetry = async () => ({
+      ok: true,
+      json: async () => ({
+        choices: [{ message: { content: 'ok' } }],
+        usage: { prompt_tokens: 1000, completion_tokens: 1000 }
+      })
+    });
+    await LLMClientService.callLLMOnce({
+      provider: 'local_llm', model: 'any-model', prompt: 'p', apiKey: '',
+      apiBaseUrl: 'http://localhost:11434/v1',
+      costs,
+      pricing: { local_llm: {}, yenPerDollar: 150 },
+      deps: { fetchWithRetry }
+    });
+    assert.equal(costs.llm.total, 0);
+    assert.equal(costs.llm.byProvider.local_llm, 0);
+    assert.equal(Boolean(costs.llm.hasUnknownEstimate), false);
+  });
 });

@@ -3422,6 +3422,13 @@ function shouldForceGeminiForNativeDocs() {
   );
 }
 
+// Keyless local providers (Ollama / LM Studio) are "configured" once a base
+// URL is set, since there is no API key to check.
+function isLlmProviderConfigured(provider) {
+  if (provider === 'local_llm') return Boolean(SecureStorage.getOption('localLlmBaseUrl', ''));
+  return Boolean(SecureStorage.getApiKey(provider));
+}
+
 // 使用可能なLLMを取得
 function getAvailableLlm() {
   if (shouldForceGeminiForNativeDocs()) {
@@ -3436,9 +3443,7 @@ function getAvailableLlm() {
     return llmClientService.resolveAvailableLlm({
       priority: priority,
       providerPriority: ProviderCatalog.getLlmProviderPriority(),
-      hasApiKey: function (provider) {
-        return Boolean(SecureStorage.getApiKey(provider));
-      },
+      hasApiKey: isLlmProviderConfigured,
       getEffectiveModel: function (provider, defaultModel) {
         return SecureStorage.getEffectiveModel(provider, defaultModel);
       },
@@ -3795,7 +3800,7 @@ function getConfiguredFallbackProviders(primaryProvider) {
   var order = Array.isArray(savedOrder) ? savedOrder : catalogOrder;
   return order.filter(function (candidate, index) {
     return candidate !== primaryProvider && order.indexOf(candidate) === index &&
-      Boolean(SecureStorage.getApiKey(candidate));
+      isLlmProviderConfigured(candidate);
   });
 }
 
@@ -3856,6 +3861,7 @@ async function callLLMOnce(provider, model, prompt, signal = null, taskType = 's
     prompt: prompt,
     signal: signal,
     apiKey: SecureStorage.getApiKey(provider),
+    apiBaseUrl: provider === 'local_llm' ? SecureStorage.getOption('localLlmBaseUrl', '') : '',
     meetingContext: AppState.meetingContext,
     taskType: taskType,
     reasoningBoost: taskType === 'advice' && AppState.meetingContext.reasoningBoostEnabled,
@@ -7036,10 +7042,8 @@ function collectRecentDiagnosticErrorCodes(contextSummary) {
 function getConfiguredLlmProvidersForDiagnostic() {
   if (diagnosticsService && typeof diagnosticsService.getConfiguredLlmProvidersForDiagnostic === 'function') {
     return diagnosticsService.getConfiguredLlmProvidersForDiagnostic(
-      ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek'],
-      function (provider) {
-        return Boolean(SecureStorage.getApiKey(provider));
-      }
+      (typeof ProviderCatalog !== 'undefined' ? ProviderCatalog.getLlmProviderIds() : ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek', 'local_llm']),
+      isLlmProviderConfigured
     );
   }
   return [];
@@ -7198,9 +7202,7 @@ function getEffectiveLlmProvider() {
   }
 
   const priority = SecureStorage.getOption('llmPriority', 'gemini');
-  return resolveEffectiveLlmProvider(priority, function(provider) {
-    return Boolean(SecureStorage.getApiKey(provider));
-  });
+  return resolveEffectiveLlmProvider(priority, isLlmProviderConfigured);
 }
 
 /**

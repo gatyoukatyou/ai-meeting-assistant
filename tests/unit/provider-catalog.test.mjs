@@ -29,7 +29,12 @@ describe('ProviderCatalog metadata', () => {
       assert.equal(provider.verifiedAt, '2026-08-01');
       assert.match(provider.docsUrl, /^https:\/\//);
       assert.equal(typeof provider.reasoningPolicy, 'object');
-      assert.ok(ProviderCatalog.getModels(providerId).length >= 1);
+      // local_llm has no fixed catalog: models are discovered from the
+      // user's own Ollama/LM Studio server at runtime (canListModels/
+      // allowCustomModel handle that), so it has none to list up front.
+      if (providerId !== 'local_llm') {
+        assert.ok(ProviderCatalog.getModels(providerId).length >= 1);
+      }
     }
   });
 
@@ -102,13 +107,14 @@ describe('ProviderCatalog provider lists', () => {
       'openai_llm',
       'groq',
       'deepseek',
+      'local_llm',
     ]);
   });
 
   it('returns llm providers with legacy IDs when requested', () => {
     assert.deepEqual(
       Array.from(ProviderCatalog.getLlmProviderIds({ includeLegacy: true })),
-      ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek', 'openai']
+      ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek', 'local_llm', 'openai']
     );
   });
 
@@ -119,8 +125,9 @@ describe('ProviderCatalog provider lists', () => {
     ]);
   });
 
-  it('returns api-key provider IDs', () => {
-    assert.deepEqual(Array.from(ProviderCatalog.getApiKeyProviderIds()), [
+  it('excludes keyless local providers from api-key provider IDs', () => {
+    const ids = Array.from(ProviderCatalog.getApiKeyProviderIds());
+    assert.deepEqual(ids, [
       'gemini',
       'claude',
       'openai_llm',
@@ -129,6 +136,7 @@ describe('ProviderCatalog provider lists', () => {
       'openai',
       'deepgram',
     ]);
+    assert.equal(ids.includes('local_llm'), false);
   });
 
   it('returns llm provider priority order', () => {
@@ -138,7 +146,33 @@ describe('ProviderCatalog provider lists', () => {
       'claude',
       'groq',
       'deepseek',
+      'local_llm',
     ]);
+  });
+});
+
+describe('ProviderCatalog local_llm (keyless)', () => {
+  it('is marked as not requiring an API key', () => {
+    assert.equal(ProviderCatalog.providerRequiresApiKey('local_llm'), false);
+    assert.equal(ProviderCatalog.providerRequiresApiKey('groq'), true);
+  });
+
+  it('exposes loopback-only base URL presets (localhost and 127.0.0.1)', () => {
+    const presets = ProviderCatalog.getBaseUrlPresets('local_llm');
+    assert.deepEqual(Array.from(presets, p => p.baseUrl), [
+      'http://localhost:11434/v1',
+      'http://127.0.0.1:11434/v1',
+      'http://localhost:1234/v1',
+      'http://127.0.0.1:1234/v1'
+    ]);
+    for (const preset of presets) {
+      assert.match(preset.baseUrl, /^http:\/\/(localhost|127\.0\.0\.1):/);
+    }
+  });
+
+  it('is included in the llm provider set but reports zero fixed models', () => {
+    assert.equal(ProviderCatalog.isLlmProvider('local_llm'), true);
+    assert.deepEqual(Array.from(ProviderCatalog.getModels('local_llm')), []);
   });
 });
 
@@ -151,6 +185,9 @@ describe('ProviderCatalog model-registry config base', () => {
     assert.equal(Boolean(config.claude), true);
     assert.equal(Boolean(config.groq), true);
     assert.equal(Boolean(config.deepseek), true);
+    assert.equal(Boolean(config.local_llm), true);
+    assert.equal(config.local_llm.endpoint, null);
+    assert.equal(config.local_llm.requiresApiKey, false);
   });
 
   it('returns defensive copies', () => {

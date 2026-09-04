@@ -81,11 +81,14 @@ const OpenAICompatibleClient = (function () {
     };
     payload = applyReasoningPolicy(providerId, opts.model, payload, opts.taskType, opts.reasoningBoost);
 
-    var auth = provider.authorization || { header: 'Authorization', prefix: 'Bearer ' };
     var headers = { 'Content-Type': 'application/json' };
-    headers[auth.header] = (auth.prefix || '') + opts.apiKey;
+    if (provider.requiresApiKey !== false || opts.apiKey) {
+      var auth = provider.authorization || { header: 'Authorization', prefix: 'Bearer ' };
+      headers[auth.header] = (auth.prefix || '') + opts.apiKey;
+    }
+    var baseUrl = opts.apiBaseUrl || provider.apiBaseUrl;
     return {
-      url: provider.apiBaseUrl + provider.chatCompletionsPath,
+      url: baseUrl + provider.chatCompletionsPath,
       options: {
         method: 'POST',
         headers: headers,

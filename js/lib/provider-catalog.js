@@ -5,11 +5,20 @@ const ProviderCatalog = (function () {
   'use strict';
 
   var VERIFIED_AT = '2026-08-01';
-  var LLM_PROVIDER_IDS = ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek'];
-  var LLM_PROVIDER_PRIORITY = ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek'];
+  var LLM_PROVIDER_IDS = ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek', 'local_llm'];
+  var LLM_PROVIDER_PRIORITY = ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek', 'local_llm'];
   var LLM_PROVIDER_IDS_WITH_LEGACY = LLM_PROVIDER_IDS.concat(['openai']);
   var STT_PROVIDER_IDS = ['openai_stt', 'deepgram_realtime'];
-  var API_KEY_PROVIDER_IDS = LLM_PROVIDER_IDS.concat(['openai', 'deepgram']);
+  var KEYLESS_LLM_PROVIDER_IDS = ['local_llm'];
+  var API_KEY_PROVIDER_IDS = LLM_PROVIDER_IDS
+    .filter(function (id) { return KEYLESS_LLM_PROVIDER_IDS.indexOf(id) === -1; })
+    .concat(['openai', 'deepgram']);
+  var LOCAL_LLM_BASE_URL_PRESETS = [
+    { id: 'ollama', label: 'Ollama (localhost:11434)', baseUrl: 'http://localhost:11434/v1' },
+    { id: 'ollama-loopback-ip', label: 'Ollama (127.0.0.1:11434)', baseUrl: 'http://127.0.0.1:11434/v1' },
+    { id: 'lmstudio', label: 'LM Studio (localhost:1234)', baseUrl: 'http://localhost:1234/v1' },
+    { id: 'lmstudio-loopback-ip', label: 'LM Studio (127.0.0.1:1234)', baseUrl: 'http://127.0.0.1:1234/v1' }
+  ];
 
   function model(id, displayName, tier, pricing, extra) {
     return Object.assign({
@@ -89,6 +98,22 @@ const ProviderCatalog = (function () {
         model('llama-3.3-70b-versatile', 'Llama 3.3 70B — 旧設定（終了予定）', 'legacy', { input: 0.59, output: 0.79 }, { lifecycle: 'deprecated', deprecated: true, shutdownDate: '2026-08-16', replacementModel: 'openai/gpt-oss-120b' }),
         model('llama-3.1-8b-instant', 'Llama 3.1 8B — 旧設定（終了予定）', 'legacy', { input: 0.05, output: 0.08 }, { lifecycle: 'deprecated', deprecated: true, shutdownDate: '2026-08-16', replacementModel: 'openai/gpt-oss-20b' })
       ]
+    },
+    local_llm: {
+      id: 'local_llm', kind: 'llm', apiKind: 'openai-compatible', displayName: 'Local LLM (Ollama / LM Studio)',
+      apiBaseUrl: '', chatCompletionsPath: '/chat/completions', requiresApiKey: false,
+      authorization: { header: 'Authorization', prefix: 'Bearer ' },
+      usageFields: { input: 'prompt_tokens', output: 'completion_tokens' },
+      errorFields: { root: 'error', message: 'message', code: 'code', type: 'type' },
+      apiKeyProviderId: null, apiKeyStorageId: null, modelProviderId: 'local_llm',
+      defaultModel: '', recommendedModel: '', canListModels: true,
+      reasoningPolicy: { summary: 'disabled', advice: 'disabled', parameter: null },
+      docsUrl: 'https://github.com/ollama/ollama/blob/main/docs/openai.md',
+      pricingUrl: null,
+      privacyUrl: null, verifiedAt: VERIFIED_AT,
+      baseUrlPresets: LOCAL_LLM_BASE_URL_PRESETS.slice(),
+      models: [],
+      allowCustomModel: true
     },
     deepseek: {
       id: 'deepseek', kind: 'llm', apiKind: 'openai-compatible', displayName: 'DeepSeek',
@@ -177,6 +202,14 @@ const ProviderCatalog = (function () {
     var provider = PROVIDER_DEFINITIONS[providerId];
     return provider ? provider.apiKeyProviderId : providerId;
   }
+  function providerRequiresApiKey(providerId) {
+    var provider = PROVIDER_DEFINITIONS[providerId];
+    return provider ? provider.requiresApiKey !== false : true;
+  }
+  function getBaseUrlPresets(providerId) {
+    var provider = PROVIDER_DEFINITIONS[providerId];
+    return clone(provider && provider.baseUrlPresets ? provider.baseUrlPresets : []);
+  }
   function getModelProviderId(providerId) {
     var provider = PROVIDER_DEFINITIONS[providerId];
     return provider ? provider.modelProviderId : providerId;
@@ -202,7 +235,12 @@ const ProviderCatalog = (function () {
     var configs = {};
     LLM_PROVIDER_IDS.forEach(function (providerId) {
       var provider = PROVIDER_DEFINITIONS[providerId];
-      var endpoint = provider.apiBaseUrl + (provider.apiKind === 'gemini' ? '/v1beta/models' : '/models');
+      // Base URL is user-configured for keyless local providers (no fixed
+      // apiBaseUrl to build an endpoint from) — leave endpoint null so
+      // model-registry.js knows it must be supplied at call time.
+      var endpoint = provider.requiresApiKey === false
+        ? null
+        : provider.apiBaseUrl + (provider.apiKind === 'gemini' ? '/v1beta/models' : '/models');
       configs[providerId] = {
         endpoint: endpoint,
         authHeader: provider.apiKind === 'gemini' ? 'x-goog-api-key' : (provider.apiKind === 'anthropic' ? 'x-api-key' : 'Authorization'),
@@ -214,7 +252,8 @@ const ProviderCatalog = (function () {
         canListModels: provider.canListModels,
         canListModelsWithProxy: providerId === 'openai_llm',
         fixedModels: getModels(providerId, { includeLegacy: true }),
-        allowCustomModel: Boolean(provider.allowCustomModel)
+        allowCustomModel: Boolean(provider.allowCustomModel),
+        requiresApiKey: provider.requiresApiKey !== false
       };
     });
     return configs;
@@ -233,6 +272,8 @@ const ProviderCatalog = (function () {
     getApiKeyProviderId: getApiKeyProviderId,
     getModelProviderId: getModelProviderId,
     getApiKeyStorageKey: getApiKeyStorageKey,
+    providerRequiresApiKey: providerRequiresApiKey,
+    getBaseUrlPresets: getBaseUrlPresets,
     normalizeGeminiModelId: normalizeGeminiModelId,
     normalizeSttProviderId: normalizeSttProviderId,
     normalizeLlmProviderId: normalizeLlmProviderId,

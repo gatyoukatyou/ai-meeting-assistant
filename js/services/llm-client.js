@@ -202,7 +202,8 @@ const LLMClientService = (function () {
       case 'openai':
       case 'openai_llm':
       case 'groq':
-      case 'deepseek': {
+      case 'deepseek':
+      case 'local_llm': {
         if (typeof OpenAICompatibleClient === 'undefined') {
           throw new Error('OpenAI-compatible client is unavailable');
         }
@@ -211,6 +212,7 @@ const LLMClientService = (function () {
           model: model,
           prompt: prompt,
           apiKey: apiKey,
+          apiBaseUrl: opts.apiBaseUrl || '',
           signal: signal,
           taskType: taskType,
           reasoningBoost: reasoningBoost,
@@ -226,14 +228,21 @@ const LLMClientService = (function () {
         throw new Error('Unknown provider: ' + provider);
     }
 
-    const pricingProvider = pricingTable ? pricingTable[provider] : null;
-    const pricing = (pricingProvider && pricingProvider[model]) ? pricingProvider[model] : null;
-    const yenPerDollar = pricingTable && typeof pricingTable.yenPerDollar === 'number'
-      ? pricingTable.yenPerDollar
-      : 150;
-    const cost = pricing && Number.isFinite(pricing.input) && Number.isFinite(pricing.output)
-      ? ((inputTokens * pricing.input + outputTokens * pricing.output) / 1000000) * yenPerDollar
-      : null;
+    // Local providers (Ollama / LM Studio) run on hardware the user already
+    // owns: always zero cost rather than falling through to "unknown estimate".
+    let cost;
+    if (provider === 'local_llm') {
+      cost = 0;
+    } else {
+      const pricingProvider = pricingTable ? pricingTable[provider] : null;
+      const pricing = (pricingProvider && pricingProvider[model]) ? pricingProvider[model] : null;
+      const yenPerDollar = pricingTable && typeof pricingTable.yenPerDollar === 'number'
+        ? pricingTable.yenPerDollar
+        : 150;
+      cost = pricing && Number.isFinite(pricing.input) && Number.isFinite(pricing.output)
+        ? ((inputTokens * pricing.input + outputTokens * pricing.output) / 1000000) * yenPerDollar
+        : null;
+    }
 
     const costProvider = provider === 'openai_llm' ? 'openai' : provider;
     if (costs && costs.llm && costs.llm.byProvider) {

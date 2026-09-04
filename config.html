@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com https://api.deepseek.com wss://api.deepgram.com https://api.deepgram.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com https://api.deepseek.com wss://api.deepgram.com https://api.deepgram.com http://localhost:* http://127.0.0.1:*; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:;">
   <title>Settings - AI Meeting</title>
   <link rel="stylesheet" href="css/config.css">
 </head>
@@ -288,6 +288,38 @@
           </div>
         </div>
 
+        <div class="setting-group" style="margin-bottom: 0;">
+          <label class="setting-label">
+            Local LLM (Ollama / LM Studio)
+            <span class="validation-status" id="local-llm-status" style="display:none;"></span>
+          </label>
+          <div class="setting-row">
+            <select class="model-select" id="localLlmBaseUrl">
+              <option value="" data-i18n="config.llm.localLlmBaseUrlUnset">未設定</option>
+              <option value="http://localhost:11434/v1">Ollama (localhost:11434)</option>
+              <option value="http://127.0.0.1:11434/v1">Ollama (127.0.0.1:11434)</option>
+              <option value="http://localhost:1234/v1">LM Studio (localhost:1234)</option>
+              <option value="http://127.0.0.1:1234/v1">LM Studio (127.0.0.1:1234)</option>
+            </select>
+            <select class="model-select" id="localLlmModel">
+              <option value="" data-i18n="config.llm.localLlmModelUnset">モデル一覧を取得してください</option>
+            </select>
+          </div>
+          <div class="setting-row" style="margin-top: 0.5rem;">
+            <input type="text" class="setting-input" id="localLlmCustomModel" placeholder="上級設定: カスタムモデル名（例: qwen3.5:9b）" style="font-size: 0.8rem;">
+          </div>
+          <div class="setting-hint custom-model-warning" style="color: var(--warning); font-size: 0.7rem;" data-i18n="config.llm.customModelWarning">
+            ⚠️ Custom model: Not verified, may not work due to API changes
+          </div>
+          <div class="api-actions">
+            <button type="button" class="api-action-btn btn-validate" data-validate="local_llm" data-i18n="config.llm.testConnection">接続テスト</button>
+            <button type="button" class="api-action-btn btn-clear" data-clear="local_llm" data-i18n="config.llm.clear">Clear</button>
+          </div>
+          <div class="setting-hint" data-i18n="config.llm.localLlmHint">
+            APIキー不要。Mac mini等で起動中のOllama／LM Studioのlocalhostエンドポイントのみ対応（費用は常に0円）。
+          </div>
+        </div>
+
         <div class="setting-group" style="margin-top: 0.75rem; padding: 1rem; background: var(--accent-warning); border-radius: 0.5rem; border: 1px solid var(--accent-border-warning);">
           <div style="font-size: 0.85rem; color: var(--text-warning);" data-i18n-html="config.llm.notConfiguredWarning">
             ⚠️ <strong>If no LLM API key is configured</strong><br>
@@ -305,13 +337,14 @@
           <option value="openai_llm" data-i18n="config.llm.priorityOpenAI">Prefer OpenAI</option>
           <option value="groq" data-i18n="config.llm.priorityGroq">Prefer Groq</option>
           <option value="deepseek" data-i18n="config.llm.priorityDeepSeek">Prefer DeepSeek</option>
+          <option value="local_llm" data-i18n="config.llm.priorityLocalLlm">Prefer Local LLM (Ollama/LM Studio)</option>
           <option value="auto" data-i18n="config.llm.priorityAuto">Auto (legacy compatibility)</option>
         </select>
         <div class="setting-hint" data-i18n="config.llm.priorityHint">
           APIキーがない場合は自動選択せず、設定を案内します。旧Auto設定はGeminiから設定済みAPIを探します。
         </div>
         <label class="setting-label" style="margin-top:0.75rem;" data-i18n="config.llm.fallbackOrder">一時障害時の予備順</label>
-        <input type="text" class="setting-input" id="llmFallbackOrder" value="gemini,openai_llm,claude,groq,deepseek" aria-describedby="llmFallbackOrderHint">
+        <input type="text" class="setting-input" id="llmFallbackOrder" value="gemini,openai_llm,claude,groq,deepseek,local_llm" aria-describedby="llmFallbackOrderHint">
         <div class="setting-hint" id="llmFallbackOrderHint" data-i18n="config.llm.fallbackOrderHint">429・一時的な5xx・ネットワーク障害の場合だけ使用します（カンマ区切り）。</div>
         <div class="setting-hint" data-i18n="config.llm.pricingPrivacyHint">料金は公式単価と1 USD = 150 JPYによる概算です（確認日: 2026-08-01）。会議内容は選択した外部APIへ送信されます。</div>
       </div>
