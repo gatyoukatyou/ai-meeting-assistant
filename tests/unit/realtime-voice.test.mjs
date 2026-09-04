@@ -218,3 +218,30 @@ test('stops a microphone stream acquired only for the Realtime test', async () =
   assert.equal(track.stopCount, 1);
   assert.equal(controller.usesSharedStream(), false);
 });
+
+test('builds fresh instructions at start via instructionsProvider (meeting context)', async () => {
+  const track = { kind: 'audio', readyState: 'live', stopCount: 0, stop() { this.stopCount += 1; } };
+  const { FakePeerConnection, peers } = createWebRtcFakes();
+  const { fetchImpl } = createFetchMock();
+  let builtCount = 0;
+  const controller = RealtimeVoiceTest.create({
+    RTCPeerConnection: FakePeerConnection,
+    mediaDevices: { getUserMedia: async () => createStream({ readyState: 'live', stopCount: 0, stop() {} }) },
+    fetchImpl,
+    createAudioElement: createAudio,
+    sharedStreamProvider: () => null,
+    instructionsProvider: () => {
+      builtCount += 1;
+      return `${RealtimeVoiceTest.DEFAULT_INSTRUCTIONS}\n\n# 会議コンテキスト\n直近の文字起こし:\n[10:00] 会議内容のサンプル`;
+    }
+  });
+
+  await controller.start();
+  const sent = JSON.parse(peers[0].dataChannel.sent[0]);
+  assert.equal(sent.type, 'session.update');
+  assert.match(sent.session.instructions, /# 会議コンテキスト/);
+  assert.match(sent.session.instructions, /\[10:00\] 会議内容のサンプル/);
+  assert.equal(builtCount, 1);
+
+  await controller.stop('test');
+});

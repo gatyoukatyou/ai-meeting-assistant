@@ -101,11 +101,13 @@
     "realtime": {
       "title": "Realtime voice test",
       "model": "Model: gpt-realtime-2.1",
-      "description": "Connect to the OpenAI Realtime API through a local server for a 30–60 second Japanese voice test. The standard API key is never sent to the browser.",
+      "description": "Connect to the OpenAI Realtime API through a local server so the AI can join your meeting by voice. The standard API key is never sent to the browser.",
+      "contextNote": "On start, the meeting info, the existing AI summary, and the most recent transcript (up to ~6,000 characters) are included in the AI instructions and sent to OpenAI. Meeting content is sent to OpenAI.",
       "headphones": "Use headphones. Input transcription events are not saved in this test, so AI audio is not added twice as the user's speech.",
-      "start": "Start voice test",
+      "start": "Join with AI voice",
       "stop": "End",
       "recordingBlocked": "Stop the regular recording before starting the Realtime voice test.",
+      "noTranscriptHint": "Transcription has not started, so the AI will join without meeting context. Start the regular recording first if you want the AI to know the meeting gist.",
       "timelineLabel": "Realtime voice",
       "state": {
         "idle": "Not connected",

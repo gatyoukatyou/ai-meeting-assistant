@@ -274,14 +274,17 @@
           <span class="realtime-state-badge" id="realtimeStateBadge" data-state="idle" data-i18n="app.realtime.state.idle">未接続</span>
         </div>
         <p class="realtime-voice-description" data-i18n="app.realtime.description">
-          ローカルサーバー経由で30〜60秒の日本語音声テストを行います。標準APIキーはこの画面へ渡りません。
+          ローカルサーバー経由でOpenAI Realtime APIに接続し、AIが音声で会議に参加します。標準APIキーはこの画面へ渡りません。
+        </p>
+        <p class="realtime-voice-description" data-i18n="app.realtime.contextNote">
+          開始時に、会議情報・これまでのAI要約・直近の文字起こし（最大約6,000字）をAIへの指示に含めて送信します。会議内容はOpenAIに送信されます。
         </p>
         <p class="realtime-voice-safety-note" data-i18n="app.realtime.headphones">
           AI音声のマイク回り込みを防ぐため、テスト中はヘッドホンを使用してください。
         </p>
         <div class="realtime-voice-actions">
           <button type="button" class="btn btn-primary" id="realtimeStartBtn">
-            ▶ <span data-i18n="app.realtime.start">音声テスト開始</span>
+            ▶ <span data-i18n="app.realtime.start">AI音声で参加</span>
           </button>
           <button type="button" class="btn btn-secondary" id="realtimeStopBtn" disabled>
             ■ <span data-i18n="app.realtime.stop">終了</span>

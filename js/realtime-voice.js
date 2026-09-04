@@ -71,6 +71,10 @@ const RealtimeVoiceTest = (function () {
       this.tokenEndpoint = options.tokenEndpoint || DEFAULT_TOKEN_ENDPOINT;
       this.callsEndpoint = options.callsEndpoint || DEFAULT_CALLS_ENDPOINT;
       this.instructions = options.instructions || DEFAULT_INSTRUCTIONS;
+      // 開始時に会議コンテキスト等の最新指示を組み立てるためのフック。
+      // 文字起こしや会議情報はセッション開始の瞬間に変わるため、関数で渡す。
+      this.instructionsProvider =
+        typeof options.instructionsProvider === 'function' ? options.instructionsProvider : null;
       this.fetchImpl =
         options.fetchImpl || (typeof root.fetch === 'function' ? root.fetch.bind(root) : null);
       this.mediaDevices = options.mediaDevices || root.navigator?.mediaDevices;
@@ -141,6 +145,10 @@ const RealtimeVoiceTest = (function () {
       this.responseTextCommitted = false;
       this.responseCount = 0;
       this.usage = RealtimeUsageService.createEmptyUsage();
+      if (this.instructionsProvider) {
+        const fresh = this.instructionsProvider();
+        if (typeof fresh === 'string' && fresh.trim()) this.instructions = fresh;
+      }
       this._setState(STATES.CONNECTING);
 
       try {
@@ -495,6 +503,7 @@ const RealtimeVoiceTest = (function () {
   return Object.freeze({
     STATES,
     DEFAULT_MODEL,
+    DEFAULT_INSTRUCTIONS,
     RealtimeVoiceError,
     create(options) {
       return new Controller(options);

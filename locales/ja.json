@@ -101,11 +101,13 @@
     "realtime": {
       "title": "Realtime音声テスト",
       "model": "モデル: gpt-realtime-2.1",
-      "description": "ローカルサーバー経由でOpenAI Realtime APIに接続し、30〜60秒の日本語音声会話を確認します。標準APIキーはブラウザへ渡しません。",
+      "description": "ローカルサーバー経由でOpenAI Realtime APIに接続し、AIが音声で会議に参加します。標準APIキーはブラウザへ渡しません。",
+      "contextNote": "開始時に、会議情報・これまでのAI要約・直近の文字起こし（最大約6,000字）をAIへの指示に含めて送信します。会議内容はOpenAIに送信されます。",
       "headphones": "ヘッドホンを使用してください。AI音声を既存の文字起こしへ二重登録しないため、入力文字起こしイベントはこのテストでは保存しません。",
-      "start": "音声テスト開始",
+      "start": "AI音声で参加",
       "stop": "終了",
       "recordingBlocked": "通常録音中はRealtime音声テストを開始できません。先に録音を停止してください。",
+      "noTranscriptHint": "文字起こしが未開始のため、AIは会議コンテキストを持たずに参加します。会議の概要を把握させたい場合は先に録音を開始してください。",
       "timelineLabel": "Realtime音声",
       "state": {
         "idle": "未接続",

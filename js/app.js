@@ -2279,11 +2279,49 @@ function updateRealtimeVoiceUI(state, details = {}) {
   updateRealtimeUsageUI();
 }
 
+// ===== Realtimeセッションへの会議コンテキスト注入 =====
+// 録音中に作成済みのAI要約と直近の文字起こしを指示に含め、
+// AIが会議の概要を把握した状態で音声参加できるようにする。
+const REALTIME_CONTEXT_SUMMARY_CHARS = 2000;
+const REALTIME_CONTEXT_TRANSCRIPT_CHARS = 6000;
+const REALTIME_INSTRUCTIONS_MAX_CHARS = 9000;
+
+function buildRealtimeVoiceContext() {
+  const parts = [];
+  const meetingInfo = AppState.meetingContext || {};
+  if (meetingInfo.goal) parts.push('会議の目的: ' + String(meetingInfo.goal).slice(0, 500));
+  if (meetingInfo.participants) parts.push('参加者: ' + String(meetingInfo.participants).slice(0, 500));
+  if (meetingInfo.handoff) parts.push('前提・引き継ぎ: ' + String(meetingInfo.handoff).slice(0, 500));
+
+  const summary = (AppState.aiResponses.summary || [])
+    .map(entry => (entry && typeof entry.content === 'string' ? entry.content : ''))
+    .filter(Boolean)
+    .join('\n');
+  if (summary) {
+    parts.push('これまでのAI要約:\n' + summary.slice(-REALTIME_CONTEXT_SUMMARY_CHARS));
+  }
+
+  const transcript = (getFullTranscriptText() || '').trim();
+  if (transcript) {
+    parts.push('直近の文字起こし:\n' + transcript.slice(-REALTIME_CONTEXT_TRANSCRIPT_CHARS));
+  }
+  return parts.join('\n\n');
+}
+
+function buildRealtimeVoiceInstructions() {
+  const context = buildRealtimeVoiceContext();
+  if (!context) return null;
+  const contextText = context.slice(0, REALTIME_INSTRUCTIONS_MAX_CHARS);
+  return (
+    RealtimeVoiceTest.DEFAULT_INSTRUCTIONS +
+    '\n\n# 会議コンテキスト（開始時点までの状況）\n' +
+    contextText
+  );
+}
+
 function initRealtimeVoiceTest() {
   const panel = document.getElementById('realtimeVoicePanel');
-  if (!panel || typeof RealtimeVoiceTest === 'undefined') return;
-
-  const startBtn = document.getElementById('realtimeStartBtn');
+  if (!panel || typeof RealtimeVoiceTest === 'undefined') return;  const startBtn = document.getElementById('realtimeStartBtn');
   const stopBtn = document.getElementById('realtimeStopBtn');
   const errorEl = document.getElementById('realtimeError');
   let actionInFlight = false;
@@ -2294,6 +2332,7 @@ function initRealtimeVoiceTest() {
     createAudioElement: () => document.getElementById('realtimeAudio') || document.createElement('audio'),
     preserveAudioElement: true,
     sharedStreamProvider: () => AppState.currentAudioStream,
+    instructionsProvider: buildRealtimeVoiceInstructions,
     onStateChange: (state, details) => {
       if (state === 'connecting') {
         AppState.realtimeUsage = RealtimeUsageService.createEmptyUsage();
@@ -2315,6 +2354,11 @@ function initRealtimeVoiceTest() {
   if (startBtn) {
     startBtn.addEventListener('click', async () => {
       if (actionInFlight || realtimeVoiceController.isActive()) return;
+      // 録音を自動開始はしない。未開始のまま参加する場合は、会議コンテキストが
+      // 空になることを警告表示で伝える
+      if (!AppState.transcriptChunks.length) {
+        showToast(t('app.realtime.noTranscriptHint'), 'warning');
+      }
       actionInFlight = true;
       startBtn.disabled = true;
       try {
