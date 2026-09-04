@@ -7,7 +7,7 @@
   var DISPLAY_THEME_KEY = 'display_theme';
   var DEFAULT_DISPLAY_THEME = 'light';
   var STYLE_KEY = 'appStyle';
-  var DEFAULT_STYLE = 'brutalism';
+  var DEFAULT_STYLE = 'clean';
 
   /**
    * Get current theme from storage
@@ -111,8 +111,8 @@
 
   // ========== Style Switcher (Brutalism / Paper / Clean / CLI) ==========
   function normalizeStyle(value) {
-    if (value === 'paper' || value === 'clean' || value === 'cli') return value;
-    return 'brutalism';
+    if (value === 'brutalism' || value === 'paper' || value === 'clean' || value === 'cli') return value;
+    return DEFAULT_STYLE;
   }
 
   function getStyle() {
