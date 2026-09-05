@@ -5,9 +5,10 @@
 
 ---
 
-## v1.6.0 (2026-09-05) - ローカルLLM実用化 & 録音中プロファイル切替
+## v1.6.0 (2026-09-05) - ローカルLLM実用化 & リアルタイムSTT拡充 & 録音中プロファイル切替
 
 ### Added
+- **OpenAI Realtime Transcribe (STT)**: 既存の OpenAI API キーでリアルタイム文字起こしが可能に。`/v1/realtime/client_secrets` で一時トークン発行 → WebSocket (PCM16 24kHz) ストリーミング。`server_vad` による部分表示/確定表示、`whisper-1` 選択時は `gpt-4o-transcribe` へ自動フォールバック (#223)
 - **録音中のプロファイル切替**: メモ⇔会議プロファイルを録音中でも切替可能に。切替は表示整合のみで録音データは不変 (#220)
 
 ### Changed
