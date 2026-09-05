@@ -134,19 +134,20 @@ describe('OpenAIRealtimeProvider', () => {
     FakeWebSocket.instances = [];
   });
 
-  it('creates a transcription session and connects with subprotocol auth', async () => {
+  it('creates a client secret and connects with subprotocol auth', async () => {
     const { provider, calls } = createProvider();
 
     const ws = await startConnected(provider);
 
     assert.equal(calls.fetch.length, 1);
-    assert.equal(calls.fetch[0].url, 'https://api.openai.com/v1/realtime/transcription_sessions');
+    assert.equal(calls.fetch[0].url, 'https://api.openai.com/v1/realtime/client_secrets');
     assert.equal(calls.fetch[0].options.headers.Authorization, 'Bearer test-openai-key');
-    const body = JSON.parse(calls.fetch[0].options.body);
-    assert.equal(body.input_audio_format, 'pcm16');
-    assert.equal(body.input_audio_transcription.model, 'gpt-4o-transcribe');
-    assert.equal(body.input_audio_transcription.language, 'ja');
-    assert.equal(body.turn_detection.type, 'server_vad');
+    const session = JSON.parse(calls.fetch[0].options.body).session;
+    assert.equal(session.type, 'transcription');
+    assert.deepEqual(session.audio.input.format, { type: 'audio/pcm', rate: 24000 });
+    assert.equal(session.audio.input.transcription.model, 'gpt-4o-transcribe');
+    assert.equal(session.audio.input.transcription.language, 'ja');
+    assert.equal(session.audio.input.turn_detection.type, 'server_vad');
 
     assert.equal(provider.isConnected, true);
     assert.equal(ws.url, 'wss://api.openai.com/v1/realtime?intent=transcription');
@@ -161,8 +162,9 @@ describe('OpenAIRealtimeProvider', () => {
       .map((s) => JSON.parse(s))
       .filter((m) => m.type === 'session.update');
     assert.equal(updates.length, 1);
-    assert.equal(updates[0].session.input_audio_transcription.model, 'gpt-4o-transcribe');
-    assert.equal(updates[0].session.turn_detection.type, 'server_vad');
+    assert.equal(updates[0].session.type, 'transcription');
+    assert.equal(updates[0].session.audio.input.transcription.model, 'gpt-4o-transcribe');
+    assert.equal(updates[0].session.audio.input.turn_detection.type, 'server_vad');
   });
 
   it('sends audio as base64 input_audio_buffer.append events', async () => {

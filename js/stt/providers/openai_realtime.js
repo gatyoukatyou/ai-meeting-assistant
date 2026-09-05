@@ -2,9 +2,11 @@
  * OpenAI Realtime Transcribe STT Provider (WebSocket)
  *
  * OpenAI Realtime API の transcription-only セッションで真のリアルタイム文字起こし
+ * （GA インターフェース: /v1/realtime/client_secrets + session.type "transcription"）
  *
  * 認証フロー（ブラウザ BYOK）:
- * 1. POST /v1/realtime/transcription_sessions（実APIキー）で一時トークン(client_secret)を発行
+ * 1. POST /v1/realtime/client_secrets（実APIキー + セッション設定）で
+ *    一時トークン(client_secret)を発行
  * 2. wss://api.openai.com/v1/realtime?intent=transcription へ
  *    subprotocol ["realtime", "openai-insecure-api-key.<ephemeral>"] で接続
  *
@@ -18,7 +20,7 @@ class OpenAIRealtimeProvider {
     this.apiKey = config.apiKey || (typeof SecureStorage !== 'undefined' ? SecureStorage.getApiKey('openai') : null);
     const requestedModel = config.model || (typeof SecureStorage !== 'undefined' ? SecureStorage.getModel('openai') : null);
     // whisper-1 は Realtime API 非対応（バッチ専用）。互換モデルは既定へフォールバック
-    const supportedModels = ['gpt-4o-transcribe', 'gpt-4o-mini-transcribe'];
+    const supportedModels = ['gpt-4o-transcribe', 'gpt-4o-mini-transcribe', 'gpt-live-transcribe', 'gpt-transcribe'];
     this.model = supportedModels.includes(requestedModel) ? requestedModel : 'gpt-4o-transcribe';
     this.language = config.language || 'ja';
 
@@ -40,7 +42,31 @@ class OpenAIRealtimeProvider {
   setOnStatusChange(callback) { this.onStatusChange = callback; }
 
   /**
-   * 一時トークンを発行してWebSocket接続を開始
+   * transcription 設定を組み立てる（client_secrets の session と
+   * 接続後の session.update の両方で使用）
+   */
+  _buildTranscriptionSessionConfig() {
+    // gpt-live-transcribe のみ複数形 languages を使用（language との併用は不可）
+    const transcription = { model: this.model };
+    if (this.model === 'gpt-live-transcribe') {
+      if (this.language && this.language !== 'auto') transcription.languages = [this.language];
+    } else if (this.language && this.language !== 'auto') {
+      transcription.language = this.language;
+    }
+    return {
+      type: 'transcription',
+      audio: {
+        input: {
+          format: { type: 'audio/pcm', rate: 24000 },
+          transcription,
+          turn_detection: { type: 'server_vad', silence_duration_ms: 500 }
+        }
+      }
+    };
+  }
+
+  /**
+   * client secret を発行してWebSocket接続を開始
    */
   async start() {
     if (!this.apiKey) {
@@ -55,36 +81,32 @@ class OpenAIRealtimeProvider {
   }
 
   /**
-   * transcription session を作成し一時トークンを取得
+   * 一時トークン（client secret）を発行
    */
   async _createTranscriptionSession() {
     let response;
     try {
-      response = await fetch('https://api.openai.com/v1/realtime/transcription_sessions', {
+      response = await fetch('https://api.openai.com/v1/realtime/client_secrets', {
         method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + this.apiKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({
-          input_audio_format: 'pcm16',
-          input_audio_transcription: {
-            model: this.model,
-            language: this.language === 'auto' ? undefined : this.language
-          },
-          turn_detection: { type: 'server_vad' }
-        })
+        body: JSON.stringify({ session: this._buildTranscriptionSessionConfig() })
       });
     } catch (error) {
       throw new Error('Failed to create realtime transcription session: ' + (error && error.message || 'network error'));
     }
     if (!response.ok) {
       let detail = '';
-      try { detail = (await response.json()).error && (await response.json()).error.message || ''; } catch (_) { /* ignore */ }
+      try {
+        const data = await response.json();
+        detail = (data && data.error && data.error.message) || '';
+      } catch (_) { /* ignore */ }
       throw new Error('Realtime session error (HTTP ' + response.status + ')' + (detail ? ': ' + detail : ''));
     }
     const data = await response.json();
-    const secret = data && data.client_secret && data.client_secret.value;
+    const secret = (data && data.value) || (data && data.client_secret && data.client_secret.value);
     if (!secret) {
       throw new Error('Realtime session response missing client_secret');
     }
@@ -172,25 +194,17 @@ class OpenAIRealtimeProvider {
   }
 
   /**
-   * セッション設定を送信（一時トークンに紐づく設定と二重だが冪等）
+   * セッション設定を送信（client secret に紐づく設定と二重だが冪等）
    */
   _sendSessionConfig() {
     if (!this.ws || this.ws.readyState !== WebSocket.OPEN) return;
     try {
       this.ws.send(JSON.stringify({
         type: 'session.update',
-        session: {
-          type: 'transcription',
-          input_audio_format: 'pcm16',
-          input_audio_transcription: {
-            model: this.model,
-            language: this.language === 'auto' ? undefined : this.language
-          },
-          turn_detection: { type: 'server_vad' }
-        }
+        session: this._buildTranscriptionSessionConfig()
       }));
     } catch (e) {
-      // 設定送信失敗は致命的でない（セッション作成時に設定済み）
+      // 設定送信失敗は致命的でない（client secret に設定済み）
       DebugLogger.error('[OpenAIRealtime]', 'session.update failed:', e && e.message);
     }
   }
