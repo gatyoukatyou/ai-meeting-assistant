@@ -2,7 +2,7 @@
 
 [🇯🇵 日本語](README.md) | 🇺🇸 English
 
-[![Version](https://img.shields.io/badge/version-v1.5.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.5.0)
+[![Version](https://img.shields.io/badge/version-v1.6.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.6.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 A lightweight, browser-based meeting assistant that records audio, transcribes speech, and generates summaries, consult responses, minutes, and memos using AI.
@@ -281,14 +281,14 @@ MIT License – Free to use and modify
 
 ## Version
 
-**v1.5.0** – Clean theme refresh & new default theme (2026-08-11)
+**v1.6.0** – Local LLM support & profile switching while recording (2026-09-05)
 
-- Redesigned clean theme (light/dark support, 9 accent colors applied to buttons and more)
-- Clean is now the default theme for new users (existing saved preferences are preserved)
-- Added clean / CLI to the main page style switcher
-- Tidied mobile bottom tab colors (subtle inactive tabs, accent-colored active tab)
+- AI features now work with keyless local LLMs such as Ollama / LM Studio (#211)
+- Extended the AI timeout to 180s when a local LLM is selected, so summaries are less likely to be aborted (#221)
+- Reasoning control for thinking models makes local summaries more reliable (#219)
+- Memo/meeting profile can now be switched while recording (#220)
 
-- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.5.0)
+- [Latest Release](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.6.0)
 - [Change Log](docs/CHANGELOG.md)
 
 ## Support

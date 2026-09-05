@@ -2,7 +2,7 @@
 
 🇯🇵 日本語 | [🇺🇸 English](README.en.md)
 
-[![Version](https://img.shields.io/badge/version-v1.5.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.5.0)
+[![Version](https://img.shields.io/badge/version-v1.6.0-blue)](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.6.0)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
 
 会議中にAIがリアルタイムで参加し、文字起こし・要約・相談・議事録・メモを行うWebアプリです。
@@ -292,14 +292,14 @@ MIT License - 自由に使ってOKです
 
 ## バージョン
 
-**v1.5.0** - clean テーマ刷新 & 既定テーマ切替（2026-08-11）
+**v1.6.0** - ローカルLLM実用化 & 録音中プロファイル切替（2026-09-05）
 
-- clean テーマを再設計（ライト/ダーク対応、アクセントカラー9色がボタン等に反映）
-- 新規ユーザーの既定テーマが Clean に（既存の保存値は上書きされません）
-- clean / CLI をメインページのスタイル切替に追加
-- モバイル下部タブの配色整理（非アクティブは控えめ、アクティブのみアクセント表示）
+- Ollama / LM Studio など API キー不要のローカル LLM で AI 機能が利用可能に（#211）
+- ローカル LLM 使用時はタイムアウトを 180 秒に延長し、要約が中断されにくく（#221）
+- thinking モデル向けの reasoning 制御でローカル要約を安定化（#219）
+- 録音中でもメモ⇔会議プロファイルを切替可能に（#220）
 
-- [最新リリース](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.5.0)
+- [最新リリース](https://github.com/gatyoukatyou/ai-meeting-assistant/releases/tag/v1.6.0)
 - [変更履歴](docs/CHANGELOG.md)
 
 ## 困ったときは
