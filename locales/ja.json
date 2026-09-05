@@ -98,6 +98,47 @@
         "timeline": "タイムライン"
       }
     },
+    "realtime": {
+      "title": "Realtime音声テスト",
+      "model": "モデル: gpt-realtime-2.1",
+      "description": "ローカルサーバー経由でOpenAI Realtime APIに接続し、AIが音声で会議に参加します。標準APIキーはブラウザへ渡しません。",
+      "contextNote": "開始時に、会議情報・これまでのAI要約・直近の文字起こし（最大約6,000字）をAIへの指示に含めて送信します。会議内容はOpenAIに送信されます。",
+      "headphones": "ヘッドホンを使用してください。AI音声を既存の文字起こしへ二重登録しないため、入力文字起こしイベントはこのテストでは保存しません。",
+      "start": "AI音声で参加",
+      "stop": "終了",
+      "recordingBlocked": "通常録音中はRealtime音声テストを開始できません。先に録音を停止してください。",
+      "noTranscriptHint": "文字起こしが未開始のため、AIは会議コンテキストを持たずに参加します。会議の概要を把握させたい場合は先に録音を開始してください。",
+      "timelineLabel": "Realtime音声",
+      "state": {
+        "idle": "未接続",
+        "connecting": "接続中",
+        "connected": "接続済み",
+        "responding": "応答中",
+        "ended": "終了",
+        "error": "エラー"
+      },
+      "usageTitle": "今回の使用量",
+      "responses": "応答回数",
+      "totalTokens": "合計トークン",
+      "inputTokens": "入力トークン",
+      "outputTokens": "出力トークン",
+      "estimate": "概算",
+      "pricingNote": "単価は{date}時点の{model}公式掲載値を使用した概算です。実際の請求額とは異なる場合があります。",
+      "responseTitle": "AI回答",
+      "noResponse": "まだAI回答はありません。",
+      "errors": {
+        "unsupported": "このブラウザはRealtime音声テストに対応していません。Chrome系デスクトップブラウザを使用してください。",
+        "missingApiKey": "ローカルサーバーにOPENAI_API_KEYが設定されていません。画面やログへキー値を貼り付けないでください。",
+        "authentication": "OpenAI APIキーの認証に失敗しました。キー値を共有せず、安全に設定し直してください。",
+        "rateLimit": "短時間の連続発行またはOpenAI側の利用上限に達しました。時間をおいて再試行してください。",
+        "network": "ローカルサーバーまたはOpenAI Realtime APIへ接続できませんでした。",
+        "server": "OpenAI Realtime APIで一時的な障害が発生しています。",
+        "localOnly": "Realtime音声テストはローカル接続からのみ利用できます。",
+        "tokenResponse": "短命なクライアントシークレットを取得できませんでした。",
+        "localServer": "ローカルRealtimeサーバーのリクエストに失敗しました。",
+        "connection": "Realtime音声接続が終了しました。"
+      }
+    },
     "timeline": {
       "filterAll": "全部",
       "filterMemo": "メモ",
@@ -512,6 +553,7 @@
       "memos": "メモ",
       "todos": "TODO",
       "qa": "Q&A",
+      "realtime": "Realtime音声",
       "transcript": "文字起こし",
       "aiWorkOrder": "AIワークオーダー",
       "cost": "コスト詳細"

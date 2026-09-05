@@ -158,9 +158,17 @@ const ExportService = (function () {
     const t = typeof c.t === 'function' ? c.t : function (k) { return k; };
     const options = c.options || {
       minutes: true, summary: true, consult: true, opinion: true, idea: true,
-      memos: true, todos: true, qa: true, transcript: true, aiWorkOrder: true, cost: true
+      memos: true, todos: true, qa: true, realtime: true, transcript: true, aiWorkOrder: true, cost: true
     };
-    const aiResponses = c.aiResponses || { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [] };
+    const aiResponses = c.aiResponses || { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [], realtime: [] };
+    const realtimeUsage = c.realtimeUsage || null;
+    const hasRealtimeUsage = Boolean(
+      realtimeUsage && (
+        Number(realtimeUsage.responseCount) > 0 ||
+        Number(realtimeUsage.totalTokens) > 0 ||
+        (Array.isArray(aiResponses.realtime) && aiResponses.realtime.length > 0)
+      )
+    );
     const meetingMemos = c.meetingMemos || { items: [] };
     const costs = c.costs || {
       transcript: { duration: 0, calls: 0, byProvider: { openai: 0, deepgram: 0 }, total: 0 },
@@ -187,6 +195,9 @@ const ExportService = (function () {
     const formatNumber = typeof c.formatNumber === 'function'
       ? c.formatNumber
       : function (v) { return String(v); };
+    const formatRealtimeUsage = typeof c.formatRealtimeUsage === 'function'
+      ? c.formatRealtimeUsage
+      : function () { return '算出不可'; };
 
     let md = `# ${title}\n\n`;
     md += `**${t('export.document.datetime')}** ${now}\n\n`;
@@ -259,7 +270,8 @@ const ExportService = (function () {
     const showConsult = options.consult && aiResponses.consult.length > 0;
     const showOpinion = options.opinion && aiResponses.opinion.length > 0;
     const showIdea = options.idea && aiResponses.idea.length > 0;
-    const hasAIResponses = showSummary || showConsult || showOpinion || showIdea;
+    const showRealtime = options.realtime !== false && Array.isArray(aiResponses.realtime) && aiResponses.realtime.length > 0;
+    const hasAIResponses = showSummary || showConsult || showOpinion || showIdea || showRealtime;
     if (hasAIResponses) {
       md += `---\n\n`;
       md += `## 🤖 ${t('export.document.sectionAI')}\n\n`;
@@ -267,6 +279,7 @@ const ExportService = (function () {
       if (showConsult) md += formatAIResponses(aiResponses.consult, t('export.items.consult') || '相談', '💭');
       if (showOpinion) md += formatAIResponses(aiResponses.opinion, t('export.items.opinion'), '💭');
       if (showIdea) md += formatAIResponses(aiResponses.idea, t('export.items.idea'), '💡');
+      if (showRealtime) md += formatAIResponses(aiResponses.realtime, t('export.items.realtime') || 'Realtime音声', '🔊');
     }
 
     if (options.memos) {
@@ -350,6 +363,16 @@ const ExportService = (function () {
       md += `- DeepSeek: ${formatCost(costs.llm.byProvider.deepseek || 0)}\n`;
       if (costs.llm.hasUnknownEstimate) md += `- Custom model: estimate unavailable\n`;
       md += `- ${t('export.document.costSubtotal')}: ${formatCost(costs.llm.total)}\n\n`;
+      if (hasRealtimeUsage) {
+        md += `### 🔊 ${t('export.items.realtime') || 'Realtime音声'}\n`;
+        md += `- モデル: ${realtimeUsage.estimate?.pricing?.model || 'gpt-realtime-2.1'}\n`;
+        md += `- 応答回数: ${realtimeUsage.responseCount || 0}\n`;
+        md += `- 合計トークン: ${formatNumber(realtimeUsage.totalTokens || 0)}\n`;
+        md += `- 入力トークン: ${formatNumber(realtimeUsage.inputTokens || 0)}\n`;
+        md += `- 出力トークン: ${formatNumber(realtimeUsage.outputTokens || 0)}\n`;
+        md += `- 概算: ${formatRealtimeUsage(realtimeUsage)}\n`;
+        md += `- 単価参照日: ${realtimeUsage.estimate?.pricing?.sourceDate || '未取得'}\n\n`;
+      }
       md += `### ${t('export.document.costTotal')}\n`;
       md += `**${formatCost(total)}**\n\n`;
       md += `---\n`;

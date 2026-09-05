@@ -1,6 +1,6 @@
 # セキュリティ / Security
 
-最終更新日 / Last Updated: 2026-07-11
+最終更新日 / Last Updated: 2026-08-25
 
 ---
 
@@ -35,6 +35,17 @@
 - 記憶を有効にするとAPIキーは端末のlocalStorageに平文で残ります。共有端末では使用せず、端末の紛失・盗難に備えて画面ロックを有効にしてください
 - 開発者のサーバーに送信されることはありません
 - HTTPS通信のみを使用します
+
+### Realtime音声短時間テスト（ローカル専用）
+
+- Realtime音声テストだけは、`npm run start:realtime`で起動したループバック（`127.0.0.1`）のローカルNode.jsサーバーが、プロセス環境変数`OPENAI_API_KEY`を読み取ります。公開サーバーへの配置は想定していません
+- ローカルサーバーはOpenAIへ短命なクライアントシークレットを要求し、その値だけをブラウザへ返します。標準APIキーはレスポンス、画面、ログ、ブラウザのStorageへ保存しません
+- ブラウザは短命なシークレットでOpenAI Realtime APIへWebRTC接続します。音声はWebRTCで送信され、AI音声は画面の音声要素で再生されます
+- 既存録音のマイクストリームがある場合は同じ音声トラックを共有し、Realtime終了時に既存トラックを停止しません。Realtime専用に取得したトラックだけを終了時に停止します
+- AIの出力文字列だけを既存タイムラインへ追加し、入力音声の文字起こしイベントは保存しません。ヘッドホンを使用して、AI音声がマイクへ回り込むことを避けてください
+- 開始時に、会議情報（目的・参加者・引き継ぎ）・これまでのAI要約・直近の文字起こし（最大約9,000字相当）をAIへの指示（`session.update`）に含めてOpenAIへ送信します。会議内容がOpenAIに送信される点は、クラウドLLM利用時と同様です
+- 30〜60秒のテストでもOpenAIの利用料が発生します。使用量は`response.done`のusageを画面へ表示し、料金は公式単価を使った概算または算出不可として扱います。実請求額はOpenAIの請求画面で確認してください
+- APIキーや音声内容をスクリーンショット、録画、Issue、PR、Todoistへ記録しないでください
 
 ### 保護の範囲と限界
 
@@ -97,6 +108,17 @@ The Application is designed to minimize security risks.
 - Persisted API keys remain unencrypted in localStorage. Do not enable this on shared devices, and use a device screen lock to reduce the risk from loss or theft
 - They are never transmitted to developer-controlled servers
 - All communication uses HTTPS
+
+### Realtime short voice test (local only)
+
+- Only the Realtime voice test reads `OPENAI_API_KEY`, and only the loopback Node.js server started with `npm run start:realtime` reads it from its process environment. It is not intended for public deployment
+- The local server requests a short-lived client secret from OpenAI and returns only that secret to the browser. The standard API key is not stored in responses, the UI, logs, or browser storage
+- The browser uses the short-lived secret to connect to the OpenAI Realtime API over WebRTC. Audio is sent over WebRTC and AI audio is played by the page's audio element
+- If an existing recording stream is available, the test shares its audio track and does not stop that track when the test ends. A track acquired only for Realtime is stopped during cleanup
+- Only AI output text is added to the existing timeline. Input transcription events are ignored to prevent duplicate user speech entries. Use headphones to reduce audio feedback
+- On start, the meeting info (goal, participants, handoff), the existing AI summary, and the most recent transcript (up to ~9,000 characters equivalent) are included in the AI instructions (`session.update`) and sent to OpenAI. Meeting content reaching OpenAI is the same as when using cloud LLMs
+- A 30–60 second test incurs OpenAI usage charges. The page shows `response.done` usage and an estimate based on the published rates, or “unavailable” when details are missing. Verify actual charges in OpenAI billing
+- Never record API keys or audio content in screenshots, recordings, Issues, PRs, or Todoist
 
 ### Protection Scope and Limitations
 

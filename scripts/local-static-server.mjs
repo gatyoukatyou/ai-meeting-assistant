@@ -106,6 +106,22 @@ async function probeServer(baseUrl) {
   }
 }
 
+// このリポジトリの index.html に必ず含まれる要素で同一性を確認する。
+// 開発機では別リポジトリや別ブランチのサーバーが同じポートで残留していることがあり、
+// 内容確認なしに再利用すると smoke test が誤ったページを検証してしまう。
+const DEFAULT_IDENTITY_MARKER = 'id="recordBtn"';
+
+async function isThisAppServer(baseUrl, marker) {
+  try {
+    const response = await fetch(`${baseUrl}/index.html`);
+    if (!response.ok) return false;
+    const body = await response.text();
+    return body.includes(marker);
+  } catch {
+    return false;
+  }
+}
+
 function listen(server, { port, host }) {
   return new Promise((resolve, reject) => {
     server.once('error', reject);
@@ -135,6 +151,14 @@ export async function ensureLocalStaticServer(options = {}) {
   const { port, host, rootDir, baseUrl } = config;
 
   if (await probeServer(baseUrl)) {
+    const marker = options.marker || DEFAULT_IDENTITY_MARKER;
+    if (!(await isThisAppServer(baseUrl, marker))) {
+      throw new Error(
+        `Port ${port} is occupied by a server that does not serve this app ` +
+          `(its index.html is missing "${marker}"). ` +
+          'Set PORT (or REALTIME_UI_PORT) to a free port or stop the other server.'
+      );
+    }
     return {
       ...config,
       reused: true,

@@ -24,6 +24,8 @@ let recorderStopReason = null;
 let recorderRestartTimeoutId = null;
 let activeProviderId = null;
 let sttConnectionStatus = null;
+let realtimeVoiceController = null;
+let realtimeUsage = RealtimeUsageService.createEmptyUsage();
 let activeMeetingDraftId = null;
 let activeMeetingDraftStartedAt = null;
 let activeMeetingDraftSaveTimer = null;
@@ -214,6 +216,9 @@ const AppState = {
   set activeProviderId(value) { activeProviderId = value; },
   get sttConnectionStatus() { return sttConnectionStatus; },
   set sttConnectionStatus(value) { sttConnectionStatus = value; },
+  get realtimeVoiceController() { return realtimeVoiceController; },
+  get realtimeUsage() { return realtimeUsage; },
+  set realtimeUsage(value) { realtimeUsage = value; },
   get activeMeetingDraftId() { return activeMeetingDraftId; },
   set activeMeetingDraftId(value) { activeMeetingDraftId = value; },
   get activeMeetingDraftStartedAt() { return activeMeetingDraftStartedAt; },
@@ -347,6 +352,10 @@ function handleFatalError(error) {
   const sanitizedMessage = sanitizeErrorLog(error?.message || String(error));
   const sanitizedStack = sanitizeErrorLog(error?.stack || '');
   console.error('[FatalError]', sanitizedMessage, sanitizedStack);
+
+  if (AppState.realtimeVoiceController?.isActive?.()) {
+    AppState.realtimeVoiceController.stop('fatal_error').catch(() => {});
+  }
 
   // Safely stop recording if in progress
   if (AppState.isRecording && !AppState.isStopping) {
@@ -671,7 +680,8 @@ let aiResponses = {
   idea: [],     // { timestamp: '19:07', content: '...' } - 後方互換用
   consult: [],  // { timestamp: '19:08', content: '...' } - 統合された相談結果
   minutes: '',  // 議事録（録音停止後に生成、単一）
-  custom: []    // Q&A形式で蓄積 { q: '...', a: '...' }
+  custom: [],   // Q&A形式で蓄積 { q: '...', a: '...' }
+  realtime: []  // Realtime音声のAI回答 { timestamp, content, usage }
 };
 
 // Memo Timeline
@@ -1099,10 +1109,11 @@ document.addEventListener('DOMContentLoaded', async function() {
     if (SecureStorage.getOption('clearOnClose', false)) {
       SecureStorage.clearApiKeys();
     }
-    if (AppState.isRecording || hasActiveMeetingDraftState()) {
+    if (AppState.isRecording || AppState.realtimeVoiceController?.isActive?.() || hasActiveMeetingDraftState()) {
       event.preventDefault();
       event.returnValue = '';
     }
+    AppState.realtimeVoiceController?.stop?.('page_unload').catch(() => {});
   });
 
   // 言語切り替え時にUIを再描画
@@ -1111,6 +1122,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     updateUI();
     updateCosts();
     updateLLMIndicator();
+    if (AppState.realtimeVoiceController) {
+      updateRealtimeVoiceUI(AppState.realtimeVoiceController.getState());
+      renderRealtimeResponseLog();
+    }
   });
 
   // 設定画面（別タブ）からの設定変更通知を受信してUIを更新
@@ -1176,6 +1191,7 @@ document.addEventListener('DOMContentLoaded', async function() {
 
   // ブラウザ互換性チェック（iOS Safari対応）
   checkBrowserCompatibility();
+  initRealtimeVoiceTest();
 
   // デバッグHUD（?debug パラメータ時のみ）
   initDebugHUD();
@@ -1801,6 +1817,10 @@ document.addEventListener('DOMContentLoaded', async function() {
     renderTimeline();
     updateRecordingProfileUI();
     updatePanelMeetingModeUI();
+    if (AppState.realtimeVoiceController) {
+      updateRealtimeVoiceUI(AppState.realtimeVoiceController.getState());
+      renderRealtimeResponseLog();
+    }
     updateUI();
   });
 
@@ -1829,6 +1849,11 @@ async function toggleRecording() {
 }
 
 async function startRecording() {
+  if (AppState.realtimeVoiceController?.isActive?.()) {
+    showToast(t('app.realtime.recordingBlocked'), 'warning');
+    return;
+  }
+
   // iOS Safari対応: ユーザー操作直後にgetUserMediaを呼び出す
   // Safariは「最初の非同期処理前にgetUserMediaを呼ぶ」ことを強く要求する
   let tempAudioStream;
@@ -2138,6 +2163,253 @@ function handleTranscriptResult(text, isFinal) {
   if (body) {
     body.scrollTop = body.scrollHeight;
   }
+}
+
+const REALTIME_STATE_I18N_KEYS = Object.freeze({
+  idle: 'app.realtime.state.idle',
+  connecting: 'app.realtime.state.connecting',
+  connected: 'app.realtime.state.connected',
+  responding: 'app.realtime.state.responding',
+  ended: 'app.realtime.state.ended',
+  error: 'app.realtime.state.error'
+});
+
+function getRealtimeStateLabel(state) {
+  const key = REALTIME_STATE_I18N_KEYS[state] || REALTIME_STATE_I18N_KEYS.idle;
+  return t(key) || state;
+}
+
+function updateRealtimeUsageUI() {
+  const usage = AppState.realtimeUsage || RealtimeUsageService.createEmptyUsage();
+  const responseCount = Number.isFinite(Number(usage.responseCount))
+    ? Number(usage.responseCount)
+    : (AppState.aiResponses.realtime || []).length;
+  const setText = (id, value) => {
+    const element = document.getElementById(id);
+    if (element) element.textContent = value;
+  };
+
+  setText('realtimeResponseCount', RealtimeUsageService.formatTokens(responseCount));
+  setText('realtimeTotalTokens', RealtimeUsageService.formatTokens(usage.totalTokens));
+  setText('realtimeInputTokens', RealtimeUsageService.formatTokens(usage.inputTokens));
+  setText('realtimeOutputTokens', RealtimeUsageService.formatTokens(usage.outputTokens));
+  setText('realtimeCostEstimate', RealtimeUsageService.formatEstimate(usage));
+
+  const pricingNote = document.getElementById('realtimePricingNote');
+  if (pricingNote) {
+    pricingNote.textContent = t('app.realtime.pricingNote', {
+      date: RealtimeUsageService.PRICING.sourceDate,
+      model: RealtimeUsageService.MODEL
+    });
+  }
+}
+
+function renderRealtimeResponseLog() {
+  const list = document.getElementById('realtimeResponseList');
+  const empty = document.getElementById('realtimeResponseEmpty');
+  if (!list) return;
+
+  const entries = Array.isArray(AppState.aiResponses.realtime)
+    ? AppState.aiResponses.realtime
+    : [];
+  list.replaceChildren();
+  if (empty) empty.hidden = entries.length > 0;
+
+  entries.forEach(entry => {
+    const wrapper = document.createElement('div');
+    wrapper.className = 'realtime-response-item';
+    const time = document.createElement('time');
+    time.textContent = entry.timestamp || '';
+    const content = document.createElement('div');
+    content.textContent = entry.content || '';
+    wrapper.appendChild(time);
+    wrapper.appendChild(content);
+    list.appendChild(wrapper);
+  });
+}
+
+function handleRealtimeAssistantText(text, usage) {
+  const timestamp = new Date().toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' });
+  AppState.aiResponses = RealtimeResponseService.appendAssistantResponse(
+    AppState.aiResponses,
+    { text, timestamp, usage }
+  );
+  renderRealtimeResponseLog();
+  renderTimeline();
+  scheduleActiveMeetingDraftSave();
+}
+
+function handleRealtimeUsage(usage) {
+  AppState.realtimeUsage = RealtimeUsageService.withEstimate(usage);
+  const entries = Array.isArray(AppState.aiResponses.realtime)
+    ? AppState.aiResponses.realtime
+    : [];
+  if (entries.length > 0) {
+    entries[entries.length - 1].usage = RealtimeResponseService.normalizeUsageSnapshot(usage);
+  }
+  updateRealtimeUsageUI();
+  renderRealtimeResponseLog();
+  scheduleActiveMeetingDraftSave();
+}
+
+function getRealtimeErrorMessage(error) {
+  const code = error?.code || 'connection';
+  const messages = {
+    unsupported: 'app.realtime.errors.unsupported',
+    missing_api_key: 'app.realtime.errors.missingApiKey',
+    openai_authentication: 'app.realtime.errors.authentication',
+    authentication: 'app.realtime.errors.authentication',
+    rate_limited: 'app.realtime.errors.rateLimit',
+    rate_limit: 'app.realtime.errors.rateLimit',
+    rate_limited_local: 'app.realtime.errors.rateLimit',
+    openai_network: 'app.realtime.errors.network',
+    network: 'app.realtime.errors.network',
+    openai_server_error: 'app.realtime.errors.server',
+    temporary_server: 'app.realtime.errors.server',
+    local_only: 'app.realtime.errors.localOnly',
+    token_response: 'app.realtime.errors.tokenResponse',
+    invalid_request: 'app.realtime.errors.localServer',
+    connection: 'app.realtime.errors.connection',
+    realtime_error: 'app.realtime.errors.connection'
+  };
+  const key = messages[code] || 'app.realtime.errors.connection';
+  return t(key) || 'Realtime音声テストに接続できませんでした。';
+}
+
+function updateRealtimeVoiceUI(state, details = {}) {
+  const badge = document.getElementById('realtimeStateBadge');
+  const startBtn = document.getElementById('realtimeStartBtn');
+  const stopBtn = document.getElementById('realtimeStopBtn');
+  const errorEl = document.getElementById('realtimeError');
+  if (badge) {
+    badge.dataset.state = state;
+    const key = REALTIME_STATE_I18N_KEYS[state] || REALTIME_STATE_I18N_KEYS.idle;
+    badge.setAttribute('data-i18n', key);
+    badge.textContent = getRealtimeStateLabel(state);
+  }
+  if (startBtn) startBtn.disabled = Boolean(AppState.realtimeVoiceController?.isActive?.());
+  if (stopBtn) stopBtn.disabled = !AppState.realtimeVoiceController?.isActive?.();
+  if (errorEl) {
+    if (state === 'error') {
+      errorEl.hidden = false;
+      errorEl.textContent = getRealtimeErrorMessage(details.error);
+    } else if (state === 'connecting' || state === 'connected' || state === 'responding') {
+      errorEl.hidden = true;
+      errorEl.textContent = '';
+    }
+  }
+  updateRealtimeUsageUI();
+}
+
+// ===== Realtimeセッションへの会議コンテキスト注入 =====
+// 録音中に作成済みのAI要約と直近の文字起こしを指示に含め、
+// AIが会議の概要を把握した状態で音声参加できるようにする。
+const REALTIME_CONTEXT_SUMMARY_CHARS = 2000;
+const REALTIME_CONTEXT_TRANSCRIPT_CHARS = 6000;
+const REALTIME_INSTRUCTIONS_MAX_CHARS = 9000;
+
+function buildRealtimeVoiceContext() {
+  const parts = [];
+  const meetingInfo = AppState.meetingContext || {};
+  if (meetingInfo.goal) parts.push('会議の目的: ' + String(meetingInfo.goal).slice(0, 500));
+  if (meetingInfo.participants) parts.push('参加者: ' + String(meetingInfo.participants).slice(0, 500));
+  if (meetingInfo.handoff) parts.push('前提・引き継ぎ: ' + String(meetingInfo.handoff).slice(0, 500));
+
+  const summary = (AppState.aiResponses.summary || [])
+    .map(entry => (entry && typeof entry.content === 'string' ? entry.content : ''))
+    .filter(Boolean)
+    .join('\n');
+  if (summary) {
+    parts.push('これまでのAI要約:\n' + summary.slice(-REALTIME_CONTEXT_SUMMARY_CHARS));
+  }
+
+  const transcript = (getFullTranscriptText() || '').trim();
+  if (transcript) {
+    parts.push('直近の文字起こし:\n' + transcript.slice(-REALTIME_CONTEXT_TRANSCRIPT_CHARS));
+  }
+  return parts.join('\n\n');
+}
+
+function buildRealtimeVoiceInstructions() {
+  const context = buildRealtimeVoiceContext();
+  if (!context) return null;
+  const contextText = context.slice(0, REALTIME_INSTRUCTIONS_MAX_CHARS);
+  return (
+    RealtimeVoiceTest.DEFAULT_INSTRUCTIONS +
+    '\n\n# 会議コンテキスト（開始時点までの状況）\n' +
+    contextText
+  );
+}
+
+function initRealtimeVoiceTest() {
+  const panel = document.getElementById('realtimeVoicePanel');
+  if (!panel || typeof RealtimeVoiceTest === 'undefined') return;  const startBtn = document.getElementById('realtimeStartBtn');
+  const stopBtn = document.getElementById('realtimeStopBtn');
+  const errorEl = document.getElementById('realtimeError');
+  let actionInFlight = false;
+
+  realtimeVoiceController = RealtimeVoiceTest.create({
+    model: RealtimeUsageService.MODEL,
+    audioElement: document.getElementById('realtimeAudio'),
+    createAudioElement: () => document.getElementById('realtimeAudio') || document.createElement('audio'),
+    preserveAudioElement: true,
+    sharedStreamProvider: () => AppState.currentAudioStream,
+    instructionsProvider: buildRealtimeVoiceInstructions,
+    onStateChange: (state, details) => {
+      if (state === 'connecting') {
+        AppState.realtimeUsage = RealtimeUsageService.createEmptyUsage();
+        if (errorEl) {
+          errorEl.hidden = true;
+          errorEl.textContent = '';
+        }
+      }
+      updateRealtimeVoiceUI(state, details);
+    },
+    onAssistantText: handleRealtimeAssistantText,
+    onUsage: handleRealtimeUsage,
+    onError: error => {
+      // Keep logs limited to a safe category; never log tokens, SDP, or audio data.
+      console.warn('[Realtime] Error category:', error?.code || 'unknown');
+    }
+  });
+
+  if (startBtn) {
+    startBtn.addEventListener('click', async () => {
+      if (actionInFlight || realtimeVoiceController.isActive()) return;
+      // 録音を自動開始はしない。未開始のまま参加する場合は、会議コンテキストが
+      // 空になることを警告表示で伝える
+      if (!AppState.transcriptChunks.length) {
+        showToast(t('app.realtime.noTranscriptHint'), 'warning');
+      }
+      actionInFlight = true;
+      startBtn.disabled = true;
+      try {
+        await realtimeVoiceController.start();
+      } catch (_) {
+        // The controller already maps the error to the safe UI message.
+      } finally {
+        actionInFlight = false;
+        updateRealtimeVoiceUI(realtimeVoiceController.getState());
+      }
+    });
+  }
+
+  if (stopBtn) {
+    stopBtn.addEventListener('click', async () => {
+      if (actionInFlight || !realtimeVoiceController.isActive()) return;
+      actionInFlight = true;
+      stopBtn.disabled = true;
+      try {
+        await realtimeVoiceController.stop('user');
+      } finally {
+        actionInFlight = false;
+        updateRealtimeVoiceUI(realtimeVoiceController.getState());
+      }
+    });
+  }
+
+  updateRealtimeVoiceUI(realtimeVoiceController.getState());
+  renderRealtimeResponseLog();
 }
 
 // 全チャンクをテキストに変換（互換性用）
@@ -2539,6 +2811,11 @@ async function persistStoppedRecordingHistory() {
 
 async function stopRecording() {
   console.log('=== stopRecording ===');
+
+  if (AppState.realtimeVoiceController?.isActive?.() &&
+      AppState.realtimeVoiceController.usesSharedStream?.()) {
+    await AppState.realtimeVoiceController.stop('recording_stopped');
+  }
 
   if (suspensionPromise) {
     await suspensionPromise;
@@ -4409,7 +4686,10 @@ function clearTranscript() {
     }
 
     // AI応答をリセット
-    AppState.aiResponses = { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [] };
+    AppState.aiResponses = { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [], realtime: [] };
+    AppState.realtimeUsage = RealtimeUsageService.createEmptyUsage();
+    renderRealtimeResponseLog();
+    updateRealtimeUsageUI();
     scheduleActiveMeetingDraftSave();
 
     // AI応答UIをクリアし、empty-stateを再表示
@@ -4634,7 +4914,7 @@ function renderTimeline() {
   });
 
   // Add AI responses (summary, consult, opinion, idea for backward compat)
-  ['summary', 'consult', 'opinion', 'idea'].forEach(aiType => {
+  ['summary', 'consult', 'opinion', 'idea', 'realtime'].forEach(aiType => {
     (AppState.aiResponses[aiType] || []).forEach((entry, idx) => {
       items.push({
         id: `ai_${aiType}_${idx}`,
@@ -4710,7 +4990,9 @@ function renderTimelineItem(item) {
     item.completed ? 'completed' : ''
   ].filter(Boolean).join(' ');
 
-  const aiTypeLabel = item.aiType ? ` (${item.aiType})` : '';
+  const aiTypeLabel = item.aiType
+    ? ` (${item.aiType === 'realtime' ? (t('app.realtime.timelineLabel') || 'Realtime音声') : item.aiType})`
+    : '';
 
   const memoActions = item.source === 'memo' ? `
     <button class="btn-icon" data-action="pin" title="${item.pinned ? escapeHtml(t('app.timeline.actions.unpin') || 'ピン解除') : escapeHtml(t('app.timeline.actions.pin') || 'ピン留め')}">📌</button>
@@ -4825,6 +5107,7 @@ function getExportOptions() {
     memos: getChecked('exportMemos'),
     todos: getChecked('exportTodos'),
     qa: getChecked('exportQA'),
+    realtime: getChecked('exportRealtime'),
     transcript: getChecked('exportTranscript'),
     aiWorkOrder: getChecked('exportAiWorkOrder'),
     cost: getChecked('exportCost')
@@ -4839,16 +5122,17 @@ function setExportPreset(preset) {
     memos: document.getElementById('exportMemos'),
     todos: document.getElementById('exportTodos'),
     qa: document.getElementById('exportQA'),
+    realtime: document.getElementById('exportRealtime'),
     transcript: document.getElementById('exportTranscript'),
     aiWorkOrder: document.getElementById('exportAiWorkOrder'),
     cost: document.getElementById('exportCost')
   };
 
   const presets = {
-    all: { minutes: true, summary: true, consult: true, memos: true, todos: true, qa: true, transcript: true, aiWorkOrder: true, cost: true },
-    minutes: { minutes: true, summary: false, consult: false, memos: false, todos: false, qa: false, transcript: false, aiWorkOrder: false, cost: false },
-    ai: { minutes: false, summary: true, consult: true, memos: true, todos: true, qa: true, transcript: false, aiWorkOrder: true, cost: false },
-    none: { minutes: false, summary: false, consult: false, memos: false, todos: false, qa: false, transcript: false, aiWorkOrder: false, cost: false }
+    all: { minutes: true, summary: true, consult: true, memos: true, todos: true, qa: true, realtime: true, transcript: true, aiWorkOrder: true, cost: true },
+    minutes: { minutes: true, summary: false, consult: false, memos: false, todos: false, qa: false, realtime: false, transcript: false, aiWorkOrder: false, cost: false },
+    ai: { minutes: false, summary: true, consult: true, memos: true, todos: true, qa: true, realtime: true, transcript: false, aiWorkOrder: true, cost: false },
+    none: { minutes: false, summary: false, consult: false, memos: false, todos: false, qa: false, realtime: false, transcript: false, aiWorkOrder: false, cost: false }
   };
 
   const selected = presets[preset] || presets.all;
@@ -4910,7 +5194,8 @@ function buildDemoSessionData() {
       idea: [],
       consult: [{ timestamp: '10:11', content: template.consult }],
       minutes: template.minutes,
-      custom: [{ q: template.qaQuestion, a: template.qaAnswer }]
+      custom: [{ q: template.qaQuestion, a: template.qaAnswer }],
+      realtime: []
     },
     meetingMemos: { items: memos },
     memoIdCounter: memos.length + 1
@@ -5171,7 +5456,7 @@ function generateExportMarkdown(options = null) {
   // デフォルトは全て有効
   const opts = options || {
     minutes: true, summary: true, consult: true, opinion: true, idea: true,
-    memos: true, todos: true, qa: true, transcript: true, aiWorkOrder: true, cost: true
+    memos: true, todos: true, qa: true, realtime: true, transcript: true, aiWorkOrder: true, cost: true
   };
 
   if (exportService && typeof exportService.generateMarkdown === 'function') {
@@ -5187,12 +5472,14 @@ function generateExportMarkdown(options = null) {
       aiResponses: AppState.aiResponses,
       meetingMemos: AppState.meetingMemos,
       costs: AppState.costs,
+      realtimeUsage: AppState.aiResponses.realtime.length > 0 ? AppState.realtimeUsage : null,
       findAiWorkOrderModules: findAiWorkOrderModules,
       getLocalizedAiModuleField: getLocalizedAiModuleField,
       extractAiInstructionFromMemoLine: extractAiInstructionFromMemoLine,
       formatDuration: formatDuration,
       formatCost: formatCost,
-      formatNumber: formatNumber
+      formatNumber: formatNumber,
+      formatRealtimeUsage: RealtimeUsageService.formatEstimate
     });
   }
 
@@ -5276,7 +5563,8 @@ function generateExportMarkdown(options = null) {
   const showConsult = opts.consult && AppState.aiResponses.consult.length > 0;
   const showOpinion = opts.opinion && AppState.aiResponses.opinion.length > 0;
   const showIdea = opts.idea && AppState.aiResponses.idea.length > 0;
-  const hasAIResponses = showSummary || showConsult || showOpinion || showIdea;
+  const showRealtime = opts.realtime !== false && AppState.aiResponses.realtime.length > 0;
+  const hasAIResponses = showSummary || showConsult || showOpinion || showIdea || showRealtime;
 
   // 配列形式のAI回答をフォーマット
   const formatAIResponses = (entries, label, emoji) => {
@@ -5307,6 +5595,9 @@ function generateExportMarkdown(options = null) {
     }
     if (showIdea) {
       md += formatAIResponses(AppState.aiResponses.idea, t('export.items.idea'), '💡');
+    }
+    if (showRealtime) {
+      md += formatAIResponses(AppState.aiResponses.realtime, t('export.items.realtime') || 'Realtime音声', '🔊');
     }
   }
 
@@ -5404,6 +5695,16 @@ function generateExportMarkdown(options = null) {
     md += `- DeepSeek: ${formatCost(AppState.costs.llm.byProvider.deepseek || 0)}\n`;
     if (AppState.costs.llm.hasUnknownEstimate) md += `- 自由入力モデル: 見積不能\n`;
     md += `- ${t('export.document.costSubtotal')}: ${formatCost(AppState.costs.llm.total)}\n\n`;
+    if (AppState.aiResponses.realtime.length > 0 || AppState.realtimeUsage.totalTokens > 0) {
+      md += `### 🔊 ${t('export.items.realtime') || 'Realtime音声'}\n`;
+      md += `- モデル: ${AppState.realtimeUsage.estimate?.pricing?.model || RealtimeUsageService.MODEL}\n`;
+      md += `- 応答回数: ${AppState.realtimeUsage.responseCount || AppState.aiResponses.realtime.length}\n`;
+      md += `- 合計トークン: ${formatNumber(AppState.realtimeUsage.totalTokens || 0)}\n`;
+      md += `- 入力トークン: ${formatNumber(AppState.realtimeUsage.inputTokens || 0)}\n`;
+      md += `- 出力トークン: ${formatNumber(AppState.realtimeUsage.outputTokens || 0)}\n`;
+      md += `- 概算: ${RealtimeUsageService.formatEstimate(AppState.realtimeUsage)}\n`;
+      md += `- 単価参照日: ${AppState.realtimeUsage.estimate?.pricing?.sourceDate || '未取得'}\n\n`;
+    }
     md += `### ${t('export.document.costTotal')}\n`;
     md += `**${formatCost(total)}**\n\n`;
     md += `---\n`;
@@ -5590,6 +5891,7 @@ function buildActiveMeetingDraftPayload(nowIso = new Date().toISOString()) {
     meetingStartMarkerId: AppState.meetingStartMarkerId,
     chunkIdCounter: AppState.chunkIdCounter,
     aiResponses: AppState.aiResponses,
+    realtimeUsage: AppState.realtimeUsage,
     costs: AppState.costs,
     meetingMemos: AppState.meetingMemos,
     memoIdCounter: AppState.memoIdCounter,
@@ -5692,8 +5994,10 @@ function applyActiveMeetingDraftToState(rawDraft) {
     idea: draft.aiResponses.idea || [],
     consult: draft.aiResponses.consult || [],
     minutes: draft.aiResponses.minutes || '',
-    custom: draft.aiResponses.custom || []
+    custom: draft.aiResponses.custom || [],
+    realtime: draft.aiResponses.realtime || []
   };
+  AppState.realtimeUsage = RealtimeUsageService.withEstimate(draft.realtimeUsage || {});
   AppState.meetingMemos = {
     items: (draft.meetingMemos && Array.isArray(draft.meetingMemos.items)) ? draft.meetingMemos.items : []
   };
@@ -5857,6 +6161,7 @@ function buildHistoryRecord() {
     meetingStartMarkerId: AppState.meetingStartMarkerId,
     chunkIdCounter: AppState.chunkIdCounter,
     aiResponses: deepCopy(AppState.aiResponses),
+    realtimeUsage: deepCopy(AppState.realtimeUsage),
     costs: deepCopy(AppState.costs),
     // Memos
     meetingMemos: deepCopy(AppState.meetingMemos),
@@ -6150,6 +6455,7 @@ function hasAnyAiResponse() {
     AppState.aiResponses.idea.length > 0 ||
     AppState.aiResponses.minutes !== '' ||
     AppState.aiResponses.custom.length > 0 ||
+    (AppState.aiResponses.realtime || []).length > 0 ||
     AppState.meetingMemos.items.length > 0
   );
 }
@@ -6232,6 +6538,8 @@ function renderAIResponsesFromState() {
       });
     }
   }
+
+  renderRealtimeResponseLog();
 }
 
 // コスト表示更新（履歴・下書き復元後に AppState.costs を画面へ反映）
@@ -6301,11 +6609,14 @@ async function restoreFromHistory(recordId) {
       idea: record.aiResponses.idea || [],
       consult: record.aiResponses.consult || [],
       minutes: record.aiResponses.minutes || '',
-      custom: record.aiResponses.custom || []
+      custom: record.aiResponses.custom || [],
+      realtime: record.aiResponses.realtime || []
     };
   } else {
-    AppState.aiResponses = { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [] };
+    AppState.aiResponses = { summary: [], opinion: [], idea: [], consult: [], minutes: '', custom: [], realtime: [] };
   }
+
+  AppState.realtimeUsage = RealtimeUsageService.withEstimate(record.realtimeUsage || {});
 
   // メモ復元
   if (record.meetingMemos) {
@@ -6369,7 +6680,8 @@ function parseImportMarkdown(mdContent) {
       opinion: [],
       idea: [],
       minutes: '',
-      custom: []
+      custom: [],
+      realtime: []
     }
   };
 

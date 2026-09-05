@@ -266,6 +266,52 @@
       <div class="panel-body" id="transcriptBody">
         <div class="transcript-text" id="transcriptText"><span class="transcript-placeholder" id="transcriptPlaceholder" data-i18n="app.transcript.placeholder">録音を開始すると、ここに文字起こしが表示されます...</span></div>
       </div>
+      <section class="realtime-voice-test" id="realtimeVoicePanel" aria-labelledby="realtimeVoiceTitle">
+        <div class="realtime-voice-header">
+          <div>
+            <h2 id="realtimeVoiceTitle" class="realtime-voice-title">🔊 <span data-i18n="app.realtime.title">Realtime音声テスト</span></h2>
+            <p class="realtime-voice-model" id="realtimeModelLabel" data-i18n="app.realtime.model">モデル: gpt-realtime-2.1</p>
+          </div>
+          <span class="realtime-state-badge" id="realtimeStateBadge" data-state="idle" data-i18n="app.realtime.state.idle">未接続</span>
+        </div>
+        <p class="realtime-voice-description" data-i18n="app.realtime.description">
+          ローカルサーバー経由でOpenAI Realtime APIに接続し、AIが音声で会議に参加します。標準APIキーはこの画面へ渡りません。
+        </p>
+        <p class="realtime-voice-description" data-i18n="app.realtime.contextNote">
+          開始時に、会議情報・これまでのAI要約・直近の文字起こし（最大約6,000字）をAIへの指示に含めて送信します。会議内容はOpenAIに送信されます。
+        </p>
+        <p class="realtime-voice-safety-note" data-i18n="app.realtime.headphones">
+          AI音声のマイク回り込みを防ぐため、テスト中はヘッドホンを使用してください。
+        </p>
+        <div class="realtime-voice-actions">
+          <button type="button" class="btn btn-primary" id="realtimeStartBtn">
+            ▶ <span data-i18n="app.realtime.start">AI音声で参加</span>
+          </button>
+          <button type="button" class="btn btn-secondary" id="realtimeStopBtn" disabled>
+            ■ <span data-i18n="app.realtime.stop">終了</span>
+          </button>
+        </div>
+        <audio id="realtimeAudio" class="realtime-audio-output" autoplay playsinline controls aria-label="Realtime AI audio"></audio>
+        <p class="realtime-voice-error" id="realtimeError" role="alert" hidden></p>
+        <div class="realtime-usage" id="realtimeUsagePanel" aria-live="polite">
+          <div class="realtime-usage-title" data-i18n="app.realtime.usageTitle">今回の使用量</div>
+          <div class="realtime-usage-grid">
+            <span id="realtimeResponsesLabel" data-i18n="app.realtime.responses">応答</span><strong id="realtimeResponseCount">0</strong>
+            <span data-i18n="app.realtime.totalTokens">合計トークン</span><strong id="realtimeTotalTokens">0</strong>
+            <span data-i18n="app.realtime.inputTokens">入力トークン</span><strong id="realtimeInputTokens">0</strong>
+            <span data-i18n="app.realtime.outputTokens">出力トークン</span><strong id="realtimeOutputTokens">0</strong>
+            <span data-i18n="app.realtime.estimate">概算</span><strong id="realtimeCostEstimate">算出不可</strong>
+          </div>
+          <p class="realtime-pricing-note" id="realtimePricingNote" data-i18n="app.realtime.pricingNote">
+            公式単価を使った概算です。単価は更新され得るため、請求額はOpenAIの利用画面で確認してください。
+          </p>
+        </div>
+        <div class="realtime-response-log" id="realtimeResponseLog" aria-live="polite">
+          <div class="realtime-response-log-title" data-i18n="app.realtime.responseTitle">AI回答</div>
+          <p class="realtime-response-empty" id="realtimeResponseEmpty" data-i18n="app.realtime.noResponse">まだAI回答はありません。</p>
+          <div id="realtimeResponseList"></div>
+        </div>
+      </section>
       <!-- Cost Chip Bar (compact) -->
       <div class="cost-chip-bar">
         <button class="cost-chip" id="transcriptCostChip" type="button">
@@ -620,6 +666,10 @@
               <span>❓ <span data-i18n="export.items.qa">Q&A</span></span>
             </label>
             <label class="export-option">
+              <input type="checkbox" id="exportRealtime" checked>
+              <span>🔊 <span data-i18n="export.items.realtime">Realtime音声</span></span>
+            </label>
+            <label class="export-option">
               <input type="checkbox" id="exportTranscript" checked>
               <span>📜 <span data-i18n="export.items.transcript">文字起こし</span></span>
             </label>
@@ -869,6 +919,9 @@
   <script src="js/services/history-backup-service.js" defer></script>
   <script src="js/services/history-list-service.js" defer></script>
   <script src="js/services/diagnostics-service.js" defer></script>
+  <script src="js/services/realtime-usage-service.js" defer></script>
+  <script src="js/services/realtime-response-service.js" defer></script>
+  <script src="js/realtime-voice.js" defer></script>
   <!-- メインアプリ -->
   <script src="js/app.js" defer></script>
 </body>
