@@ -11,6 +11,18 @@
 
 > ⚠️ **重要**: このアプリは**無料**ですが、AIサービス（Gemini, OpenAI等）の利用料は各社から別途請求されます。会議の録音・文字起こしを行う前に、**参加者の同意を得てください**。
 
+> [!WARNING]
+> **🏠 ローカルLLM（Ollama / LM Studio）は、公開URL（GitHub Pages）からは原則利用できません**
+>
+> 公開URLは `https` オリジンのため、ブラウザから同一PCの `http://localhost`（Ollama :11434 / LM Studio :1234）への直接接続は CORS でブロックされます。
+>
+> **ローカルLLMを使う場合は、同一PCの開発サーバーから開いてください:**
+> ```bash
+> npx http-server . -p 8080
+> # → http://localhost:8080 を開く
+> ```
+> 公開URLから使う場合は、Ollama 側の起動環境変数で許可する必要があります（例: `OLLAMA_ORIGINS="https://gatyoukatyou.github.io" ollama serve`）。LM Studio は設定画面で CORS を有効化してください。**自PCのAPIキーと音声を扱うため、許可範囲は最小限にしてください。**
+
 ## できること
 
 - 🎤 **会議を文字にする** - 話している内容が自動で文字になります
@@ -18,7 +30,7 @@
 - 📝 **メモ & TODO** - 選択テキストを引用したメモを残し、TODO化/ピン留め可能
 - 🗂️ **タイムライン** - AI回答・Q&A・メモ/TODOを時系列に整理（検索/フィルタ対応）
 - 🤖 **好きなAIを選べる** - 複数のAIプロバイダーから選択可能（BYOK: Bring Your Own Key）
-- 🏠 **ローカルLLM対応** - Ollama / LM Studio と連携。APIキー不要・コスト¥0（同一PCのlocalhost接続のみ）
+- 🏠 **ローカルLLM対応** - Ollama / LM Studio と連携。APIキー不要・コスト¥0（同一PCのlocalhost接続のみ。**公開URLからは原則利用不可、上記の警告を参照**）
 - ⚡ **録音中のLLM変更** - 録音を中断せずにAIプロバイダー/モデルを切り替え可能
 - 💰 **コスト目安がわかる** - 推定コストを表示（実請求額は各プロバイダーの課金仕様により前後します）
 - 📥 **記録を保存できる** - 会議の内容とAIの回答、メモ/TODOをMarkdownでエクスポート
