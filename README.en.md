@@ -281,9 +281,10 @@ MIT License – Free to use and modify
 
 ## Version
 
-**v1.6.0** – Local LLM support & profile switching while recording (2026-09-05)
+**v1.6.0** – Local LLM support & realtime STT & profile switching while recording (2026-09-05)
 
 - AI features now work with keyless local LLMs such as Ollama / LM Studio (#211)
+- Added OpenAI Realtime Transcribe: realtime transcription with your existing OpenAI key (#223)
 - Extended the AI timeout to 180s when a local LLM is selected, so summaries are less likely to be aborted (#221)
 - Reasoning control for thinking models makes local summaries more reliable (#219)
 - Memo/meeting profile can now be switched while recording (#220)
