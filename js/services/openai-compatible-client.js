@@ -51,6 +51,13 @@ const OpenAICompatibleClient = (function () {
     var task = taskType === 'advice' ? 'advice' : 'summary';
     var boosted = Boolean(reasoningBoost) && task === 'advice';
 
+    if (providerId === 'local_llm') {
+      // Ollama-style servers: thinking models (e.g. qwen3.5) fill max_tokens
+      // with reasoning before any answer text unless thinking is disabled.
+      result.think = Boolean(boosted);
+      return result;
+    }
+
     if (providerId === 'deepseek') {
       result.thinking = { type: boosted ? 'enabled' : 'disabled' };
       if (boosted) result.reasoning_effort = 'high';
