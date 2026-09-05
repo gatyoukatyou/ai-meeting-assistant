@@ -42,6 +42,19 @@ describe('OpenAICompatibleClient requests', () => {
     assert.equal(advice.reasoning_effort, 'high');
   });
 
+  it('disables thinking for local LLM summaries and enables it for boosted advice', () => {
+    const summary = OpenAICompatibleClient.buildRequest({
+      provider: 'local_llm', model: 'qwen3.5:9b', prompt: 'p', apiBaseUrl: 'http://localhost:11434/v1',
+      taskType: 'summary', reasoningBoost: false
+    }).payload;
+    const advice = OpenAICompatibleClient.buildRequest({
+      provider: 'local_llm', model: 'qwen3.5:9b', prompt: 'p', apiBaseUrl: 'http://localhost:11434/v1',
+      taskType: 'advice', reasoningBoost: true
+    }).payload;
+    assert.equal(summary.think, false);
+    assert.equal(advice.think, true);
+  });
+
   it('does not send reasoning fields to an unsupported custom model', () => {
     const payload = OpenAICompatibleClient.buildRequest({
       provider: 'groq', model: 'custom-model', prompt: 'p', apiKey: 'k',
