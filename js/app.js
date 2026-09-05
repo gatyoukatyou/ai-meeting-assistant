@@ -164,7 +164,7 @@ const QA_DUPLICATE_THRESHOLD_MS = 5000; // 5秒以内の同一質問は重複と
 const QA_TIMEOUT_MS = 30000; // 30秒タイムアウト
 // Local LLM (Ollama/LM Studio) はローカル生成のためクラウドAPIより時間がかかる。
 // 実測: gpt-oss:20b (Mac mini) で会議要約 30〜90秒/回 → クラウドより長く許容する
-const LOCAL_LLM_QA_TIMEOUT_MS = 120000; // 120秒タイムアウト
+const LOCAL_LLM_QA_TIMEOUT_MS = 180000; // 180秒タイムアウト
 
 // Q&Aリクエストログ（Issue #3対応）
 let qaEventLog = [];
