@@ -162,6 +162,9 @@ let lastQAQuestion = '';
 let lastQAQuestionTime = 0;
 const QA_DUPLICATE_THRESHOLD_MS = 5000; // 5秒以内の同一質問は重複とみなす
 const QA_TIMEOUT_MS = 30000; // 30秒タイムアウト
+// Local LLM (Ollama/LM Studio) はローカル生成のためクラウドAPIより時間がかかる。
+// 実測: gpt-oss:20b (Mac mini) で会議要約 30〜90秒/回 → クラウドより長く許容する
+const LOCAL_LLM_QA_TIMEOUT_MS = 120000; // 120秒タイムアウト
 
 // Q&Aリクエストログ（Issue #3対応）
 let qaEventLog = [];
@@ -3652,6 +3655,8 @@ async function askAI(type) {
   }
 
   // タイムアウト付きLLM呼び出し（AbortController使用 #50）
+  // Local LLM は生成が遅いため、クラウドAPIより長いタイムアウトを適用する
+  const qaTimeoutMs = provider === 'local_llm' ? LOCAL_LLM_QA_TIMEOUT_MS : QA_TIMEOUT_MS;
   const startTime = Date.now();
   let timeoutId = null;
   const abortController = new AbortController();
@@ -3665,7 +3670,7 @@ async function askAI(type) {
         const err = new Error(t('error.api.timeout'));
         err.code = 'TIMEOUT';
         reject(err);
-      }, QA_TIMEOUT_MS);
+      }, qaTimeoutMs);
     });
 
     const response = await Promise.race([llmPromise, timeoutPromise]);
