@@ -11,6 +11,18 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 
 > ⚠️ **Important**: This app is **free**, but AI service fees (Gemini, OpenAI, etc.) are billed separately by each provider. **Get consent from all participants** before recording or transcribing meetings.
 
+> [!WARNING]
+> **🏠 Local LLMs (Ollama / LM Studio) generally cannot be used from the published URL (GitHub Pages)**
+>
+> The published site runs on an `https` origin, so direct browser connections to your machine's `http://localhost` (Ollama :11434 / LM Studio :1234) are blocked by CORS.
+>
+> **To use a local LLM, open the app from a local dev server on the same machine:**
+> ```bash
+> npx http-server . -p 8080
+> # → open http://localhost:8080
+> ```
+> If you must use it from the published URL, allow the origin on the server side (e.g. `OLLAMA_ORIGINS="https://gatyoukatyou.github.io" ollama serve`; in LM Studio, enable CORS in the server settings). **Keep the allowed origin as narrow as possible** since your local API key and audio are involved.
+
 ## Features
 
 - 🎤 **Real-time transcription** – Speech is automatically converted to text
@@ -18,7 +30,7 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - 📝 **Memos & TODOs** – Add quoted memos, convert to TODOs, pin important items
 - 🗂️ **Timeline** – AI responses, Q&A, memos/TODOs in a searchable timeline
 - 🤖 **Multiple AI providers** – Choose from multiple AI providers (BYOK: Bring Your Own Key)
-- 🏠 **Local LLM support** – Works with Ollama / LM Studio. No API key required, cost shown as ¥0 (localhost on the same machine only)
+- 🏠 **Local LLM support** – Works with Ollama / LM Studio. No API key required, cost shown as ¥0 (localhost on the same machine only; **generally unavailable from the published URL — see the warning above**)
 - ⚡ **Switch LLM while recording** – Change AI provider/model without stopping transcription
 - 💰 **Cost estimates** – View estimated costs (actual charges may vary by provider)
 - 📥 **Export to Markdown** – Save meeting content, AI responses, memos/TODOs
