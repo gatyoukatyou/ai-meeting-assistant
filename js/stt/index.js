@@ -22,6 +22,11 @@ const STT_PROVIDERS = {
     type: STT_PROVIDER_TYPES.STREAMING,
     name: 'Deepgram Realtime',
     module: './providers/deepgram_ws.js'
+  },
+  'openai_realtime': {
+    type: STT_PROVIDER_TYPES.STREAMING,
+    name: 'OpenAI Realtime Transcribe',
+    module: './providers/openai_realtime.js'
   }
 };
 

@@ -442,8 +442,12 @@ const ALLOWED_STT_PROVIDERS = new Set(
 
 // streaming系プロバイダー
 const STREAMING_PROVIDERS = new Set([
-  'deepgram_realtime'
+  'deepgram_realtime',
+  'openai_realtime'
 ]);
+
+// OpenAI Realtime API が要求する入力サンプルレート（PCM16 24kHz）
+const OPENAI_REALTIME_SAMPLE_RATE = 24000;
 
 // STTプロバイダーインスタンス
 let currentSTTProvider = null;
@@ -1919,6 +1923,13 @@ async function validateSTTProviderForRecording(provider) {
       }
       return { valid: true };
     }
+    case 'openai_realtime': {
+      const key = SecureStorage.getApiKey('openai');
+      if (!key) {
+        return { valid: false, message: 'OpenAI APIキーを設定してください', redirectToConfig: true };
+      }
+      return { valid: true };
+    }
     default:
       return { valid: false, message: `不明なプロバイダー: ${provider}`, redirectToConfig: true };
   }
@@ -1995,6 +2006,13 @@ async function startStreamingRecording(provider) {
         model: SecureStorage.getModel('deepgram') || 'nova-3-general'
       });
       break;
+    case 'openai_realtime':
+      AppState.currentSTTProvider = new OpenAIRealtimeProvider({
+        apiKey: SecureStorage.getApiKey('openai'),
+        model: SecureStorage.getModel('openai') || 'gpt-4o-transcribe',
+        language: SecureStorage.getOption('sttLanguage', 'ja')
+      });
+      break;
     default:
       throw new Error(`Unknown streaming provider: ${provider}`);
   }
@@ -2047,9 +2065,10 @@ async function startStreamingRecording(provider) {
   // WebSocket接続を開始
   await AppState.currentSTTProvider.start();
 
-  // PCMストリームプロセッサを作成
+  // PCMストリームプロセサを作成（OpenAI Realtime は PCM16 24kHz を要求）
+  const pcmSampleRate = provider === 'openai_realtime' ? OPENAI_REALTIME_SAMPLE_RATE : 16000;
   AppState.pcmStreamProcessor = new PCMStreamProcessor({
-    sampleRate: 16000,
+    sampleRate: pcmSampleRate,
     sendInterval: 50  // 100ms→50msに短縮（断片化防止）
   });
 

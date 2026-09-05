@@ -232,7 +232,7 @@
       "infoTitle": "STTプロバイダーについて",
       "infoOpenAI": "OpenAI Transcribe: チャンク送信による擬似リアルタイム",
       "infoWebSocket": "Deepgram: WebSocketで真のリアルタイム。低遅延",
-      "providerNotes": "💡 <strong>STTプロバイダーについて</strong><br>• <strong>OpenAI Transcribe</strong>: チャンク送信。GPT-4o系はトークン課金<br>• <strong>Deepgram</strong>: WebSocketで真のリアルタイム。Nova-3を会議標準に使用",
+      "providerNotes": "💡 <strong>STTプロバイダーについて</strong><br>• <strong>OpenAI Transcribe</strong>: チャンク送信。GPT-4o系はトークン課金<br>• <strong>OpenAI Realtime Transcribe</strong>: WebSocketで真のリアルタイム（PCM16 24kHz）。OpenAI APIキーを共用<br>• <strong>Deepgram</strong>: WebSocketで真のリアルタイム。Nova-3を会議標準に使用",
       "userDictionary": "📖 ユーザー辞書（固有名詞ヒント）",
       "userDictPlaceholder": "例: OpenAI, ChatGPT, Anthropic アンソロピック, 田中 たなか",
       "userDictHint": "文字起こしで認識させたい固有名詞をカンマ区切りで入力。",
@@ -244,7 +244,8 @@
         "nova3": "nova-3-general（会議リアルタイム標準）",
         "nova2": "nova-2-general（安定版）",
         "base": "base（低コスト）"
-      }
+      },
+      "openaiRealtime": "🚀 OpenAI Realtime Transcribe（WebSocket・真のリアルタイム）"
     },
     "llm": {
       "title": "AI回答・要約（任意）- LLMを選択",

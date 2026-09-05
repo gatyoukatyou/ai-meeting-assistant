@@ -39,11 +39,19 @@ August 16, 2026 shutdown for developer/free tiers. DeepSeek's retired
 |---|---|---|---|
 | OpenAI Transcribe | `gpt-4o-mini-transcribe` (standard), `gpt-4o-transcribe` (accuracy), `whisper-1` (legacy) | `whisper-1`: $0.006/min. GPT-4o transcription uses audio tokens; when usage is unavailable the app says estimate unavailable | [mini model](https://developers.openai.com/api/docs/models/gpt-4o-mini-transcribe), [full model](https://developers.openai.com/api/docs/models/gpt-4o-transcribe), [Whisper](https://developers.openai.com/api/docs/models/whisper-1) |
 | Deepgram realtime | `nova-3-general` | $0.0048/min pay-as-you-go monolingual streaming reference | [models](https://developers.deepgram.com/docs/model), [pricing](https://deepgram.com/pricing) |
+| OpenAI Realtime Transcribe | `gpt-4o-transcribe` (accuracy), `gpt-4o-mini-transcribe` (standard) | $0.006/min / $0.003/min realtime transcription reference (session-duration based) | [Realtime WebSocket guide](https://developers.openai.com/api/docs/guides/realtime-websocket), [pricing](https://openai.com/api/pricing/) |
 
-The existing OpenAI path continues to upload completed audio chunks to
+The existing OpenAI path uploads completed audio chunks to
 `/v1/audio/transcriptions`; this is not the OpenAI Realtime API. Deepgram remains the
 true WebSocket realtime path. The OpenAI default changed for new settings only. Existing
 saved `whisper-1` selections are preserved.
+
+The OpenAI Realtime Transcribe provider (`openai_realtime`) streams microphone PCM16
+(24 kHz) over a WebSocket to `wss://api.openai.com/v1/realtime?intent=transcription`,
+authenticated with a short-lived ephemeral key minted via
+`POST /v1/realtime/transcription_sessions`. It shares the OpenAI API key with the
+chunked path; `whisper-1` is not selectable on the realtime path (batch only) and
+falls back to `gpt-4o-transcribe`.
 
 ## Cost estimate limits
 
