@@ -4416,7 +4416,9 @@ function initRecordingProfile() {
 }
 
 function setRecordingProfile(profile) {
-  if (!Object.values(RECORDING_PROFILES).includes(profile) || AppState.isRecording) return false;
+  // 録音中でもプロファイル切替を許可する（録音データはプロファイル非依存のため）。
+  // 切替時は updateRecordingProfileUI がパネル表示を整合させる。
+  if (!Object.values(RECORDING_PROFILES).includes(profile)) return false;
   AppState.recordingProfile = profile;
   try {
     localStorage.setItem(RECORDING_PROFILE_STORAGE_KEY, profile);
@@ -4443,7 +4445,7 @@ function updateRecordingProfileUI() {
   if (chip) {
     const switchKey = isMemo ? 'app.profile.switchToMeeting' : 'app.profile.switchToMemo';
     chip.dataset.profile = profile;
-    chip.disabled = AppState.isRecording;
+    chip.disabled = false;
     chip.title = t(switchKey);
     chip.setAttribute('aria-label', t(switchKey));
   }
