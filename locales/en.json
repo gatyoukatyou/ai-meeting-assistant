@@ -422,7 +422,7 @@
     "qa": {
       "submitting": "Submitting. Please wait.",
       "duplicate": "Same question was recently sent. Please wait before trying again.",
-      "timeout": "Timeout (30 sec). Please try again.",
+      "timeout": "Request timed out. Please try again.",
       "enterQuestion": "Please enter a question",
       "minutesAfterStop": "Minutes can only be generated after stopping the recording"
     }
@@ -449,7 +449,7 @@
       "invalidRequest": "The model name or request settings are invalid",
       "rateLimit": "The rate limit was reached; try again later",
       "temporaryServer": "The API is temporarily unavailable",
-      "timeout": "Request timed out (30 seconds)",
+      "timeout": "Request timed out",
       "notConfigured": "LLM API key not configured.\nPlease enter an API key in settings."
     },
     "prompt": {
