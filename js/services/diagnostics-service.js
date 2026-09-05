@@ -117,6 +117,9 @@ const DiagnosticsService = (function () {
     if (provider === 'deepgram_realtime') {
       return get('deepgram') || 'nova-3-general';
     }
+    if (provider === 'openai_realtime') {
+      return get('openai') || 'gpt-4o-transcribe';
+    }
     return get('openai') || 'gpt-4o-mini-transcribe';
   }
 

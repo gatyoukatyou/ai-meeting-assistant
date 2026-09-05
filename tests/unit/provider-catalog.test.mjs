@@ -13,6 +13,10 @@ describe('ProviderCatalog.getDefaultModel', () => {
       ProviderCatalog.getDefaultModel('deepgram_realtime'),
       'nova-3-general'
     );
+    assert.equal(
+      ProviderCatalog.getDefaultModel('openai_realtime'),
+      'gpt-4o-transcribe'
+    );
   });
 
   it('returns undefined for unknown provider', () => {
@@ -83,6 +87,7 @@ describe('ProviderCatalog provider ID normalization', () => {
 describe('ProviderCatalog storage mapping', () => {
   it('maps logical provider ID to API key storage provider ID', () => {
     assert.equal(ProviderCatalog.getApiKeyProviderId('openai_stt'), 'openai');
+    assert.equal(ProviderCatalog.getApiKeyProviderId('openai_realtime'), 'openai');
     assert.equal(
       ProviderCatalog.getApiKeyProviderId('deepgram_realtime'),
       'deepgram'
@@ -92,6 +97,7 @@ describe('ProviderCatalog storage mapping', () => {
 
   it('creates API key storage key from provider ID', () => {
     assert.equal(ProviderCatalog.getApiKeyStorageKey('openai_stt'), '_ak_openai');
+    assert.equal(ProviderCatalog.getApiKeyStorageKey('openai_realtime'), '_ak_openai');
     assert.equal(
       ProviderCatalog.getApiKeyStorageKey('deepgram_realtime'),
       '_ak_deepgram'
@@ -122,6 +128,7 @@ describe('ProviderCatalog provider lists', () => {
     assert.deepEqual(Array.from(ProviderCatalog.getSttProviderIds()), [
       'openai_stt',
       'deepgram_realtime',
+      'openai_realtime',
     ]);
   });
 

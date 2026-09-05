@@ -11,7 +11,8 @@ const ModelUtils = (function () {
   function getProviderDisplayName(provider) {
     var names = {
       openai_stt: 'OpenAI Transcribe',
-      deepgram_realtime: 'Deepgram Realtime'
+      deepgram_realtime: 'Deepgram Realtime',
+      openai_realtime: 'OpenAI Realtime Transcribe'
     };
     return names[provider] || provider;
   }

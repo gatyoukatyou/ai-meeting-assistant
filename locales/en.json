@@ -232,7 +232,7 @@
       "infoTitle": "About STT Providers",
       "infoOpenAI": "OpenAI Transcribe: Pseudo-realtime via chunked uploads",
       "infoWebSocket": "Deepgram: True realtime via WebSocket. Low latency",
-      "providerNotes": "💡 <strong>About STT Providers</strong><br>• <strong>OpenAI Transcribe</strong>: Chunked uploads; GPT-4o models use token billing<br>• <strong>Deepgram</strong>: True realtime via WebSocket; Nova-3 is the meeting default",
+      "providerNotes": "💡 <strong>About STT Providers</strong><br>• <strong>OpenAI Transcribe</strong>: Chunked uploads; GPT-4o models use token billing<br>• <strong>OpenAI Realtime Transcribe</strong>: True realtime via WebSocket (PCM16 24kHz); shares the OpenAI API key<br>• <strong>Deepgram</strong>: True realtime via WebSocket; Nova-3 is the meeting default",
       "userDictionary": "📖 User Dictionary (Proper noun hints)",
       "userDictPlaceholder": "e.g., OpenAI, ChatGPT, Anthropic, Tesla",
       "userDictHint": "Enter proper nouns to improve recognition, separated by commas.",
@@ -244,7 +244,8 @@
         "nova3": "nova-3-general (Meeting realtime standard)",
         "nova2": "nova-2-general (Stable)",
         "base": "base (Low cost)"
-      }
+      },
+      "openaiRealtime": "🚀 OpenAI Realtime Transcribe (WebSocket, true realtime)"
     },
     "llm": {
       "title": "AI Response & Summary (Optional) - Select LLM",

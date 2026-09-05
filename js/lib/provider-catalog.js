@@ -8,7 +8,7 @@ const ProviderCatalog = (function () {
   var LLM_PROVIDER_IDS = ['gemini', 'claude', 'openai_llm', 'groq', 'deepseek', 'local_llm'];
   var LLM_PROVIDER_PRIORITY = ['gemini', 'openai_llm', 'claude', 'groq', 'deepseek', 'local_llm'];
   var LLM_PROVIDER_IDS_WITH_LEGACY = LLM_PROVIDER_IDS.concat(['openai']);
-  var STT_PROVIDER_IDS = ['openai_stt', 'deepgram_realtime'];
+  var STT_PROVIDER_IDS = ['openai_stt', 'deepgram_realtime', 'openai_realtime'];
   var KEYLESS_LLM_PROVIDER_IDS = ['local_llm'];
   var API_KEY_PROVIDER_IDS = LLM_PROVIDER_IDS
     .filter(function (id) { return KEYLESS_LLM_PROVIDER_IDS.indexOf(id) === -1; })
@@ -150,6 +150,16 @@ const ProviderCatalog = (function () {
       docsUrl: 'https://developers.deepgram.com/docs/model', pricingUrl: 'https://deepgram.com/pricing', verifiedAt: VERIFIED_AT,
       models: [
         model('nova-3-general', 'Nova-3 General — 会議リアルタイム標準', 'standard', { perMinute: 0.0048 }, { pricingUnit: 'minute', estimatePerMinuteUsd: 0.0048 })
+      ]
+    },
+    openai_realtime: {
+      id: 'openai_realtime', kind: 'stt', apiKind: 'openai-realtime', displayName: 'OpenAI Realtime Transcribe',
+      apiBaseUrl: 'wss://api.openai.com/v1', apiKeyProviderId: 'openai', apiKeyStorageId: 'openai',
+      modelProviderId: 'openai', defaultModel: 'gpt-4o-transcribe', recommendedModel: 'gpt-4o-transcribe',
+      docsUrl: 'https://developers.openai.com/api/docs/guides/realtime-websocket', pricingUrl: 'https://openai.com/api/pricing/', verifiedAt: VERIFIED_AT,
+      models: [
+        model('gpt-4o-transcribe', 'GPT-4o Transcribe (Realtime) — 精度優先', 'high-quality', { perMinute: 0.006 }, { pricingUnit: 'minute', estimatePerMinuteUsd: 0.006 }),
+        model('gpt-4o-mini-transcribe', 'GPT-4o mini Transcribe (Realtime) — 標準', 'standard', { perMinute: 0.003 }, { pricingUnit: 'minute', estimatePerMinuteUsd: 0.003 })
       ]
     },
     openai: {

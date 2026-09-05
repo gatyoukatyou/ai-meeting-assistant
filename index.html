@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta http-equiv="Content-Security-Policy"
-        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com https://api.groq.com https://api.anthropic.com https://api.deepseek.com wss://api.deepgram.com https://api.deepgram.com http://localhost:* http://127.0.0.1:*; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; manifest-src 'self';">
+        content="default-src 'self'; base-uri 'self'; object-src 'none'; form-action 'self'; script-src 'self'; connect-src 'self' https://generativelanguage.googleapis.com https://api.openai.com wss://api.openai.com https://api.groq.com https://api.anthropic.com https://api.deepseek.com wss://api.deepgram.com https://api.deepgram.com http://localhost:* http://127.0.0.1:*; img-src 'self' data:; style-src 'self' 'unsafe-inline'; font-src 'self' data:; manifest-src 'self';">
 
   <!-- PWA Manifest -->
   <link rel="manifest" href="manifest.json">
@@ -90,6 +90,7 @@
         <select id="transcriptProvider" class="model-select" title="STTプロバイダー">
           <option value="openai_stt" selected>🎤 Whisper</option>
           <option value="deepgram_realtime">⚡ Deepgram</option>
+          <option value="openai_realtime">🚀 OpenAI Realtime</option>
         </select>
         <select id="sttLanguage" class="model-select" title="音声言語">
           <option value="ja" selected>🇯🇵 日本語</option>
@@ -839,6 +840,7 @@
   <script src="js/stt/index.js" defer></script>
   <script src="js/stt/providers/openai_chunked.js" defer></script>
   <script src="js/stt/providers/deepgram_ws.js" defer></script>
+  <script src="js/stt/providers/openai_realtime.js" defer></script>
   <!-- ファイル抽出 -->
   <script src="js/file-extractor.js" defer></script>
   <!-- フォーマットユーティリティ -->

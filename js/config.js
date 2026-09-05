@@ -6,7 +6,7 @@ const API_KEY_PROVIDER_IDS =
 const ALLOWED_STT_PROVIDER_IDS =
   (typeof ProviderCatalog !== 'undefined' && typeof ProviderCatalog.getSttProviderIds === 'function')
     ? ProviderCatalog.getSttProviderIds()
-    : ['openai_stt', 'deepgram_realtime'];
+    : ['openai_stt', 'deepgram_realtime', 'openai_realtime'];
 const ALLOWED_STT_PROVIDERS = new Set(ALLOWED_STT_PROVIDER_IDS);
 
 function navigateTo(target) {
@@ -310,7 +310,9 @@ function updateSTTProviderUI(provider) {
   });
 
   // 選択されたプロバイダーの設定を表示
-  const selectedSettings = document.getElementById(`${provider}_settings`);
+  // OpenAI Realtime Transcribe は OpenAI API キー設定（openai_stt_settings）を共用する
+  const settingsId = provider === 'openai_realtime' ? 'openai_stt_settings' : `${provider}_settings`;
+  const selectedSettings = document.getElementById(settingsId);
   if (selectedSettings) {
     selectedSettings.style.display = 'block';
   }
@@ -662,6 +664,19 @@ async function validateSTTProvider(provider) {
         return { valid: false, message: 'Deepgram APIキーが必要です。' };
       }
       const result = await validateApiKey('deepgram', key);
+      if (result === 'invalid') {
+        return { valid: false, message: '認証に失敗しました。APIキーを確認してください。' };
+      }
+      // 'valid' または 'unknown' の場合は続行
+      return { valid: true };
+    }
+
+    case 'openai_realtime': {
+      const key = SecureStorage.getApiKey('openai');
+      if (!key) {
+        return { valid: false, message: 'OpenAI APIキーが必要です。' };
+      }
+      const result = await validateApiKey('openai', key);
       if (result === 'invalid') {
         return { valid: false, message: '認証に失敗しました。APIキーを確認してください。' };
       }

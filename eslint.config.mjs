@@ -53,6 +53,7 @@ export default [
         PCMStreamProcessor: 'writable',
         DeepgramWSProvider: 'writable',
         OpenAIChunkedProvider: 'writable',
+        OpenAIRealtimeProvider: 'writable',
         // Cross-file references used with typeof checks
         DEFAULT_DICTIONARY: 'writable',
         handleBackToMain: 'readonly'

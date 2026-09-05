@@ -67,6 +67,7 @@
           <select class="model-select" id="sttProvider" style="width: 100%;">
             <option value="openai_stt" selected data-i18n="config.stt.openaiWhisper">OpenAI Transcribe (chunked uploads)</option>
             <option value="deepgram_realtime" data-i18n="config.stt.deepgramRealtime">Deepgram Realtime (WebSocket, fast)</option>
+            <option value="openai_realtime" data-i18n="config.stt.openaiRealtime">OpenAI Realtime Transcribe (WebSocket)</option>
           </select>
           <div class="setting-hint" id="sttProviderHint" data-i18n="config.stt.providerHint">
             Select an STT provider. WebSocket-based providers offer better real-time performance.
@@ -126,6 +127,7 @@
           <div style="font-size: 0.85rem; color: var(--text);" data-i18n-html="config.stt.providerNotes">
             💡 <strong>About STT Providers</strong><br>
             • <strong>OpenAI Transcribe</strong>: Pseudo-real-time via chunked uploads; GPT-4o models are token-billed<br>
+            • <strong>OpenAI Realtime Transcribe</strong>: True real-time via WebSocket (PCM16 24kHz); uses the same OpenAI API key<br>
             • <strong>Deepgram</strong>: True real-time via WebSocket, low latency
           </div>
         </div>
