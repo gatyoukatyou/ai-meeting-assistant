@@ -167,6 +167,8 @@ describe('ProviderCatalog local_llm (keyless)', () => {
   it('exposes loopback-only base URL presets (localhost and 127.0.0.1)', () => {
     const presets = ProviderCatalog.getBaseUrlPresets('local_llm');
     assert.deepEqual(Array.from(presets, p => p.baseUrl), [
+      'http://localhost:8080/v1',
+      'http://127.0.0.1:8080/v1',
       'http://localhost:11434/v1',
       'http://127.0.0.1:11434/v1',
       'http://localhost:1234/v1',

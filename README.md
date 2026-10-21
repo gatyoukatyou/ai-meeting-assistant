@@ -12,16 +12,16 @@
 > ⚠️ **重要**: このアプリは**無料**ですが、AIサービス（Gemini, OpenAI等）の利用料は各社から別途請求されます。会議の録音・文字起こしを行う前に、**参加者の同意を得てください**。
 
 > [!WARNING]
-> **🏠 ローカルLLM（Ollama / LM Studio）は、公開URL（GitHub Pages）からは原則利用できません**
+> **🏠 ローカルLLM（llama.cpp / Ollama / LM Studio）は、公開URL（GitHub Pages）からは原則利用できません**
 >
-> 公開URLは `https` オリジンのため、ブラウザから同一PCの `http://localhost`（Ollama :11434 / LM Studio :1234）への直接接続は CORS でブロックされます。
+> 公開URLは `https` オリジンのため、ブラウザから同一PCの `http://localhost`（llama.cpp :8080 / Ollama :11434 / LM Studio :1234）への直接接続は CORS でブロックされます。
 >
 > **ローカルLLMを使う場合は、同一PCの開発サーバーから開いてください:**
 > ```bash
-> npx http-server . -p 8080
-> # → http://localhost:8080 を開く
+> npx http-server . -p 8081
+> # → http://localhost:8081 を開く（8080はllama.cppが使うため避ける）
 > ```
-> 公開URLから使う場合は、Ollama 側の起動環境変数で許可する必要があります（例: `OLLAMA_ORIGINS="https://gatyoukatyou.github.io" ollama serve`）。LM Studio は設定画面で CORS を有効化してください。**自PCのAPIキーと音声を扱うため、許可範囲は最小限にしてください。**
+> 公開URLから使う場合は、Ollama 側の起動環境変数で許可する必要があります（例: `OLLAMA_ORIGINS="https://gatyoukatyou.github.io" ollama serve`）。LM Studio は設定画面で CORS を有効化してください。llama.cpp（`llama-server`）は `--host 127.0.0.1` で起動し、同一PCのブラウザから開いてください。**自PCのAPIキーと音声を扱うため、許可範囲は最小限にしてください。**
 
 ## できること
 
@@ -30,7 +30,7 @@
 - 📝 **メモ & TODO** - 選択テキストを引用したメモを残し、TODO化/ピン留め可能
 - 🗂️ **タイムライン** - AI回答・Q&A・メモ/TODOを時系列に整理（検索/フィルタ対応）
 - 🤖 **好きなAIを選べる** - 複数のAIプロバイダーから選択可能（BYOK: Bring Your Own Key）
-- 🏠 **ローカルLLM対応** - Ollama / LM Studio と連携。APIキー不要・コスト¥0（同一PCのlocalhost接続のみ。**公開URLからは原則利用不可、上記の警告を参照**）
+- 🏠 **ローカルLLM対応** - llama.cpp / Ollama / LM Studio と連携。APIキー不要・コスト¥0（同一PCのlocalhost接続のみ。**公開URLからは原則利用不可、上記の警告を参照**）
 - ⚡ **録音中のLLM変更** - 録音を中断せずにAIプロバイダー/モデルを切り替え可能
 - 💰 **コスト目安がわかる** - 推定コストを表示（実請求額は各プロバイダーの課金仕様により前後します）
 - 📥 **記録を保存できる** - 会議の内容とAIの回答、メモ/TODOをMarkdownでエクスポート
@@ -76,7 +76,7 @@
   - OpenAI API **または** Deepgram API
 - AI回答用のAPIキー（任意。より賢い回答が欲しい場合）
   - Gemini / Claude / OpenAI / Groq / DeepSeek から選べます
-  - ローカルLLM（Ollama / LM Studio）ならAPIキー不要です
+  - ローカルLLM（llama.cpp / Ollama / LM Studio）ならAPIキー不要です
 
 ## 対応プロバイダー
 
@@ -97,7 +97,7 @@
 | OpenAI | gpt-5.6-terra, gpt-5.6-luna, gpt-5.6-sol |
 | Groq | openai/gpt-oss-120b, openai/gpt-oss-20b |
 | DeepSeek | deepseek-v4-flash |
-| ローカルLLM（Ollama / LM Studio） | モデル一覧を `GET {baseUrl}/models` から自動取得（APIキー不要・コスト¥0） |
+| ローカルLLM（llama.cpp / Ollama / LM Studio） | モデル一覧を `GET {baseUrl}/models` から自動取得（APIキー不要・コスト¥0） |
 
 ※ いずれもプリセットの例です。カスタムモデル名の入力も可能です。モデル対応の詳細は [API / モデル対応表](docs/API_MODEL_SUPPORT.md) を参照してください。
 
@@ -244,7 +244,7 @@ A: いいえ。あなたのブラウザで処理され、AIサービスに送ら
 A: 機能は全く同じです。オンライン版（GitHub Pages）は簡単に使えるので推奨しています。ローカル版は手元で動作確認・改変したい開発者向けです（APIを呼び出すため、どちらもインターネット接続は必須です）。
 
 **Q: インターネット接続は必要ですか？**
-A: 文字起こし（OpenAI Whisper / Deepgram）にはインターネット接続が必要です。AI回答はクラウドLLM（Gemini / Claude / OpenAI / Groq / DeepSeek）のほか、同一PCで動作するローカルLLM（Ollama / LM Studio）ならインターネットなしで利用できます。このアプリはBYOK（Bring Your Own Key）方式で、各AIサービスのAPI料金は従量課金で自己負担となります（ローカルLLMは¥0）。
+A: 文字起こし（OpenAI Whisper / Deepgram）にはインターネット接続が必要です。AI回答はクラウドLLM（Gemini / Claude / OpenAI / Groq / DeepSeek）のほか、同一PCで動作するローカルLLM（llama.cpp / Ollama / LM Studio）ならインターネットなしで利用できます。このアプリはBYOK（Bring Your Own Key）方式で、各AIサービスのAPI料金は従量課金で自己負担となります（ローカルLLMは¥0）。
 
 **Q: APIキーって何ですか？**
 A: AIサービスを使うための「パスワード」のようなものです。各サービスのサイトで無料で作れます。
