@@ -12,16 +12,16 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 > ⚠️ **Important**: This app is **free**, but AI service fees (Gemini, OpenAI, etc.) are billed separately by each provider. **Get consent from all participants** before recording or transcribing meetings.
 
 > [!WARNING]
-> **🏠 Local LLMs (Ollama / LM Studio) generally cannot be used from the published URL (GitHub Pages)**
+> **🏠 Local LLMs (llama.cpp / Ollama / LM Studio) generally cannot be used from the published URL (GitHub Pages)**
 >
-> The published site runs on an `https` origin, so direct browser connections to your machine's `http://localhost` (Ollama :11434 / LM Studio :1234) are blocked by CORS.
+> The published site runs on an `https` origin, so direct browser connections to your machine's `http://localhost` (llama.cpp :8080 / Ollama :11434 / LM Studio :1234) are blocked by CORS.
 >
 > **To use a local LLM, open the app from a local dev server on the same machine:**
 > ```bash
-> npx http-server . -p 8080
-> # → open http://localhost:8080
+> npx http-server . -p 8081
+> # → open http://localhost:8081 (keep 8080 free for llama.cpp)
 > ```
-> If you must use it from the published URL, allow the origin on the server side (e.g. `OLLAMA_ORIGINS="https://gatyoukatyou.github.io" ollama serve`; in LM Studio, enable CORS in the server settings). **Keep the allowed origin as narrow as possible** since your local API key and audio are involved.
+> If you must use it from the published URL, allow the origin on the server side (e.g. `OLLAMA_ORIGINS="https://gatyoukatyou.github.io" ollama serve`; in LM Studio, enable CORS in the server settings; for llama.cpp, start `llama-server` with `--host 127.0.0.1` and open the app on the same machine). **Keep the allowed origin as narrow as possible** since your local API key and audio are involved.
 
 ## Features
 
@@ -30,7 +30,7 @@ A lightweight, browser-based meeting assistant that records audio, transcribes s
 - 📝 **Memos & TODOs** – Add quoted memos, convert to TODOs, pin important items
 - 🗂️ **Timeline** – AI responses, Q&A, memos/TODOs in a searchable timeline
 - 🤖 **Multiple AI providers** – Choose from multiple AI providers (BYOK: Bring Your Own Key)
-- 🏠 **Local LLM support** – Works with Ollama / LM Studio. No API key required, cost shown as ¥0 (localhost on the same machine only; **generally unavailable from the published URL — see the warning above**)
+- 🏠 **Local LLM support** – Works with llama.cpp / Ollama / LM Studio. No API key required, cost shown as ¥0 (localhost on the same machine only; **generally unavailable from the published URL — see the warning above**)
 - ⚡ **Switch LLM while recording** – Change AI provider/model without stopping transcription
 - 💰 **Cost estimates** – View estimated costs (actual charges may vary by provider)
 - 📥 **Export to Markdown** – Save meeting content, AI responses, memos/TODOs
@@ -75,7 +75,7 @@ See [Security Details](docs/SECURITY.md) for more information.
 - At least one STT API key for transcription:
   - OpenAI API **or** Deepgram API
 - Optional: LLM API key for AI responses (Gemini / Claude / OpenAI / Groq / DeepSeek)
-  - No API key is needed when using a local LLM (Ollama / LM Studio)
+  - No API key is needed when using a local LLM (llama.cpp / Ollama / LM Studio)
 
 ## Supported Providers
 
@@ -96,7 +96,7 @@ See [Security Details](docs/SECURITY.md) for more information.
 | OpenAI | gpt-5.6-terra, gpt-5.6-luna, gpt-5.6-sol |
 | Groq | openai/gpt-oss-120b, openai/gpt-oss-20b |
 | DeepSeek | deepseek-v4-flash |
-| Local LLM (Ollama / LM Studio) | Model list fetched live from `GET {baseUrl}/models` (no API key, cost shown as ¥0) |
+| Local LLM (llama.cpp / Ollama / LM Studio) | Model list fetched live from `GET {baseUrl}/models` (no API key, cost shown as ¥0) |
 
 Note: These are preset examples. Custom model names are supported. See [API / model support](docs/API_MODEL_SUPPORT.md) for details.
 
@@ -233,7 +233,7 @@ This app is **free to use**, but the AI services have their own usage-based pric
 ## FAQ
 
 **Q: Is internet required?**
-A: Transcription (OpenAI Whisper / Deepgram) requires an internet connection. For AI responses you can use cloud LLMs (Gemini / Claude / OpenAI / Groq / DeepSeek) or a local LLM (Ollama / LM Studio) running on the same machine, which works without internet. This app uses BYOK (Bring Your Own Key) model – you bring your own API keys and pay each provider directly based on usage (local LLM costs ¥0).
+A: Transcription (OpenAI Whisper / Deepgram) requires an internet connection. For AI responses you can use cloud LLMs (Gemini / Claude / OpenAI / Groq / DeepSeek) or a local LLM (llama.cpp / Ollama / LM Studio) running on the same machine, which works without internet. This app uses BYOK (Bring Your Own Key) model – you bring your own API keys and pay each provider directly based on usage (local LLM costs ¥0).
 
 **Q: What if I don't set up LLM keys?**
 A: Transcription will still work. AI features (summary, consult, minutes, Q&A) will be unavailable.

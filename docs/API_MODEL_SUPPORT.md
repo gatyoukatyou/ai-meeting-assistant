@@ -14,7 +14,12 @@ policy and are excluded from exports.
 | Anthropic | `claude-sonnet-5`, `claude-haiku-4-5-20251001` | Sonnet 5 summary: thinking disabled; advice: adaptive/high. No manual `budget_tokens` on Sonnet 5 | [models](https://platform.claude.com/docs/en/about-claude/models/overview), [thinking](https://platform.claude.com/docs/en/build-with-claude/thinking), [pricing](https://platform.claude.com/docs/en/about-claude/pricing) |
 | Groq | `openai/gpt-oss-120b`, `openai/gpt-oss-20b` | summary: low effort; advice: medium when enabled; reasoning text excluded | [models and prices](https://console.groq.com/docs/models), [reasoning](https://console.groq.com/docs/reasoning), [deprecations](https://console.groq.com/docs/deprecations) |
 | DeepSeek | `deepseek-v4-flash` | summary: thinking disabled; advice: thinking enabled/high | [Chat Completions](https://api-docs.deepseek.com/api/create-chat-completion), [models and pricing](https://api-docs.deepseek.com/quick_start/pricing), [thinking](https://api-docs.deepseek.com/guides/thinking_mode) |
-| Local LLM (Ollama / LM Studio) | No fixed presets — model list is fetched live from `GET {baseUrl}/models`, or entered manually | No API key required; reasoning controls are not applied | [Ollama OpenAI compatibility](https://github.com/ollama/ollama/blob/main/docs/openai.md), [LM Studio local server](https://lmstudio.ai/docs/local-server) |
+| Local LLM (llama.cpp / Ollama / LM Studio) | No fixed presets — model list is fetched live from `GET {baseUrl}/models`, or entered manually | No API key required; reasoning controls are not applied | [llama.cpp server](https://github.com/ggml-org/llama.cpp/tree/master/tools/server), [Ollama OpenAI compatibility](https://github.com/ollama/ollama/blob/main/docs/openai.md), [LM Studio local server](https://lmstudio.ai/docs/local-server) |
+
+Local LLM base URL presets: `http://localhost:8080/v1` and `http://127.0.0.1:8080/v1`
+(llama.cpp `llama-server`), `http://localhost:11434/v1` and `http://127.0.0.1:11434/v1`
+(Ollama), `http://localhost:1234/v1` and `http://127.0.0.1:1234/v1` (LM Studio). The
+settings screen persists only these preset URLs; any other base URL is discarded.
 
 Local LLM only connects to `http://localhost:*` or `http://127.0.0.1:*` (enforced by the
 CSP `connect-src`), matching Phase 1 scope: a server already running on the same machine
@@ -26,7 +31,9 @@ CORS prerequisite: when the app itself is served from a non-local origin (e.g. G
 Pages), the browser sends that origin to the local server, and Ollama's default
 `OLLAMA_ORIGINS` (localhost origins only) rejects the request. Either serve the app
 locally (e.g. `npx http-server`) or start Ollama with `OLLAMA_ORIGINS` configured.
-LM Studio requires enabling CORS in its local server settings.
+LM Studio requires enabling CORS in its local server settings. `llama-server` sends
+permissive CORS headers by default; keep it bound to `--host 127.0.0.1` and open the app
+from the same machine.
 
 Groq's `llama-3.3-70b-versatile` and `llama-3.1-8b-instant` remain recognizable only
 so saved settings can be shown with a migration recommendation. Groq announced an

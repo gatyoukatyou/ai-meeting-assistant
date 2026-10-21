@@ -250,7 +250,7 @@ async function testLocalLlmConnection() {
     } else {
       if (statusEl) {
         statusEl.className = 'validation-status validation-error';
-        statusEl.textContent = '✗ ' + t('config.validation.invalid');
+        statusEl.textContent = '✗ ' + (t('config.llm.localLlmNotConnected') || '接続できません');
       }
       showError((t('config.llm.localLlmConnectionFailed') || '接続できませんでした。Ollama/LM Studioが起動しているか確認してください。') + nonLoopbackOriginHint);
     }
@@ -258,7 +258,7 @@ async function testLocalLlmConnection() {
     console.warn('[Config] Local LLM connection test failed:', e.message);
     if (statusEl) {
       statusEl.className = 'validation-status validation-error';
-      statusEl.textContent = '✗ ' + t('config.validation.invalid');
+      statusEl.textContent = '✗ ' + (t('config.llm.localLlmNotConnected') || '接続できません');
     }
     showError((t('config.llm.localLlmConnectionFailed') || '接続できませんでした。Ollama/LM Studioが起動しているか確認してください。') + nonLoopbackOriginHint);
   }
@@ -556,6 +556,7 @@ async function saveSettings() {
   const localLlmCustomModelEl = document.getElementById('localLlmCustomModel');
   const ALLOWED_LOCAL_LLM_BASE_URLS = new Set([
     '',
+    'http://localhost:8080/v1', 'http://127.0.0.1:8080/v1',
     'http://localhost:11434/v1', 'http://127.0.0.1:11434/v1',
     'http://localhost:1234/v1', 'http://127.0.0.1:1234/v1'
   ]);

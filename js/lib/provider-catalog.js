@@ -14,6 +14,8 @@ const ProviderCatalog = (function () {
     .filter(function (id) { return KEYLESS_LLM_PROVIDER_IDS.indexOf(id) === -1; })
     .concat(['openai', 'deepgram']);
   var LOCAL_LLM_BASE_URL_PRESETS = [
+    { id: 'llamacpp', label: 'llama.cpp (localhost:8080)', baseUrl: 'http://localhost:8080/v1' },
+    { id: 'llamacpp-loopback-ip', label: 'llama.cpp (127.0.0.1:8080)', baseUrl: 'http://127.0.0.1:8080/v1' },
     { id: 'ollama', label: 'Ollama (localhost:11434)', baseUrl: 'http://localhost:11434/v1' },
     { id: 'ollama-loopback-ip', label: 'Ollama (127.0.0.1:11434)', baseUrl: 'http://127.0.0.1:11434/v1' },
     { id: 'lmstudio', label: 'LM Studio (localhost:1234)', baseUrl: 'http://localhost:1234/v1' },
@@ -100,7 +102,7 @@ const ProviderCatalog = (function () {
       ]
     },
     local_llm: {
-      id: 'local_llm', kind: 'llm', apiKind: 'openai-compatible', displayName: 'Local LLM (Ollama / LM Studio)',
+      id: 'local_llm', kind: 'llm', apiKind: 'openai-compatible', displayName: 'Local LLM (llama.cpp / Ollama / LM Studio)',
       apiBaseUrl: '', chatCompletionsPath: '/chat/completions', requiresApiKey: false,
       authorization: { header: 'Authorization', prefix: 'Bearer ' },
       usageFields: { input: 'prompt_tokens', output: 'completion_tokens' },

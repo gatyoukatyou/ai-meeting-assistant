@@ -292,12 +292,14 @@
 
         <div class="setting-group" style="margin-bottom: 0;">
           <label class="setting-label">
-            Local LLM (Ollama / LM Studio)
+            Local LLM (llama.cpp / Ollama / LM Studio)
             <span class="validation-status" id="local-llm-status" style="display:none;"></span>
           </label>
           <div class="setting-row">
             <select class="model-select" id="localLlmBaseUrl">
               <option value="" data-i18n="config.llm.localLlmBaseUrlUnset">未設定</option>
+              <option value="http://localhost:8080/v1">llama.cpp (localhost:8080)</option>
+              <option value="http://127.0.0.1:8080/v1">llama.cpp (127.0.0.1:8080)</option>
               <option value="http://localhost:11434/v1">Ollama (localhost:11434)</option>
               <option value="http://127.0.0.1:11434/v1">Ollama (127.0.0.1:11434)</option>
               <option value="http://localhost:1234/v1">LM Studio (localhost:1234)</option>
@@ -318,7 +320,7 @@
             <button type="button" class="api-action-btn btn-clear" data-clear="local_llm" data-i18n="config.llm.clear">Clear</button>
           </div>
           <div class="setting-hint" data-i18n="config.llm.localLlmHint">
-            APIキー不要。Mac mini等で起動中のOllama／LM Studioのlocalhostエンドポイントのみ対応（費用は常に0円）。
+            APIキー不要。Mac mini等で起動中のllama.cpp／Ollama／LM Studioのlocalhostエンドポイントのみ対応（費用は常に0円）。
           </div>
         </div>
 

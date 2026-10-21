@@ -195,6 +195,7 @@ const SecureStorage = {
         // localhostのみ許可（CSP connect-srcと同じ制約。他ホストは黙って捨てる）
         var allowedLocalLlmBaseUrls = [
           '',
+          'http://localhost:8080/v1', 'http://127.0.0.1:8080/v1',
           'http://localhost:11434/v1', 'http://127.0.0.1:11434/v1',
           'http://localhost:1234/v1', 'http://127.0.0.1:1234/v1'
         ];
